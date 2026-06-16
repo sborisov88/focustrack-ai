@@ -165,8 +165,8 @@ OPENROUTER_API_KEY=
 ## Связанные документы
 
 - [project_description.md](../project_description.md)
-- [FOCUSTRACK_AI_WORK_PLAN.md](../../../FOCUSTRACK_AI_WORK_PLAN.md)
-- [COURSE_HOMEWORK_MAP.md](../../../COURSE_HOMEWORK_MAP.md)
+- [FOCUSTRACK_AI_WORK_PLAN.md](../FOCUSTRACK_AI_WORK_PLAN.md)
+- [COURSE_HOMEWORK_MAP.md](../COURSE_HOMEWORK_MAP.md)
 
 ---
 
