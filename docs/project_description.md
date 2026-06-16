@@ -116,8 +116,8 @@
 | 6 | CI/CD, Google OAuth, Яндекс.Метрика |
 | Проект | Доработка MVP + защита (~10 мин) |
 
-Карта курса: [COURSE_HOMEWORK_MAP.md](../../COURSE_HOMEWORK_MAP.md)  
-План работ: [FOCUSTRACK_AI_WORK_PLAN.md](../../FOCUSTRACK_AI_WORK_PLAN.md)
+Карта курса: [COURSE_HOMEWORK_MAP.md](./COURSE_HOMEWORK_MAP.md)  
+План работ: [FOCUSTRACK_AI_WORK_PLAN.md](./FOCUSTRACK_AI_WORK_PLAN.md)
 
 ## Встроенный шаблон (демо для защиты)
 
