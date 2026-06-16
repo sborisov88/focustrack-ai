@@ -4,7 +4,7 @@
 |------|----------|
 | **Статус** | Принято |
 | **Дата** | 2026-06-17 |
-| **Контекст** | MVP для ДЗ 1–6 и проектной работы курса Otus «ИИ-агенты» |
+| **Контекст** | MVP FocusTrack AI — fullstack-приложение с AI-функциями |
 
 ---
 
@@ -13,10 +13,10 @@
 FocusTrack AI — fullstack веб-приложение с AI-функциями (clarify, plan, weekly review).  
 Нужен стек, который:
 
-- закрывает критерии ДЗ 5 (БД, auth, API, RLS, e2e);
-- закрывает ДЗ 6 (OAuth, CI/CD, аналитика);
+- обеспечивает auth, API, RLS и e2e-сценарии;
+- поддерживает OAuth, CI/CD и мониторинг;
 - позволяет безопасно вызывать OpenRouter (ключи не на клиенте);
-- укладывается в сроки одного человека на пути A.
+- укладывается в сроки разработки MVP одним разработчиком.
 
 ## Решение
 
@@ -24,32 +24,32 @@ FocusTrack AI — fullstack веб-приложение с AI-функциями
 
 | Компонент | Выбор | Обоснование |
 |-----------|--------|-------------|
-| Framework | **React 18** | Требование/ориентир курса (занятие 15), экосистема |
+| Framework | **React 18** | Зрелая экосистема, удобен для SPA |
 | Язык | **TypeScript** | Типизация, меньше ошибок при работе с агентом |
 | Сборка | **Vite** | Быстрый dev, простой CI |
-| Стили | **Tailwind CSS** | Быстрая вёрстка, согласуется с v0.dev (ДЗ 3) |
+| Стили | **Tailwind CSS** | Быстрая вёрстка, согласуется с v0.dev |
 | Графики | **Recharts** | Дашборд прогресса без тяжёлой кастомной отрисовки |
 | Роутинг | **React Router** | Несколько экранов: dashboard, goal, review |
-| Тесты | **Vitest + React Testing Library** | Критерий ДЗ 4: ≥3 автотеста |
+| Тесты | **Vitest + React Testing Library** | Автотесты ключевых UI-сценариев |
 | Supabase client | **@supabase/supabase-js** | CRUD + Auth + вызов Edge Functions |
 
 ### Backend / данные
 
 | Компонент | Выбор | Обоснование |
 |-----------|--------|-------------|
-| BaaS | **Supabase Cloud** | Занятия 20–23; Auth + RLS + REST из коробки; меньше кода для ДЗ 5 |
+| BaaS | **Supabase Cloud** | Auth + RLS + REST из коробки, меньше самописного backend |
 | БД | **PostgreSQL** (в Supabase) | Реляционная модель: goals → tasks → completions |
-| Миграции | **supabase/migrations/** | Воспроизводимый деплой (урок 21: не править только Dashboard) |
-| Auth | **Supabase Auth** | Email + Google OAuth (ДЗ 6) |
+| Миграции | **supabase/migrations/** | Воспроизводимый деплой, версионирование схемы |
+| Auth | **Supabase Auth** | Email + Google OAuth |
 | Безопасность | **RLS** | Каждый user_id видит только свои строки |
 
-**Отклонено:** отдельный Express-сервер для CRUD — избыточно для MVP и выше риск не сдать ДЗ 5 в срок.
+**Отклонено:** отдельный Express-сервер для CRUD — избыточно для MVP.
 
 ### AI-слой
 
 | Компонент | Выбор | Обоснование |
 |-----------|--------|-------------|
-| LLM-провайдер | **OpenRouter** | Занятие 26; одна API-схема, выбор моделей |
+| LLM-провайдер | **OpenRouter** | Одна API-схема, выбор моделей |
 | Вызов LLM | **Supabase Edge Functions** (Deno) | Секрет `OPENROUTER_API_KEY` только в Supabase secrets |
 | Формат ответа | **JSON** (структурированный) | Контроль формата, снижение галлюцинаций |
 | Модель (старт) | `openai/gpt-4o-mini` или аналог | Баланс цена/качество для structured output |
@@ -61,30 +61,30 @@ FocusTrack AI — fullstack веб-приложение с AI-функциями
 | `ai-clarify` | Уточняющие вопросы по цели |
 | `ai-plan` | Декомпозиция цели в этапы и задачи |
 | `ai-weekly-review` | Отчёт по `task_completions` за 7 дней |
-| `health` | Health check для ДЗ 6 |
+| `health` | Health check для мониторинга |
 
 **Отклонено:** вызов OpenRouter с клиента — утечка API-ключа.
 
 **Отклонено на MVP:** RAG / pgvector — усложнение; weekly review работает на структурированных данных из PostgreSQL.
 
-### DevOps и интеграции (ДЗ 6)
+### DevOps и интеграции
 
 | Компонент | Выбор | Обоснование |
 |-----------|--------|-------------|
-| CI/CD | **GitHub Actions** | Критерий ДЗ 6 |
+| CI/CD | **GitHub Actions** | Автотесты и проверки на каждый PR |
 | Деплой frontend | **Vercel** или **Netlify** | Простой автодеплой из main |
-| OAuth | **Google** (Supabase Auth) | Требование ДЗ 6 |
-| Аналитика | **Яндекс.Метрика** | Требование ДЗ 6, курс (занятие 25) |
+| OAuth | **Google** (Supabase Auth) | Быстрый вход без пароля |
+| Аналитика | **Яндекс.Метрика** | Поведение пользователей в production |
 | Локальная разработка | **supabase CLI** (`supabase start`) | README «поднять с нуля» |
-| Мониторинг | **UptimeRobot** + `/health` | Критерий ДЗ 6 |
+| Мониторинг | **UptimeRobot** + `/health` | Алерты при недоступности |
 
 ### Инструменты разработки
 
 | Компонент | Выбор | Обоснование |
 |-----------|--------|-------------|
-| IDE-агент | **Cursor** | Выбор ДЗ 1; rules, MCP при необходимости |
-| Правила | **`.cursor/rules/focustrack-ai.mdc`** | ДЗ 2 |
-| Репозиторий | **Один GitHub repo** | Путь A, [COURSE_HOMEWORK_MAP.md](../../../COURSE_HOMEWORK_MAP.md) |
+| IDE-агент | **Cursor** | Ускорение разработки, rules, MCP при необходимости |
+| Правила | **`.cursor/rules/focustrack-ai.mdc`** | Единые соглашения для агента и команды |
+| Репозиторий | **Один GitHub repo** | Frontend, Supabase и документация в одном месте |
 
 ---
 
@@ -132,10 +132,10 @@ OPENROUTER_API_KEY=
 
 ### Плюсы
 
-- Быстрый путь к e2e для ДЗ 5
+- Быстрый путь к end-to-end MVP
 - Auth и RLS без самописного backend
 - OpenRouter изолирован на сервере
-- Соответствует материалам курса (Supabase, OpenRouter, CI/CD)
+- Проверенный стек: Supabase, OpenRouter, GitHub Actions
 
 ### Минусы / риски
 
@@ -156,7 +156,7 @@ OPENROUTER_API_KEY=
 
 Пересмотреть стек, если:
 
-- OpenRouter недоступен → fallback на YandexGPT / Ollama (занятие 26)
+- OpenRouter недоступен → fallback на YandexGPT / Ollama
 - Edge Functions неудобны → тонкий FastAPI только для `/ai/*`, данные остаются в Supabase
 - Требования проекта изменятся (например, обязательный RAG)
 
@@ -165,8 +165,6 @@ OPENROUTER_API_KEY=
 ## Связанные документы
 
 - [project_description.md](../project_description.md)
-- [FOCUSTRACK_AI_WORK_PLAN.md](../FOCUSTRACK_AI_WORK_PLAN.md)
-- [COURSE_HOMEWORK_MAP.md](../COURSE_HOMEWORK_MAP.md)
 
 ---
 

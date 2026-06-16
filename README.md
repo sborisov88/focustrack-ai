@@ -2,9 +2,8 @@
 
 Трекер целей обучения и профессионального роста с AI-планировщиком (clarify → plan → weekly review).
 
-**Курс:** Otus — «ИИ-агенты: продвинутое внедрение и использование»  
 **Репозиторий:** https://github.com/sborisov88/focustrack-ai  
-**Статус:** Фаза 0 — подготовка (документация, инфраструктура)
+**Статус:** ранняя стадия — документация и подготовка инфраструктуры
 
 ## Документация
 
@@ -12,7 +11,6 @@
 |------|----------|
 | [docs/project_description.md](./docs/project_description.md) | Описание продукта, MVP, ЦА |
 | [docs/adr/001-tech-stack.md](./docs/adr/001-tech-stack.md) | Архитектурное решение по стеку |
-| [docs/FOCUSTRACK_AI_WORK_PLAN.md](./docs/FOCUSTRACK_AI_WORK_PLAN.md) | План ДЗ 1–6 + проект |
 
 ## Стек (зафиксирован)
 
@@ -22,7 +20,7 @@
 
 ## Быстрый старт
 
-> Код приложения появится в Фазах 4–5. Сейчас — только документация.
+> Код приложения появится на следующих этапах. Сейчас — только документация.
 
 ```bash
 # после появления frontend/ и supabase/
@@ -31,7 +29,3 @@ cp .env.example frontend/.env.local
 
 cd frontend && npm install && npm run dev
 ```
-
-## Otus
-
-- Проект: [homework-chat/47773](https://otus.ru/learning/493766/#/homework-chat/47773/)
