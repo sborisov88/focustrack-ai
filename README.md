@@ -3,6 +3,7 @@
 Трекер целей обучения и профессионального роста с AI-планировщиком (clarify → plan → weekly review).
 
 **Курс:** Otus — «ИИ-агенты: продвинутое внедрение и использование»  
+**Репозиторий:** https://github.com/sborisov88/focustrack-ai  
 **Статус:** Фаза 0 — подготовка (документация, инфраструктура)
 
 ## Документация
@@ -11,8 +12,7 @@
 |------|----------|
 | [docs/project_description.md](./docs/project_description.md) | Описание продукта, MVP, ЦА |
 | [docs/adr/001-tech-stack.md](./docs/adr/001-tech-stack.md) | Архитектурное решение по стеку |
-| [../FOCUSTRACK_AI_WORK_PLAN.md](../FOCUSTRACK_AI_WORK_PLAN.md) | План ДЗ 1–6 + проект |
-| [../COURSE_HOMEWORK_MAP.md](../COURSE_HOMEWORK_MAP.md) | Карта курса |
+| [docs/FOCUSTRACK_AI_WORK_PLAN.md](./docs/FOCUSTRACK_AI_WORK_PLAN.md) | План ДЗ 1–6 + проект |
 
 ## Стек (зафиксирован)
 
