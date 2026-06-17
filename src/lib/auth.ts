@@ -37,6 +37,26 @@ export async function signInWithPassword(email: string, password: string) {
   }
 }
 
+export async function signUpWithPassword(email: string, password: string) {
+  const supabase = getSupabaseClient()
+
+  if (!supabase || !hasSupabaseConfig()) {
+    throw new Error("Supabase не настроен для текущего окружения.")
+  }
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: globalThis.location.origin,
+    },
+  })
+
+  if (error) {
+    throw error
+  }
+}
+
 export async function signOut() {
   const supabase = getSupabaseClient()
 

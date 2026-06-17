@@ -2,9 +2,11 @@ import "@supabase/functions-js/edge-runtime.d.ts"
 
 import {
   callOpenRouter,
+  getErrorStatus,
   handleOptions,
   jsonResponse,
   readJson,
+  requireAuthenticatedUser,
 } from "../_shared/openrouter.ts"
 import { createLogger } from "../_shared/logger.ts"
 
@@ -22,8 +24,11 @@ export default {
     if (options) return options
 
     try {
+      requireAuthenticatedUser(request)
       const body = await readJson<ClarifyRequest>(request)
-      log.info("Запрос на уточнение цели", { hasDescription: Boolean(body.description) })
+      log.info("Запрос на уточнение цели", {
+        hasDescription: Boolean(body.description),
+      })
       const { content, model } = await callOpenRouter([
         {
           role: "system",
@@ -49,7 +54,7 @@ export default {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       log.error("Ошибка обработки запроса", { message })
-      return jsonResponse(request, { error: message }, 500)
+      return jsonResponse(request, { error: message }, getErrorStatus(error))
     }
   },
 }

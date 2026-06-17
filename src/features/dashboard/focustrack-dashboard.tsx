@@ -18,6 +18,9 @@ import {
   RefreshCcwIcon,
   SparklesIcon,
   TargetIcon,
+  Trash2Icon,
+  TriangleAlertIcon,
+  UserPlusIcon,
 } from "lucide-react"
 
 import {
@@ -25,6 +28,8 @@ import {
   createGoal,
   createGoalOnServer,
   createLocalGoal,
+  deleteGoal,
+  deleteGoalOnServer,
   loadWorkspace,
   requestGoalClarification,
   requestGoalPlan,
@@ -33,7 +38,12 @@ import {
   toggleTask,
   updateTaskStatusOnServer,
 } from "@/lib/focustrack-api"
-import { signInWithOAuth, signInWithPassword, signOut } from "@/lib/auth"
+import {
+  signInWithOAuth,
+  signInWithPassword,
+  signOut,
+  signUpWithPassword,
+} from "@/lib/auth"
 import { getSupabaseClient } from "@/lib/supabase"
 import { useMountEffect } from "@/hooks/use-mount-effect"
 import { trackEvent } from "@/lib/analytics"
@@ -155,13 +165,63 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-const navItems = [
-  { id: "overview", label: "Обзор", icon: LayoutDashboardIcon },
-  { id: "goals", label: "Цели", icon: TargetIcon },
-  { id: "tasks", label: "Задачи", icon: ClipboardListIcon },
-  { id: "ai-plan", label: "AI-план", icon: SparklesIcon },
-  { id: "reviews", label: "Обзоры", icon: BarChart3Icon },
+type AppRoute = "dashboard" | "planner" | "knowledge" | "review"
+
+const navItems: Array<{
+  id: AppRoute
+  label: string
+  path: string
+  icon: React.ComponentType
+}> = [
+  {
+    id: "dashboard",
+    label: "Дашборд",
+    path: "/dashboard",
+    icon: LayoutDashboardIcon,
+  },
+  { id: "planner", label: "План", path: "/planner", icon: ClipboardListIcon },
+  { id: "knowledge", label: "Заметки", path: "/knowledge", icon: BookOpenIcon },
+  { id: "review", label: "Обзоры", path: "/review", icon: BarChart3Icon },
 ]
+
+function getRouteFromPath(pathname: string): AppRoute {
+  if (pathname.startsWith("/planner")) return "planner"
+  if (pathname.startsWith("/knowledge")) return "knowledge"
+  if (pathname.startsWith("/review")) return "review"
+  return "dashboard"
+}
+
+function getRoutePath(route: AppRoute) {
+  return navItems.find((item) => item.id === route)?.path ?? "/dashboard"
+}
+
+function useAppRoute() {
+  const [route, setRoute] = useState<AppRoute>(() =>
+    getRouteFromPath(globalThis.location?.pathname ?? "/"),
+  )
+
+  useMountEffect(() => {
+    const handlePopState = () => {
+      setRoute(getRouteFromPath(globalThis.location.pathname))
+    }
+
+    globalThis.addEventListener("popstate", handlePopState)
+
+    return () => globalThis.removeEventListener("popstate", handlePopState)
+  })
+
+  const navigate = (nextRoute: AppRoute) => {
+    const nextPath = getRoutePath(nextRoute)
+
+    if (globalThis.location.pathname !== nextPath) {
+      globalThis.history.pushState(null, "", nextPath)
+    }
+
+    setRoute(nextRoute)
+  }
+
+  return { route, navigate }
+}
 
 function statusVariant(status: Goal["status"] | FocusTask["status"]) {
   if (status === "done" || status === "completed") return "default"
@@ -469,7 +529,10 @@ function CreateGoalDialog({
               data-testid="goal-submit"
             >
               {createGoalMutation.isPending ? (
-                <Loader2Icon data-icon="inline-start" />
+                <Loader2Icon
+                  className="animate-spin"
+                  data-icon="inline-start"
+                />
               ) : (
                 <PlusIcon data-icon="inline-start" />
               )}
@@ -484,7 +547,10 @@ function CreateGoalDialog({
               data-testid="goal-clarify-button"
             >
               {clarifyMutation.isPending ? (
-                <Loader2Icon data-icon="inline-start" />
+                <Loader2Icon
+                  className="animate-spin"
+                  data-icon="inline-start"
+                />
               ) : (
                 <SparklesIcon data-icon="inline-start" />
               )}
@@ -499,7 +565,10 @@ function CreateGoalDialog({
               data-testid="goal-plan-button"
             >
               {planMutation.isPending ? (
-                <Loader2Icon data-icon="inline-start" />
+                <Loader2Icon
+                  className="animate-spin"
+                  data-icon="inline-start"
+                />
               ) : (
                 <SparklesIcon data-icon="inline-start" />
               )}
@@ -548,7 +617,7 @@ function AuthButtons() {
           data-testid="google-signin-button"
         >
           {isSigningIn ? (
-            <Loader2Icon data-icon="inline-start" />
+            <Loader2Icon className="animate-spin" data-icon="inline-start" />
           ) : (
             <LogInIcon data-icon="inline-start" />
           )}
@@ -584,15 +653,13 @@ function useAuthState() {
       return
     }
 
-    void supabase.auth
-      .getSession()
-      .then(({ data }) =>
-        setAuthState({
-          email: data.session?.user.email ?? null,
-          userId: data.session?.user.id ?? null,
-          ready: true,
-        }),
-      )
+    void supabase.auth.getSession().then(({ data }) =>
+      setAuthState({
+        email: data.session?.user.email ?? null,
+        userId: data.session?.user.id ?? null,
+        ready: true,
+      }),
+    )
 
     const {
       data: { subscription },
@@ -613,12 +680,14 @@ function useAuthState() {
 
 function LoginDialog() {
   const [open, setOpen] = useState(false)
+  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isPending, setIsPending] = useState(false)
   const queryClient = useQueryClient()
   const canSubmit =
     email.trim().length > 3 && password.length >= 6 && !isPending
+  const isSignUp = mode === "sign-up"
 
   const handleSubmit = async () => {
     if (!canSubmit) return
@@ -626,16 +695,25 @@ function LoginDialog() {
     setIsPending(true)
 
     try {
-      await signInWithPassword(email.trim(), password)
-      trackEvent({ name: "password_sign_in", params: { method: "password" } })
+      if (isSignUp) {
+        await signUpWithPassword(email.trim(), password)
+        trackEvent({ name: "password_sign_up", params: { method: "password" } })
+      } else {
+        await signInWithPassword(email.trim(), password)
+        trackEvent({ name: "password_sign_in", params: { method: "password" } })
+      }
+
       await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
       setPassword("")
       setOpen(false)
-      toast.success("Вход выполнен")
+      toast.success(isSignUp ? "Регистрация отправлена" : "Вход выполнен")
     } catch (error) {
-      toast.error("Не удалось войти", {
-        description: error instanceof Error ? error.message : String(error),
-      })
+      toast.error(
+        isSignUp ? "Не удалось зарегистрироваться" : "Не удалось войти",
+        {
+          description: error instanceof Error ? error.message : String(error),
+        },
+      )
     } finally {
       setIsPending(false)
     }
@@ -656,9 +734,13 @@ function LoginDialog() {
       </DialogTrigger>
       <DialogContent data-testid="login-dialog">
         <DialogHeader>
-          <DialogTitle>Вход по email</DialogTitle>
+          <DialogTitle>
+            {isSignUp ? "Регистрация" : "Вход по email"}
+          </DialogTitle>
           <DialogDescription>
-            Войдите, чтобы видеть свои цели, задачи и AI-сессии из Supabase.
+            {isSignUp
+              ? "Создайте аккаунт, чтобы хранить цели и AI-сессии в Supabase."
+              : "Войдите, чтобы видеть свои цели, задачи и AI-сессии из Supabase."}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -686,7 +768,7 @@ function LoginDialog() {
                 id="login-password"
                 data-testid="login-password-input"
                 type="password"
-                autoComplete="current-password"
+                autoComplete={isSignUp ? "new-password" : "current-password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="Минимум 6 символов"
@@ -696,14 +778,31 @@ function LoginDialog() {
               </FieldDescription>
             </Field>
           </FieldGroup>
-          <DialogFooter className="mt-4">
-            <Button type="submit" disabled={!canSubmit} data-testid="login-submit">
+          <DialogFooter className="mt-4 flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setMode(isSignUp ? "sign-in" : "sign-up")}
+              data-testid={isSignUp ? "auth-mode-signin" : "auth-mode-signup"}
+            >
+              {isSignUp ? "У меня уже есть аккаунт" : "Создать аккаунт"}
+            </Button>
+            <Button
+              type="submit"
+              disabled={!canSubmit}
+              data-testid="login-submit"
+            >
               {isPending ? (
-                <Loader2Icon data-icon="inline-start" />
+                <Loader2Icon
+                  className="animate-spin"
+                  data-icon="inline-start"
+                />
+              ) : isSignUp ? (
+                <UserPlusIcon data-icon="inline-start" />
               ) : (
                 <LogInIcon data-icon="inline-start" />
               )}
-              Войти
+              {isSignUp ? "Зарегистрироваться" : "Войти"}
             </Button>
           </DialogFooter>
         </form>
@@ -727,12 +826,6 @@ function SignedInControls({
 
     try {
       await signOut()
-      queryClient.removeQueries({ queryKey: workspaceQueryKey })
-      queryClient.setQueryData(
-        getWorkspaceQueryKey("anonymous"),
-        anonymousWorkspace,
-      )
-      onSignedOut()
       trackEvent({ name: "sign_out", params: {} })
       toast.success("Вы вышли из аккаунта")
     } catch (error) {
@@ -740,6 +833,14 @@ function SignedInControls({
         description: error instanceof Error ? error.message : String(error),
       })
     } finally {
+      // Сбрасываем клиентское состояние всегда: даже если signOut() упал,
+      // нельзя оставлять данные прошлого пользователя в кэше и на экране.
+      queryClient.removeQueries({ queryKey: workspaceQueryKey })
+      queryClient.setQueryData(
+        getWorkspaceQueryKey("anonymous"),
+        anonymousWorkspace,
+      )
+      onSignedOut()
       setIsPending(false)
     }
   }
@@ -763,7 +864,7 @@ function SignedInControls({
         data-testid="signout-button"
       >
         {isPending ? (
-          <Loader2Icon data-icon="inline-start" />
+          <Loader2Icon className="animate-spin" data-icon="inline-start" />
         ) : (
           <LogOutIcon data-icon="inline-start" />
         )}
@@ -781,7 +882,9 @@ function AuthControls({
   onSignedOut: () => void
 }) {
   if (authState.email) {
-    return <SignedInControls email={authState.email} onSignedOut={onSignedOut} />
+    return (
+      <SignedInControls email={authState.email} onSignedOut={onSignedOut} />
+    )
   }
 
   return (
@@ -796,10 +899,14 @@ function GoalList({
   goals,
   selectedGoalId,
   onSelectGoal,
+  onDeleteGoal,
+  isDeletingGoal,
 }: {
   goals: Goal[]
   selectedGoalId: string
   onSelectGoal: (goalId: string) => void
+  onDeleteGoal: (goalId: string) => void
+  isDeletingGoal: boolean
 }) {
   return (
     <Card data-testid="goal-list">
@@ -811,30 +918,53 @@ function GoalList({
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {goals.map((goal) => (
-          <button
+          <div
             key={goal.id}
-            type="button"
             data-testid="goal-item"
-            onClick={() => onSelectGoal(goal.id)}
-            className="bg-card hover:bg-accent aria-pressed:border-primary flex flex-col gap-2 rounded-lg border p-3 text-left transition-colors"
-            aria-pressed={goal.id === selectedGoalId}
+            data-active={goal.id === selectedGoalId}
+            className="bg-card data-[active=true]:border-primary flex flex-col gap-2 rounded-lg border p-3 transition-colors"
           >
-            <div className="flex items-start justify-between gap-3">
-              <span className="font-medium">{goal.title}</span>
-              <Badge variant={statusVariant(goal.status)}>
-                {getStatusLabel(goal.status)}
-              </Badge>
+            <div className="flex items-start gap-2">
+              <button
+                type="button"
+                onClick={() => onSelectGoal(goal.id)}
+                className="hover:bg-accent flex min-w-0 flex-1 flex-col gap-2 rounded-md p-1 text-left transition-colors"
+                aria-pressed={goal.id === selectedGoalId}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span className="font-medium">{goal.title}</span>
+                  <Badge variant={statusVariant(goal.status)}>
+                    {getStatusLabel(goal.status)}
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground line-clamp-2 text-sm">
+                  {goal.description}
+                </p>
+                <div className="flex items-center gap-3">
+                  <Progress value={goal.progressPercent} />
+                  <span className="text-muted-foreground text-sm tabular-nums">
+                    {goal.progressPercent}%
+                  </span>
+                </div>
+              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={isDeletingGoal}
+                    onClick={() => onDeleteGoal(goal.id)}
+                    aria-label={`Удалить цель ${goal.title}`}
+                    data-testid="delete-goal-button"
+                  >
+                    <Trash2Icon />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Удалить цель</TooltipContent>
+              </Tooltip>
             </div>
-            <p className="text-muted-foreground line-clamp-2 text-sm">
-              {goal.description}
-            </p>
-            <div className="flex items-center gap-3">
-              <Progress value={goal.progressPercent} />
-              <span className="text-muted-foreground text-sm tabular-nums">
-                {goal.progressPercent}%
-              </span>
-            </div>
-          </button>
+          </div>
         ))}
       </CardContent>
     </Card>
@@ -877,7 +1007,7 @@ function GoalDetail({
             data-testid="ai-review-button"
           >
             {isReviewPending ? (
-              <Loader2Icon data-icon="inline-start" />
+              <Loader2Icon className="animate-spin" data-icon="inline-start" />
             ) : (
               <RefreshCcwIcon data-icon="inline-start" />
             )}
@@ -1206,7 +1336,7 @@ function KnowledgePanel({
             data-testid="rag-submit"
           >
             {ragMutation.isPending ? (
-              <Loader2Icon data-icon="inline-start" />
+              <Loader2Icon className="animate-spin" data-icon="inline-start" />
             ) : (
               <BookOpenIcon data-icon="inline-start" />
             )}
@@ -1235,6 +1365,51 @@ function KnowledgePanel({
         ))}
       </CardContent>
     </Card>
+  )
+}
+
+function WorkspaceLoadingState() {
+  return (
+    <main className="p-4" data-testid="workspace-loading-state">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Loader2Icon className="animate-spin" />
+            Загружаем рабочее пространство
+          </CardTitle>
+          <CardDescription>
+            Проверяем сессию, цели, задачи и документы в Supabase.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    </main>
+  )
+}
+
+function WorkspaceErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <main className="p-4" data-testid="workspace-error-state">
+      <Alert variant="destructive">
+        <TriangleAlertIcon />
+        <AlertTitle>Рабочее пространство не загружено</AlertTitle>
+        <AlertDescription className="mt-2 flex flex-col gap-3">
+          <span>
+            Не удалось получить актуальные цели и задачи. Можно повторить запрос
+            без перезагрузки страницы.
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-fit"
+            onClick={onRetry}
+            data-testid="workspace-retry-button"
+          >
+            <RefreshCcwIcon data-icon="inline-start" />
+            Повторить
+          </Button>
+        </AlertDescription>
+      </Alert>
+    </main>
   )
 }
 
@@ -1272,8 +1447,22 @@ function AnonymousWorkspaceEmptyState({
 export function FocusTrackDashboard() {
   const queryClient = useQueryClient()
   const authState = useAuthState()
+  const { route, navigate } = useAppRoute()
   const [signedOutMode, setSignedOutMode] =
     useState<WorkspaceQueryIdentity>("anonymous")
+  const [previousUserId, setPreviousUserId] = useState<string | null>(
+    authState.userId,
+  )
+  // При входе пользователя сбрасываем демо-предпросмотр на anonymous, чтобы
+  // последующий авто-логаут (например, по истёкшему токену) вернул пустое
+  // signed-out состояние, а не демо-данные. Это паттерн "adjust state during
+  // render" из React — без useEffect.
+  if (authState.userId !== previousUserId) {
+    setPreviousUserId(authState.userId)
+    if (authState.userId) {
+      setSignedOutMode("anonymous")
+    }
+  }
   const workspaceIdentity: WorkspaceQueryIdentity = authState.userId
     ? `user:${authState.userId}`
     : signedOutMode
@@ -1297,13 +1486,11 @@ export function FocusTrackDashboard() {
   const [selectedGoalId, setSelectedGoalId] = useState(
     workspace.goals[0]?.id ?? "",
   )
-  const [activeNavItemId, setActiveNavItemId] = useState(navItems[0].id)
   const selectedGoal =
     workspace.goals.find((goal) => goal.id === selectedGoalId) ??
     workspace.goals[0]
   const selectedTasks = useMemo(
-    () =>
-      selectedGoal ? getGoalTasks(selectedGoal.id, workspace.tasks) : [],
+    () => (selectedGoal ? getGoalTasks(selectedGoal.id, workspace.tasks) : []),
     [selectedGoal, workspace.tasks],
   )
   const reviewMutation = useMutation({
@@ -1315,7 +1502,9 @@ export function FocusTrackDashboard() {
     },
     onSuccess: async (session) => {
       if (workspace.mode === "supabase") {
-        await queryClient.invalidateQueries({ queryKey: currentWorkspaceQueryKey })
+        await queryClient.invalidateQueries({
+          queryKey: currentWorkspaceQueryKey,
+        })
       } else {
         updateWorkspace(queryClient, currentWorkspaceQueryKey, (current) => ({
           ...current,
@@ -1334,13 +1523,7 @@ export function FocusTrackDashboard() {
     },
   })
   const taskMutation = useMutation({
-    mutationFn: async ({
-      taskId,
-      done,
-    }: {
-      taskId: string
-      done: boolean
-    }) => {
+    mutationFn: async ({ taskId, done }: { taskId: string; done: boolean }) => {
       const currentWorkspace =
         queryClient.getQueryData<Workspace>(currentWorkspaceQueryKey) ??
         workspace
@@ -1353,12 +1536,52 @@ export function FocusTrackDashboard() {
     },
     onSuccess: async (result) => {
       if (result.mode === "supabase") {
-        await queryClient.invalidateQueries({ queryKey: currentWorkspaceQueryKey })
+        await queryClient.invalidateQueries({
+          queryKey: currentWorkspaceQueryKey,
+        })
       }
     },
     onError: async (error) => {
-      await queryClient.invalidateQueries({ queryKey: currentWorkspaceQueryKey })
+      await queryClient.invalidateQueries({
+        queryKey: currentWorkspaceQueryKey,
+      })
       toast.error("Статус задачи не сохранён", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    },
+  })
+  const deleteGoalMutation = useMutation({
+    mutationFn: async (goalId: string) => {
+      const currentWorkspace =
+        queryClient.getQueryData<Workspace>(currentWorkspaceQueryKey) ??
+        workspace
+
+      if (currentWorkspace.mode === "supabase") {
+        await deleteGoalOnServer(goalId)
+        return { goalId, mode: "supabase" as const }
+      }
+
+      return {
+        goalId,
+        mode: "demo" as const,
+        workspace: deleteGoal(currentWorkspace, goalId),
+      }
+    },
+    onSuccess: async (result) => {
+      if (result.mode === "supabase") {
+        await queryClient.invalidateQueries({
+          queryKey: currentWorkspaceQueryKey,
+        })
+      } else {
+        queryClient.setQueryData(currentWorkspaceQueryKey, result.workspace)
+      }
+
+      setSelectedGoalId((current) => (current === result.goalId ? "" : current))
+      trackEvent({ name: "goal_deleted", params: { goalId: result.goalId } })
+      toast.success("Цель удалена")
+    },
+    onError: (error) => {
+      toast.error("Цель не удалена", {
         description: error instanceof Error ? error.message : String(error),
       })
     },
@@ -1390,13 +1613,18 @@ export function FocusTrackDashboard() {
     setSelectedGoalId("")
   }
 
-  const handleNavigate = (sectionId: string) => {
-    document.getElementById(sectionId)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
+  const handleHideDemo = () => {
+    setSignedOutMode("anonymous")
+    setSelectedGoalId("")
+    trackEvent({ name: "demo_mode_closed", params: {} })
+  }
+
+  const handleNavigate = (nextRoute: AppRoute) => {
+    navigate(nextRoute)
+    trackEvent({
+      name: "sidebar_navigation_clicked",
+      params: { route: nextRoute },
     })
-    setActiveNavItemId(sectionId)
-    trackEvent({ name: "sidebar_navigation_clicked", params: { sectionId } })
   }
 
   return (
@@ -1425,7 +1653,7 @@ export function FocusTrackDashboard() {
                     <SidebarMenuButton
                       type="button"
                       data-testid={`nav-${id}`}
-                      isActive={id === activeNavItemId}
+                      isActive={id === route}
                       onClick={() => handleNavigate(id)}
                     >
                       <Icon />
@@ -1506,6 +1734,17 @@ export function FocusTrackDashboard() {
                     Посмотреть демо
                   </Button>
                 )}
+                {workspace.mode === "demo" && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleHideDemo}
+                    data-testid="hide-demo-button"
+                  >
+                    Скрыть демо
+                  </Button>
+                )}
                 <AuthControls
                   authState={authState}
                   onSignedOut={handleSignedOut}
@@ -1520,7 +1759,15 @@ export function FocusTrackDashboard() {
             </div>
           </header>
           <ScrollArea className="flex-1">
-            {workspace.mode === "anonymous" ? (
+            {!authState.ready ? (
+              <WorkspaceLoadingState />
+            ) : workspaceQuery.isError ? (
+              <WorkspaceErrorState
+                onRetry={() => {
+                  void workspaceQuery.refetch()
+                }}
+              />
+            ) : workspace.mode === "anonymous" ? (
               <AnonymousWorkspaceEmptyState onShowDemo={handleShowDemo} />
             ) : (
               <>
@@ -1536,116 +1783,182 @@ export function FocusTrackDashboard() {
                     </Alert>
                   </div>
                 )}
-                <main
-                  id="overview"
-                  className="grid scroll-mt-4 gap-4 p-4 xl:grid-cols-[320px_minmax(0,1fr)_360px]"
-                >
-              <section id="goals" className="flex scroll-mt-4 flex-col gap-4">
-                <GoalList
-                  goals={workspace.goals}
-                  selectedGoalId={selectedGoal?.id ?? ""}
-                  onSelectGoal={setSelectedGoalId}
-                />
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Метрики</CardTitle>
-                    <CardDescription>Краткая сводка по целям.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-2 gap-3">
-                    <MetricCard
-                      icon={TargetIcon}
-                      label="Цели"
-                      value={workspace.goals.length}
+                {workspaceQuery.isFetching && workspace.mode === "supabase" && (
+                  <div className="px-4 pt-4">
+                    <Alert data-testid="workspace-loading-banner">
+                      <Loader2Icon className="animate-spin" />
+                      <AlertTitle>Синхронизируем данные</AlertTitle>
+                      <AlertDescription>
+                        Обновляем цели, задачи и AI-сессии из Supabase.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                )}
+                {route === "dashboard" && (
+                  <main
+                    className="grid gap-4 p-4 xl:grid-cols-[320px_minmax(0,1fr)]"
+                    data-testid="route-dashboard"
+                  >
+                    <section className="flex flex-col gap-4">
+                      <GoalList
+                        goals={workspace.goals}
+                        selectedGoalId={selectedGoal?.id ?? ""}
+                        onSelectGoal={setSelectedGoalId}
+                        onDeleteGoal={(goalId) =>
+                          deleteGoalMutation.mutate(goalId)
+                        }
+                        isDeletingGoal={deleteGoalMutation.isPending}
+                      />
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Метрики</CardTitle>
+                          <CardDescription>
+                            Краткая сводка по целям.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-3">
+                          <MetricCard
+                            icon={TargetIcon}
+                            label="Цели"
+                            value={workspace.goals.length}
+                          />
+                          <MetricCard
+                            icon={CheckCircle2Icon}
+                            label="Готово"
+                            value={doneCount}
+                          />
+                          <MetricCard
+                            icon={GaugeIcon}
+                            label="Блокеры"
+                            value={blockedCount}
+                          />
+                          <MetricCard
+                            icon={BookOpenIcon}
+                            label="Документы"
+                            value={workspace.knowledgeDocuments.length}
+                          />
+                        </CardContent>
+                      </Card>
+                    </section>
+                    <section className="grid min-w-0 gap-4 lg:grid-cols-2">
+                      <ProgressChart goals={workspace.goals} />
+                      <Card data-testid="categories-card">
+                        <CardHeader>
+                          <CardTitle>Категории целей</CardTitle>
+                          <CardDescription>
+                            Баланс направлений и источники для AI-ответов.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-3">
+                          {[
+                            ["Здоровье", "Полумарафон"],
+                            ["Карьера", "IELTS 7.0"],
+                            ["Финансы", "Подушка 6 мес"],
+                            ["Проект", "Лендинг"],
+                          ].map(([label, value]) => (
+                            <div
+                              key={label}
+                              className="flex items-center justify-between gap-3"
+                            >
+                              <span className="text-sm font-medium">
+                                {label}
+                              </span>
+                              <Badge variant="outline">{value}</Badge>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    </section>
+                  </main>
+                )}
+                {route === "planner" && (
+                  <main
+                    className="grid gap-4 p-4 xl:grid-cols-[320px_minmax(0,1fr)]"
+                    data-testid="route-planner"
+                  >
+                    <GoalList
+                      goals={workspace.goals}
+                      selectedGoalId={selectedGoal?.id ?? ""}
+                      onSelectGoal={setSelectedGoalId}
+                      onDeleteGoal={(goalId) =>
+                        deleteGoalMutation.mutate(goalId)
+                      }
+                      isDeletingGoal={deleteGoalMutation.isPending}
                     />
-                    <MetricCard
-                      icon={CheckCircle2Icon}
-                      label="Готово"
-                      value={doneCount}
+                    {selectedGoal ? (
+                      <GoalDetail
+                        goal={selectedGoal}
+                        tasks={selectedTasks}
+                        onToggleTask={handleToggleTask}
+                        onRequestReview={() => reviewMutation.mutate()}
+                        isReviewPending={reviewMutation.isPending}
+                      />
+                    ) : (
+                      <Card data-testid="empty-state">
+                        <CardHeader>
+                          <CardTitle>У вас пока нет целей</CardTitle>
+                          <CardDescription>
+                            Создайте первую цель — она сохранится в вашем
+                            аккаунте и будет видна только вам.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <CreateGoalDialog
+                            workspace={workspace}
+                            queryKey={currentWorkspaceQueryKey}
+                          />
+                        </CardContent>
+                      </Card>
+                    )}
+                  </main>
+                )}
+                {route === "knowledge" && (
+                  <main
+                    className="grid gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_360px]"
+                    data-testid="route-knowledge"
+                  >
+                    <KnowledgePanel
+                      workspace={workspace}
+                      queryKey={currentWorkspaceQueryKey}
                     />
-                    <MetricCard
-                      icon={GaugeIcon}
-                      label="Блокеры"
-                      value={blockedCount}
-                    />
-                    <MetricCard
-                      icon={BookOpenIcon}
-                      label="Документы"
-                      value={workspace.knowledgeDocuments.length}
-                    />
-                  </CardContent>
-                </Card>
-              </section>
-              <section className="flex min-w-0 flex-col gap-4">
-                <div id="tasks" className="scroll-mt-4">
-                  {selectedGoal ? (
-                    <GoalDetail
-                      goal={selectedGoal}
-                      tasks={selectedTasks}
-                      onToggleTask={handleToggleTask}
-                      onRequestReview={() => reviewMutation.mutate()}
-                      isReviewPending={reviewMutation.isPending}
-                    />
-                  ) : (
-                    <Card data-testid="empty-state">
+                    <Card>
                       <CardHeader>
-                        <CardTitle>У вас пока нет целей</CardTitle>
+                        <CardTitle>Источники RAG</CardTitle>
                         <CardDescription>
-                          Создайте первую цель — она сохранится в вашем аккаунте
-                          и будет видна только вам.
+                          Личные заметки, на которых строится ответ модели.
                         </CardDescription>
                       </CardHeader>
-                      <CardContent>
-                        <CreateGoalDialog
-                          workspace={workspace}
-                          queryKey={currentWorkspaceQueryKey}
-                        />
+                      <CardContent className="flex flex-col gap-3">
+                        {workspace.knowledgeDocuments.map((document) => (
+                          <Badge
+                            key={document.id}
+                            variant="outline"
+                            className="h-auto justify-start whitespace-normal"
+                          >
+                            {document.title}
+                          </Badge>
+                        ))}
                       </CardContent>
                     </Card>
-                  )}
-                </div>
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <ProgressChart goals={workspace.goals} />
-                  <KnowledgePanel
-                    workspace={workspace}
-                    queryKey={currentWorkspaceQueryKey}
-                  />
-                </div>
-                <div id="reviews" className="scroll-mt-4">
-                  <SessionsTable workspace={workspace} />
-                </div>
-              </section>
-              <aside className="flex flex-col gap-4">
-                <div id="ai-plan" className="scroll-mt-4">
-                  {selectedGoal && (
-                    <AiReviewPanel workspace={workspace} goal={selectedGoal} />
-                  )}
-                </div>
-                <Card data-testid="categories-card">
-                  <CardHeader>
-                    <CardTitle>Категории целей</CardTitle>
-                    <CardDescription>
-                      Баланс направлений и источники для AI-ответов.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-3">
-                    {[
-                      ["Здоровье", "Полумарафон"],
-                      ["Карьера", "IELTS 7.0"],
-                      ["Финансы", "Подушка 6 мес"],
-                      ["Проект", "Лендинг"],
-                    ].map(([label, value]) => (
-                      <div
-                        key={label}
-                        className="flex items-center justify-between gap-3"
-                      >
-                        <span className="text-sm font-medium">{label}</span>
-                        <Badge variant="outline">{value}</Badge>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              </aside>
-                </main>
+                  </main>
+                )}
+                {route === "review" && (
+                  <main
+                    className="grid gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_420px]"
+                    data-testid="route-review"
+                  >
+                    <section className="flex min-w-0 flex-col gap-4">
+                      {selectedGoal && (
+                        <AiReviewPanel
+                          workspace={workspace}
+                          goal={selectedGoal}
+                        />
+                      )}
+                      <SessionsTable workspace={workspace} />
+                    </section>
+                    <ProgressChart goals={workspace.goals} />
+                  </main>
+                )}
               </>
             )}
           </ScrollArea>

@@ -18,17 +18,19 @@
 
 ## Реализовано
 
-| Требование       | Реализация                                   |
-| ---------------- | -------------------------------------------- |
-| Дашборд целей    | `FocusTrackDashboard`                        |
-| Список целей     | `GoalList`                                   |
-| Детали цели      | `GoalDetail`                                 |
-| Задачи и статусы | shadcn Checkbox + Badge                      |
-| Прогресс         | shadcn Progress + Recharts                   |
-| Weekly AI Review | кнопка `AI Review` и панель результата       |
-| Knowledge/RAG    | блок документов и Edge Function `rag-answer` |
-| OAuth            | кнопка Google через Supabase Auth            |
-| Аналитика        | `trackEvent` с поддержкой Яндекс.Метрики     |
+| Требование        | Реализация                                               |
+| ----------------- | -------------------------------------------------------- |
+| 4 основных экрана | `/dashboard`, `/planner`, `/knowledge`, `/review`        |
+| Дашборд целей     | `FocusTrackDashboard`                                    |
+| Список целей      | `GoalList`                                               |
+| Детали цели       | `GoalDetail`                                             |
+| Задачи и статусы  | shadcn Checkbox + Badge                                  |
+| CRUD              | создание, чтение, обновление task status и удаление цели |
+| Прогресс          | shadcn Progress + Recharts                               |
+| Weekly AI Review  | кнопка `AI Review` и панель результата                   |
+| Knowledge/RAG     | блок документов и Edge Function `rag-answer`             |
+| Auth              | email/password sign in, sign up, logout и Google OAuth   |
+| Аналитика         | `trackEvent` с поддержкой Яндекс.Метрики                 |
 
 ## shadcn/ui
 
@@ -130,15 +132,19 @@ AI применялся не только для генерации кода, н
 
 ## Найденные и исправленные проблемы
 
-| Проблема                                   | Исправление                                                                                          |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| Нужен запрет прямого `useEffect`           | Эффекты монтирования вынесены в `useMountEffect` (`useAuthEmail`)                                     |
-| Supabase env может отсутствовать           | Добавлен demo-mode fallback в API-слое                                                                |
-| OpenRouter ключ нельзя хранить во frontend | AI-вызовы вынесены в Supabase Edge Functions                                                          |
-| Нужна визуальная регрессия для проверки UI | Добавлены Playwright screenshots/video                                                                |
-| Декоративный Select имитировал действие    | «Мёртвый» Select источника знаний удалён из карточки «Категории целей»; рабочий — `rag-source-select` |
-| Индикаторы Supabase/OpenRouter выглядели кликабельными | Sidebar-индикаторы режима и провайдера переведены в обычные статусные строки                |
-| Яндекс.Метрика не инициализировалась       | `initAnalytics()` (`src/lib/analytics.ts`) грузит `tag.js` из `main.tsx`; активна только при `VITE_YANDEX_METRIKA_ID` |
+| Проблема                                               | Исправление                                                                                                           |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Нужен запрет прямого `useEffect`                       | Эффекты монтирования вынесены в `useMountEffect` (`useAuthEmail`)                                                     |
+| Supabase env может отсутствовать                       | Добавлен demo-mode fallback в API-слое                                                                                |
+| OpenRouter ключ нельзя хранить во frontend             | AI-вызовы вынесены в Supabase Edge Functions                                                                          |
+| Нужна визуальная регрессия для проверки UI             | Добавлены Playwright screenshots/video                                                                                |
+| Декоративный Select имитировал действие                | «Мёртвый» Select источника знаний удалён из карточки «Категории целей»; рабочий — `rag-source-select`                 |
+| Индикаторы Supabase/OpenRouter выглядели кликабельными | Sidebar-индикаторы режима и провайдера переведены в обычные статусные строки                                          |
+| Требовались отдельные основные экраны                  | Добавлены URL `/dashboard`, `/planner`, `/knowledge`, `/review` и e2e-проверка навигации                              |
+| CRUD не имел явного удаления                           | Добавлена кнопка удаления цели, API `deleteGoalOnServer` и e2e-сценарий удаления                                      |
+| Auth не показывал регистрацию                          | Email/password диалог получил режим `sign-up`, сохранив demo login и Google OAuth                                     |
+| Не хватало глобального loading/error                   | Добавлены loading banner/state, retry-state для workspace query и `AppErrorBoundary`                                  |
+| Яндекс.Метрика не инициализировалась                   | `initAnalytics()` (`src/lib/analytics.ts`) грузит `tag.js` из `main.tsx`; активна только при `VITE_YANDEX_METRIKA_ID` |
 
 ## Правила проекта в Cursor
 

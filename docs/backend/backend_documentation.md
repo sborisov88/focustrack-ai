@@ -62,7 +62,7 @@ supabase/migrations/20260617033231_restrict_anon_table_grants.sql
 
 Базовый URL: `https://wbxyyvvuqrhqtuywfeto.supabase.co/functions/v1/<name>`.
 
-AI/RAG-функции защищены JWT, поэтому требуют заголовок `Authorization: Bearer <token>`, где `<token>` — Supabase access token текущей сессии. `health` открыт и вызывается без токена.
+AI/RAG-функции защищены JWT и дополнительно проверяют роль токена внутри функции. Требуется заголовок `Authorization: Bearer <token>`, где `<token>` — Supabase access token текущей пользовательской сессии с ролью `authenticated`. Publishable/anon JWT без пользовательской сессии отклоняется с `401`. `health` открыт и вызывается без токена.
 
 ### `ai-clarify`
 

@@ -21,6 +21,7 @@ vi.mock("@/lib/supabase", () => ({
 import {
   createGoal,
   createLocalGoal,
+  deleteGoal,
   loadWorkspace,
   requestGoalClarification,
   requestGoalPlan,
@@ -99,9 +100,7 @@ function createEmptySupabaseClientMock() {
     from: (table: string) => ({
       select: () => ({
         order: () =>
-          table === "weekly_reviews"
-            ? { limit: () => response }
-            : response,
+          table === "weekly_reviews" ? { limit: () => response } : response,
       }),
     }),
   }
@@ -163,6 +162,33 @@ describe("createGoal", () => {
     expect(next.goals).toHaveLength(2)
     expect(next.goals[0].title).toBe("Новая цель")
     expect(baseWorkspace.goals).toHaveLength(1) // исходный workspace не мутирован
+  })
+})
+
+describe("deleteGoal", () => {
+  it("удаляет цель, её задачи и связанные AI-сессии", () => {
+    const next = deleteGoal(
+      {
+        ...baseWorkspace,
+        aiSessions: [
+          {
+            id: "s1",
+            goalId: "g1",
+            type: "plan",
+            model: "demo",
+            status: "completed",
+            summary: "План",
+            createdAt: "2026-06-17T00:00:00.000Z",
+          },
+        ],
+      },
+      "g1",
+    )
+
+    expect(next.goals).toEqual([])
+    expect(next.tasks).toEqual([])
+    expect(next.aiSessions).toEqual([])
+    expect(baseWorkspace.goals).toHaveLength(1)
   })
 })
 

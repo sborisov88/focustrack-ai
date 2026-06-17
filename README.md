@@ -69,14 +69,14 @@ pnpm run test:e2e
 
 ## Документация
 
-| Раздел                                                                                              | Содержание                              |
-| --------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| [docs/product/](./docs/product/)                                                                    | Описание продукта, UI-концепции, user stories, ТЗ |
-| [docs/backend/backend_architecture.md](./docs/backend/backend_architecture.md)                      | Архитектура backend-а и AI-функций      |
-| [docs/backend/backend_documentation.md](./docs/backend/backend_documentation.md)                    | Backend-документация                    |
-| [docs/frontend/development_report.md](./docs/frontend/development_report.md)                         | Отчёт по frontend                       |
-| [docs/integrations/integration_documentation.md](./docs/integrations/integration_documentation.md)  | CI/CD и интеграции                      |
-| [docs/production-deployment.md](./docs/production-deployment.md)                                     | Vercel production deployment            |
-| [docs/security/security_audit.md](./docs/security/security_audit.md)                                | Аудит безопасности                      |
-| [DEMO_ACCESS.md](./DEMO_ACCESS.md)                                                                  | Публичный демо-доступ для проверки      |
-| [AGENTS.md](./AGENTS.md)                                                                             | Проектные инструкции для AI-агента      |
+| Раздел                                                                                             | Содержание                                        |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| [docs/product/](./docs/product/)                                                                   | Описание продукта, UI-концепции, user stories, ТЗ |
+| [docs/backend/backend_architecture.md](./docs/backend/backend_architecture.md)                     | Архитектура backend-а и AI-функций                |
+| [docs/backend/backend_documentation.md](./docs/backend/backend_documentation.md)                   | Backend-документация                              |
+| [docs/frontend/development_report.md](./docs/frontend/development_report.md)                       | Отчёт по frontend                                 |
+| [docs/integrations/integration_documentation.md](./docs/integrations/integration_documentation.md) | CI/CD и интеграции                                |
+| [docs/production-deployment.md](./docs/production-deployment.md)                                   | Vercel production deployment                      |
+| [docs/security/security_audit.md](./docs/security/security_audit.md)                               | Аудит безопасности                                |
+| [DEMO_ACCESS.md](./DEMO_ACCESS.md)                                                                 | Публичный демо-доступ для проверки                |
+| [AGENTS.md](./AGENTS.md)                                                                           | Проектные инструкции для AI-агента                |

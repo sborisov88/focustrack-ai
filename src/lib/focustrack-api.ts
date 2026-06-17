@@ -43,7 +43,12 @@ type DbSessionRow = {
   goal_id: string | null
   type: AiSession["type"]
   model: string
-  output: { summary?: string; plan?: string; raw?: string; answer?: string } | null
+  output: {
+    summary?: string
+    plan?: string
+    raw?: string
+    answer?: string
+  } | null
   status: AiSession["status"]
   created_at: string
 }
@@ -219,7 +224,9 @@ async function requireSupabaseContext(): Promise<SupabaseContext> {
 
 export function createLocalGoal(
   input: NewGoalInput,
-  clarifiedContext: Record<string, string> = { source: "created-from-dashboard" },
+  clarifiedContext: Record<string, string> = {
+    source: "created-from-dashboard",
+  },
 ): Goal {
   return {
     id: `goal-${Date.now()}`,
@@ -335,9 +342,24 @@ export function createGoal(
   }
 }
 
+export function deleteGoal(workspace: Workspace, goalId: string): Workspace {
+  const tasks = workspace.tasks.filter((task) => task.goalId !== goalId)
+
+  return {
+    ...workspace,
+    goals: workspace.goals.filter((goal) => goal.id !== goalId),
+    tasks,
+    aiSessions: workspace.aiSessions.filter(
+      (session) => session.goalId !== goalId,
+    ),
+  }
+}
+
 export async function createGoalOnServer(
   input: NewGoalInput,
-  clarifiedContext: Record<string, string> = { source: "created-from-dashboard" },
+  clarifiedContext: Record<string, string> = {
+    source: "created-from-dashboard",
+  },
 ): Promise<Goal> {
   const { supabase, userId } = await requireSupabaseContext()
   const { data, error } = await supabase
@@ -362,14 +384,23 @@ export async function createGoalOnServer(
   return mapGoal(data as DbGoalRow)
 }
 
+export async function deleteGoalOnServer(goalId: string): Promise<void> {
+  const { supabase } = await requireSupabaseContext()
+  const { error } = await supabase.from("goals").delete().eq("id", goalId)
+
+  if (error) {
+    throw error
+  }
+}
+
 export function toggleTask(
   workspace: Workspace,
   taskId: string,
-  done: boolean
+  done: boolean,
 ): Workspace {
   const nextStatus: TaskStatus = done ? "done" : "todo"
   const tasks = workspace.tasks.map((task) =>
-    task.id === taskId ? { ...task, status: nextStatus } : task
+    task.id === taskId ? { ...task, status: nextStatus } : task,
   )
 
   const goals = workspace.goals.map((goal) => ({
@@ -583,7 +614,7 @@ export async function requestRagAnswer({
 
 export async function requestWeeklyReview(
   workspace: Workspace,
-  goalId: string
+  goalId: string,
 ): Promise<AiSession> {
   const goalTasks = getGoalTasks(goalId, workspace.tasks)
   const completedTasks = goalTasks
@@ -597,19 +628,21 @@ export async function requestWeeklyReview(
 
   if (supabase && hasSupabaseConfig()) {
     const context = await getSupabaseContext()
-    const { data, error } = await supabase.functions.invoke("ai-weekly-review", {
-      body: {
-        weekStart: workspace.weeklyReview.weekStart,
-        completedTasks,
-        blockedTasks,
-        goalProgress: goal?.progressPercent ?? 0,
+    const { data, error } = await supabase.functions.invoke(
+      "ai-weekly-review",
+      {
+        body: {
+          weekStart: workspace.weeklyReview.weekStart,
+          completedTasks,
+          blockedTasks,
+          goalProgress: goal?.progressPercent ?? 0,
+        },
       },
-    })
+    )
 
     if (!error && data?.review) {
       if (context) {
-        const weekStart =
-          workspace.weeklyReview.weekStart || currentWeekStart()
+        const weekStart = workspace.weeklyReview.weekStart || currentWeekStart()
         const { error: reviewError } = await context.supabase
           .from("weekly_reviews")
           .upsert(

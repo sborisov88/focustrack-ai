@@ -13,20 +13,15 @@ function screenshotPath(name: string) {
 async function expectSidebarNavigationTarget(
   page: Page,
   testid: string,
-  sectionId: string,
+  routePath: string,
+  routeTestId: string,
 ) {
   const button = page.getByTestId(testid)
 
   await button.click()
   await expect(button).toHaveAttribute("data-active", "true")
-  await expect
-    .poll(async () => {
-      const box = await page.locator(`#${sectionId}`).boundingBox()
-      const viewport = page.viewportSize()
-
-      return Boolean(box && viewport && box.y >= 0 && box.y < viewport.height)
-    })
-    .toBe(true)
+  await expect(page).toHaveURL(new RegExp(`${routePath}$`))
+  await expect(page.getByTestId(routeTestId)).toBeVisible()
 }
 
 async function openDemoWorkspace(page: Page) {
@@ -64,6 +59,7 @@ test("desktop dashboard flow renders and updates local state", async ({
   await expect(page.getByTestId("workspace-title")).toBeVisible()
   await expect(page.getByTestId("sidebar-tagline")).toBeVisible()
   await openDemoWorkspace(page)
+  await expect(page.getByTestId("route-dashboard")).toBeVisible()
   await page.screenshot({
     fullPage: true,
     path: screenshotPath("dashboard-desktop-initial.png"),
@@ -76,8 +72,12 @@ test("desktop dashboard flow renders and updates local state", async ({
     .fill("Одна книга в месяц, заметки и краткие конспекты после каждой.")
   await page.getByTestId("goal-submit").click()
   await expect(
-    page.getByTestId("goal-item").filter({ hasText: "Прочитать 12 книг за год" }),
+    page
+      .getByTestId("goal-item")
+      .filter({ hasText: "Прочитать 12 книг за год" }),
   ).toBeVisible()
+  await page.getByTestId("nav-planner").click()
+  await expect(page.getByTestId("route-planner")).toBeVisible()
   await page
     .getByTestId("goal-item")
     .filter({ hasText: "Пробежать первый полумарафон" })
@@ -91,6 +91,7 @@ test("desktop dashboard flow renders and updates local state", async ({
   await expect(task).toBeChecked()
 
   await page.getByTestId("ai-review-button").click()
+  await page.getByTestId("nav-review").click()
   await expect(page.getByTestId("ai-review-panel")).toContainText(
     /Тестовый weekly review|Демо-режим/,
   )
@@ -105,9 +106,10 @@ test("desktop goal creation supports AI clarify and AI plan flow", async ({
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
 
-  await page.goto("/")
+  await page.goto("/planner")
   await expect(page.getByTestId("workspace-title")).toBeVisible()
   await openDemoWorkspace(page)
+  await expect(page.getByTestId("route-planner")).toBeVisible()
 
   await openHeaderNewGoalDialog(page)
   await page.getByTestId("goal-title-input").fill("Подготовить демо продукта")
@@ -126,7 +128,9 @@ test("desktop goal creation supports AI clarify and AI plan flow", async ({
   await page.getByTestId("goal-plan-button").click()
   await expect(page.getByTestId("ai-plan-result")).toContainText("AI-план")
   await expect(
-    page.getByTestId("goal-item").filter({ hasText: "Подготовить демо продукта" }),
+    page
+      .getByTestId("goal-item")
+      .filter({ hasText: "Подготовить демо продукта" }),
   ).toBeVisible()
   await expect(page.getByText("AI-план").first()).toBeVisible()
 })
@@ -136,18 +140,19 @@ test("desktop RAG panel answers a question from knowledge documents", async ({
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
 
-  await page.goto("/")
+  await page.goto("/knowledge")
   await expect(page.getByTestId("workspace-title")).toBeVisible()
   await openDemoWorkspace(page)
+  await expect(page.getByTestId("route-knowledge")).toBeVisible()
 
-  await page.getByTestId("rag-question-input").fill(
-    "на какой неделе была самая длинная пробежка",
-  )
+  await page
+    .getByTestId("rag-question-input")
+    .fill("на какой неделе была самая длинная пробежка")
   await page.getByTestId("rag-submit").click()
   await expect(page.getByTestId("rag-answer")).toContainText(/15 км|недел/i)
 })
 
-test("desktop sidebar navigation buttons scroll to their dashboard sections", async ({
+test("desktop navigation opens four primary routes", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
@@ -156,14 +161,34 @@ test("desktop sidebar navigation buttons scroll to their dashboard sections", as
   await expect(page.getByTestId("workspace-title")).toBeVisible()
   await openDemoWorkspace(page)
 
-  await expectSidebarNavigationTarget(page, "nav-goals", "goals")
-  await expectSidebarNavigationTarget(page, "nav-tasks", "tasks")
-  await expectSidebarNavigationTarget(page, "nav-ai-plan", "ai-plan")
-  await expectSidebarNavigationTarget(page, "nav-reviews", "reviews")
-  await expectSidebarNavigationTarget(page, "nav-overview", "overview")
+  await expect(page.getByTestId("route-dashboard")).toBeVisible()
+  await expectSidebarNavigationTarget(
+    page,
+    "nav-planner",
+    "/planner",
+    "route-planner",
+  )
+  await expectSidebarNavigationTarget(
+    page,
+    "nav-knowledge",
+    "/knowledge",
+    "route-knowledge",
+  )
+  await expectSidebarNavigationTarget(
+    page,
+    "nav-review",
+    "/review",
+    "route-review",
+  )
+  await expectSidebarNavigationTarget(
+    page,
+    "nav-dashboard",
+    "/dashboard",
+    "route-dashboard",
+  )
 })
 
-test("email/password login dialog renders and validates input", async ({
+test("email/password auth dialog renders sign in and sign up modes", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
@@ -181,6 +206,39 @@ test("email/password login dialog renders and validates input", async ({
   await page.getByTestId("login-email-input").fill("demo@focustrack.ai")
   await page.getByTestId("login-password-input").fill("focustrack-demo")
   await expect(submit).toBeEnabled()
+
+  await page.getByTestId("auth-mode-signup").click()
+  await expect(page.getByTestId("login-dialog")).toContainText("Регистрация")
+  await expect(page.getByTestId("login-submit")).toContainText(
+    "Зарегистрироваться",
+  )
+  await expect(page.getByTestId("auth-mode-signin")).toBeVisible()
+})
+
+test("desktop demo goal can be deleted", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
+
+  await page.goto("/planner")
+  await openDemoWorkspace(page)
+
+  await openHeaderNewGoalDialog(page)
+  await page.getByTestId("goal-title-input").fill("Удаляемая цель")
+  await page
+    .getByTestId("goal-context-input")
+    .fill("Проверка явной операции DELETE в интерфейсе.")
+  await page.getByTestId("goal-submit").click()
+  await expect(
+    page.getByTestId("goal-item").filter({ hasText: "Удаляемая цель" }),
+  ).toBeVisible()
+
+  await page
+    .getByTestId("goal-item")
+    .filter({ hasText: "Удаляемая цель" })
+    .getByTestId("delete-goal-button")
+    .click()
+  await expect(
+    page.getByTestId("goal-item").filter({ hasText: "Удаляемая цель" }),
+  ).toHaveCount(0)
 })
 
 test("mobile dashboard keeps the primary content usable", async ({
@@ -227,11 +285,17 @@ test("live Supabase flow persists created goals and task status", async ({
     .getByTestId("goal-context-input")
     .fill("Проверка сохранения цели через Supabase Data API.")
   await page.getByTestId("goal-submit").click()
-  await expect(page.getByTestId("goal-item").filter({ hasText: title })).toBeVisible()
+  await expect(
+    page.getByTestId("goal-item").filter({ hasText: title }),
+  ).toBeVisible()
 
   await page.reload()
-  await expect(page.getByTestId("goal-item").filter({ hasText: title })).toBeVisible()
+  await expect(
+    page.getByTestId("goal-item").filter({ hasText: title }),
+  ).toBeVisible()
 
+  await page.getByTestId("nav-planner").click()
+  await expect(page.getByTestId("route-planner")).toBeVisible()
   const firstTask = page.getByTestId("task-item").first()
   const checkbox = firstTask.getByTestId("task-checkbox")
   const initiallyChecked = await checkbox.isChecked()
@@ -246,15 +310,16 @@ test("live Supabase flow persists created goals and task status", async ({
   await expect(checkbox).toBeChecked({ checked: !initiallyChecked })
   await page.reload()
   await expect(page.getByTestId("mode-badge")).toContainText("Supabase")
-  await expect(page.getByTestId("task-item").first().getByTestId("task-checkbox"))
-    .toBeChecked({ checked: !initiallyChecked })
+  await expect(
+    page.getByTestId("task-item").first().getByTestId("task-checkbox"),
+  ).toBeChecked({ checked: !initiallyChecked })
 
   await page.getByTestId("signout-button").click()
   await expect(page.getByTestId("mode-badge")).toContainText("Вход не выполнен")
   await expect(page.getByTestId("user-email")).toHaveCount(0)
   await expect(page.getByTestId("signed-out-empty-state")).toBeVisible()
-  await expect(page.getByTestId("goal-item").filter({ hasText: title })).toHaveCount(
-    0,
-  )
+  await expect(
+    page.getByTestId("goal-item").filter({ hasText: title }),
+  ).toHaveCount(0)
   await expect(page.getByTestId("goal-item")).toHaveCount(0)
 })

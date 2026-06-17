@@ -18,6 +18,62 @@ type ChatResponse = {
   }
 }
 
+type SupabaseJwtPayload = {
+  sub?: string
+  role?: string
+}
+
+export class AuthError extends Error {
+  status = 401
+}
+
+function decodeBase64Url(value: string) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/")
+  const padded = base64.padEnd(
+    base64.length + ((4 - (base64.length % 4)) % 4),
+    "=",
+  )
+
+  return atob(padded)
+}
+
+function decodeJwtPayload(token: string): SupabaseJwtPayload {
+  const [, payload] = token.split(".")
+
+  if (!payload) {
+    throw new AuthError("Некорректный JWT.")
+  }
+
+  try {
+    return JSON.parse(decodeBase64Url(payload)) as SupabaseJwtPayload
+  } catch {
+    throw new AuthError("Некорректный JWT.")
+  }
+}
+
+export function requireAuthenticatedUser(request: Request): string {
+  const authHeader = request.headers.get("Authorization") ?? ""
+  const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1]
+
+  if (!token) {
+    throw new AuthError("Missing authorization header")
+  }
+
+  const payload = decodeJwtPayload(token)
+
+  if (payload.role !== "authenticated" || !payload.sub) {
+    throw new AuthError(
+      "AI/RAG функции доступны только пользователю с сессией.",
+    )
+  }
+
+  return payload.sub
+}
+
+export function getErrorStatus(error: unknown) {
+  return error instanceof AuthError ? error.status : 500
+}
+
 // CORS: явный allowlist вместо wildcard "*". Список источников настраивается
 // секретом ALLOWED_ORIGINS (через запятую); по умолчанию — продакшн + локальная
 // разработка. Заголовок отражает только разрешённый источник запроса.
@@ -63,7 +119,8 @@ export async function readJson<T>(request: Request): Promise<T> {
 
 export async function callOpenRouter(messages: ChatMessage[]) {
   const apiKey = Deno.env.get("OPENROUTER_API_KEY")
-  const model = Deno.env.get("OPENROUTER_MODEL") ?? "google/gemini-2.5-flash-lite"
+  const model =
+    Deno.env.get("OPENROUTER_MODEL") ?? "google/gemini-2.5-flash-lite"
 
   if (!apiKey) {
     logEvent("error", "openrouter", "OPENROUTER_API_KEY не задан")
@@ -71,20 +128,23 @@ export async function callOpenRouter(messages: ChatMessage[]) {
   }
 
   const startedAt = Date.now()
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://github.com/sborisov88/focustrack-ai",
-      "X-OpenRouter-Title": "FocusTrack AI",
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/sborisov88/focustrack-ai",
+        "X-OpenRouter-Title": "FocusTrack AI",
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: 0.2,
+      }),
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: 0.2,
-    }),
-  })
+  )
 
   const payload = (await response.json()) as ChatResponse
 
@@ -95,7 +155,7 @@ export async function callOpenRouter(messages: ChatMessage[]) {
       latencyMs: Date.now() - startedAt,
     })
     throw new Error(
-      payload.error?.message ?? `OpenRouter вернул HTTP ${response.status}.`
+      payload.error?.message ?? `OpenRouter вернул HTTP ${response.status}.`,
     )
   }
 
