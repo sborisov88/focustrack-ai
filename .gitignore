@@ -30,27 +30,4 @@ npm-debug.log*
 
 # Test
 coverage/
-output/playwright/html-report/index.html
-output/playwright/html-report/data/0fb6a24d864de9eafaba05788586bb4470721e7f.webm
-output/playwright/html-report/data/6e98cd159cead8daee02f2aa307629370ba438b3.webm
-output/playwright/html-report/data/7b326aa89ffa64923f1c633a8abf632d98f7858e.webm
-output/playwright/html-report/data/15c81573f6b3a14e50a2f497b91ca3e021189489.webm
-output/playwright/html-report/data/34f111d7d792de76531f45f8b5aff1ade3568c74.webm
-output/playwright/html-report/data/49ec6bac12fc3f88eb44b930fa8c3106482eb8b5.webm
-output/playwright/html-report/data/865f0925ad405e055bae3105e508dfb626929841.webm
-output/playwright/html-report/data/4828236cc0e6cc370b3b805586d79c5632cfb693.webm
-output/playwright/html-report/data/c2b005301594334ba58affd4d9509bd7a6f19194.webm
-output/playwright/html-report/data/cdfd59a16769045d0ad16491a4adcad453b29b7f.webm
-output/playwright/html-report/data/d29ffd26218ed70cd39012b26d27b9d6733efd09.webm
-output/playwright/html-report/data/fcbb4e56acba80ea1c2bfe1a2012cc2e550aa7b3.webm
-output/playwright/screenshots/dashboard-desktop-after-flow.png
-output/playwright/screenshots/dashboard-desktop-initial.png
-output/playwright/screenshots/dashboard-mobile.png
-output/playwright/test-results/focustrack-desktop-dashboa-e3e5b-ers-and-updates-local-state-chromium-desktop/video.webm
-output/playwright/test-results/focustrack-desktop-dashboa-e3e5b-ers-and-updates-local-state-chromium-mobile/video.webm
-output/playwright/test-results/focustrack-desktop-sidebar-35b31-to-their-dashboard-sections-chromium-desktop/video.webm
-output/playwright/test-results/focustrack-desktop-sidebar-35b31-to-their-dashboard-sections-chromium-mobile/video.webm
-output/playwright/test-results/focustrack-email-password--0f77b-renders-and-validates-input-chromium-desktop/video.webm
-output/playwright/test-results/focustrack-email-password--0f77b-renders-and-validates-input-chromium-mobile/video.webm
-output/playwright/test-results/focustrack-mobile-dashboard-keeps-the-primary-content-usable-chromium-desktop/video.webm
-output/playwright/test-results/focustrack-mobile-dashboard-keeps-the-primary-content-usable-chromium-mobile/video.webm
+output/playwright/
