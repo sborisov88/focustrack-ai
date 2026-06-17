@@ -1,31 +1,44 @@
+COMMAND: pnpm run test:e2e
 
 > focustrack-ai@0.1.0 test:e2e /Users/sborisov/Otus/ИИ-агенты продвинутое внедрение и использование/focustrack-ai
 > playwright test
 
-[WebServer] (node:54464) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (node:45609) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
-[WebServer] (node:54547) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (node:45669) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
 [WebServer] [plugin builtin:vite-reporter]
 [WebServer] (!) Some chunks are larger than 500 kB after minification. Consider:
 [WebServer] - Using dynamic import() to code-split the application
 [WebServer] - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
 [WebServer] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-[WebServer] (node:54553) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (node:45675) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
-[WebServer] (node:54582) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (node:45692) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
 
-Running 4 tests using 2 workers
+Running 14 tests using 2 workers
 
-(node:54589) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:45723) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-(node:54590) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:45722) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-  -  1 [chromium-mobile] › tests/e2e/focustrack.spec.ts:13:1 › desktop dashboard flow renders and updates local state
-  ✓  3 [chromium-mobile] › tests/e2e/focustrack.spec.ts:68:1 › mobile dashboard keeps the primary content usable (577ms)
-  ✓  2 [chromium-desktop] › tests/e2e/focustrack.spec.ts:13:1 › desktop dashboard flow renders and updates local state (1.0s)
-  -  4 [chromium-desktop] › tests/e2e/focustrack.spec.ts:68:1 › mobile dashboard keeps the primary content usable
+  -   2 [chromium-mobile] › tests/e2e/focustrack.spec.ts:32:1 › desktop dashboard flow renders and updates local state
+  -   3 [chromium-mobile] › tests/e2e/focustrack.spec.ts:85:1 › desktop goal creation supports AI clarify and AI plan flow
+  -   4 [chromium-mobile] › tests/e2e/focustrack.spec.ts:115:1 › desktop RAG panel answers a question from knowledge documents
+  -   5 [chromium-mobile] › tests/e2e/focustrack.spec.ts:130:1 › desktop sidebar navigation buttons scroll to their dashboard sections
+  -   6 [chromium-mobile] › tests/e2e/focustrack.spec.ts:145:1 › email/password login dialog renders and validates input
+  ✓   7 [chromium-mobile] › tests/e2e/focustrack.spec.ts:165:1 › mobile dashboard keeps the primary content usable (687ms)
+  ✓   1 [chromium-desktop] › tests/e2e/focustrack.spec.ts:32:1 › desktop dashboard flow renders and updates local state (1.4s)
+  -   8 [chromium-mobile] › tests/e2e/focustrack.spec.ts:180:1 › live Supabase flow persists created goals and task status
+  ✓   9 [chromium-desktop] › tests/e2e/focustrack.spec.ts:85:1 › desktop goal creation supports AI clarify and AI plan flow (687ms)
+  ✓  10 [chromium-desktop] › tests/e2e/focustrack.spec.ts:115:1 › desktop RAG panel answers a question from knowledge documents (307ms)
+  ✓  11 [chromium-desktop] › tests/e2e/focustrack.spec.ts:130:1 › desktop sidebar navigation buttons scroll to their dashboard sections (1.7s)
+  ✓  12 [chromium-desktop] › tests/e2e/focustrack.spec.ts:145:1 › email/password login dialog renders and validates input (506ms)
+  -  13 [chromium-desktop] › tests/e2e/focustrack.spec.ts:165:1 › mobile dashboard keeps the primary content usable
+  -  14 [chromium-desktop] › tests/e2e/focustrack.spec.ts:180:1 › live Supabase flow persists created goals and task status
 
-  2 skipped
-  2 passed (4.5s)
+  8 skipped
+  6 passed (9.3s)
+
+EXIT=0

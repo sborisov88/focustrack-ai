@@ -1,3 +1,4 @@
+COMMAND: pnpm run test
 
 > focustrack-ai@0.1.0 test /Users/sborisov/Otus/ИИ-агенты продвинутое внедрение и использование/focustrack-ai
 > vitest run
@@ -5,8 +6,12 @@
 
  RUN  v4.1.9 /Users/sborisov/Otus/ИИ-агенты продвинутое внедрение и использование/focustrack-ai
 
+ ✓ src/lib/progress.test.ts (3 tests) 2ms
 
  Test Files  1 passed (1)
       Tests  3 passed (3)
-   Start at  12:44:27
-   Duration  158ms (transform 17ms, setup 0ms, import 26ms, tests 2ms, environment 0ms)
+   Start at  15:43:52
+   Duration  151ms (transform 17ms, setup 0ms, import 24ms, tests 2ms, environment 0ms)
+
+
+EXIT=0

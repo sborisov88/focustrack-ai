@@ -2,11 +2,12 @@
 
 ## Проверенные критерии
 
-- MVP запускается, собирается и проходит happy path на жизненной цели (создание цели → AI-уточнение → AI-план → задачи и прогресс → weekly review → RAG-вопрос по личным заметкам);
+- MVP запускается, собирается и проходит happy path на жизненной цели (создание цели -> AI-уточнение -> AI-план -> задачи и прогресс -> weekly review -> RAG-вопрос по личным заметкам);
 - Supabase backend, RLS, Edge Functions и OpenRouter настроены;
-- AI применяется в продукте через server-side Edge Functions;
+- AI применяется в продукте через server-side Edge Functions, а UI вызывает `ai-clarify`, `ai-plan`, `ai-weekly-review` и `rag-answer`;
 - подготовлены README, архитектура, промпты, roadmap, презентационный план и evidence;
-- Playwright записал скриншоты и видео нового UI.
+- Playwright проверяет dashboard, AI-уточнение/AI-план, RAG-вопрос, навигацию, login dialog и mobile usability.
+- Отдельный live Supabase e2e подтверждает persistence создания цели и статуса задачи после reload.
 
 ## Проверенные файлы
 
@@ -29,7 +30,8 @@
 - `logs/unit-test.log`
 - `logs/build.log`
 - `logs/audit.log`
-- `logs/e2e.log`
+- `logs/e2e.log` — 6 выполненных Playwright сценариев, включая AI-clarify/AI-plan и RAG.
+- `logs/live-supabase-e2e.log` — live login, создание цели и task toggle через Supabase с проверкой после reload.
 - `logs/supabase-smoke.log`
 - `logs/tooling.log`
 
@@ -38,6 +40,6 @@
 - `media/dashboard-desktop-initial.png` — дашборд нового UI: «Категории целей» и «Личный планировщик» с жизненными целями (полумарафон, IELTS, подушка безопасности, лендинг пет-проекта);
 - `media/dashboard-desktop-after-flow.png` — состояние после сценария: отмеченная задача и пересчитанный прогресс по цели;
 - `media/dashboard-mobile.png` — мобильный вид планировщика личных и рабочих целей;
-- `media/*.webm` — Playwright-записи сквозного сценария на жизненной цели;
+- `media/*.webm` — Playwright-записи сквозных сценариев на жизненных целях;
 - `media/html-report/index.html` — HTML-отчет Playwright;
 - `media/vercel-production/` — скриншоты production-деплоя https://focustrack-ai.vercel.app.

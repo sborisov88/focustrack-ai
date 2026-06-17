@@ -1,3 +1,7 @@
+COMMAND: pnpm run typecheck
 
 > focustrack-ai@0.1.0 typecheck /Users/sborisov/Otus/ИИ-агенты продвинутое внедрение и использование/focustrack-ai
 > tsc --noEmit
+
+
+EXIT=0

@@ -35,8 +35,9 @@ Remote database is up to date.
 | Миграции                       | применены           |
 | RLS                            | включен на таблицах |
 | Edge Functions                 | deployed            |
+| JWT protection for AI/RAG      | включена            |
 | OpenRouter через Edge Function | smoke OK            |
-| Frontend fallback demo-mode    | работает            |
+| Frontend integration           | demo-mode и Supabase session-mode работают |
 
 `supabase functions list --workdir .` показывает активные функции:
 
@@ -48,7 +49,6 @@ Remote database is up to date.
 
 ## Остаточные production-задачи
 
-- включить JWT verification для AI-функций;
 - добавить rate limit на AI-вызовы;
 - настроить Supabase OAuth provider secrets;
 - включить алерты в Supabase/Vercel после деплоя frontend.

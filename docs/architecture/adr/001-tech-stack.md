@@ -56,7 +56,7 @@
 
 Перед реальным пользовательским трафиком:
 
-- включить JWT verification для AI Edge Functions;
+- поддерживать JWT verification для AI/RAG Edge Functions и публичным оставлять только `health`;
 - настроить OAuth provider secrets в Supabase;
 - добавить rate limits на AI-вызовы;
 - настроить мониторинг и алерты;

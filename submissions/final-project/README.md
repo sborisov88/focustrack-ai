@@ -48,8 +48,10 @@ pnpm dev
 
 ```text
 lint/typecheck/unit/build/audit/e2e -> pass
+Playwright e2e -> 6 выполненных сценариев: dashboard, AI-clarify/AI-plan, RAG, sidebar, login dialog, mobile usability
+Live Supabase e2e -> создание цели и task toggle сохраняются после reload
 Vercel production frontend -> 200
-GitHub Actions CI + Vercel deploy -> success, run 27682163117
+GitHub Actions CI + Vercel deploy -> success
 GET /functions/v1/health -> 200
 POST /functions/v1/ai-weekly-review без JWT -> 401
 Playwright screenshots/video -> output/playwright/ и output/playwright/production/
@@ -69,7 +71,7 @@ Playwright screenshots/video -> output/playwright/ и output/playwright/producti
 | Security             | `docs/security/security_audit.md`         |
 | Release notes        | `docs/progress/release_notes.md`          |
 | Presentation outline | `presentation/README.md`                  |
-| Evidence             | `output/playwright/`, `output/playwright/production/` |
+| Evidence             | `submissions/final-project/evidence/`, `output/playwright/`, `output/playwright/production/` |
 
 ## Текст для отправки темы/проекта
 

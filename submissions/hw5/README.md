@@ -12,6 +12,7 @@
 | Миграции              | `supabase/migrations/`                             |
 | Edge Functions        | `supabase/functions/`                              |
 | Frontend integration  | `src/lib/supabase.ts`, `src/lib/focustrack-api.ts` |
+| E2E checks            | `tests/e2e/focustrack.spec.ts`                     |
 
 ## Инфраструктура
 
@@ -23,6 +24,8 @@
 - Supabase Edge Functions;
 - OpenRouter через Supabase secrets;
 - AI/RAG функции с `verify_jwt=true`, публичный только `health`;
+- frontend создает цели и переключает задачи через Supabase при активной сессии;
+- `ai-clarify`, `ai-plan` и `rag-answer` доступны из UI;
 - `rag-answer` отвечает по личным заметкам пользователя (журнал тренировок, бюджет, план подготовки к IELTS).
 
 ## Проверка
@@ -42,6 +45,7 @@ supabase functions deploy health --workdir .
 supabase db push --workdir . --yes -> применена 20260617033231_restrict_anon_table_grants.sql
 GET /functions/v1/health -> 200
 POST /functions/v1/ai-weekly-review без JWT -> 401
+pnpm run test:e2e -> pass, UI-flow AI-clarify/AI-plan/RAG покрыт Playwright
 ```
 
 ## Текст для отправки
@@ -50,6 +54,7 @@ POST /functions/v1/ai-weekly-review без JWT -> 401
 Добрый день! Сдаю ДЗ 5 по FocusTrack AI.
 
 Backend развернут на Supabase Cloud. В репозитории есть миграции, RLS policies, ограниченные grants, JWT-protected Edge Functions и frontend-интеграция.
+Frontend вызывает AI-уточнение, AI-план, RAG-вопрос и сохраняет создание целей/статусы задач через Supabase при активной сессии.
 Документация:
 - docs/backend/backend_documentation.md
 - docs/backend/backend_report.md

@@ -82,6 +82,51 @@ test("desktop dashboard flow renders and updates local state", async ({
   })
 })
 
+test("desktop goal creation supports AI clarify and AI plan flow", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
+
+  await page.goto("/")
+  await expect(page.getByTestId("workspace-title")).toBeVisible()
+
+  await page.getByTestId("new-goal-button").click()
+  await page.getByTestId("goal-title-input").fill("Подготовить демо защиты")
+  await page
+    .getByTestId("goal-context-input")
+    .fill("Нужно показать AI-уточнение, AI-план и RAG без лишних шагов.")
+  await page.getByTestId("goal-clarify-button").click()
+
+  const answers = page.getByTestId("clarify-answer-input")
+  await expect(answers.first()).toBeVisible()
+  const answerCount = await answers.count()
+  for (let index = 0; index < answerCount; index += 1) {
+    await answers.nth(index).fill(`Ответ ${index + 1} для плана защиты`)
+  }
+
+  await page.getByTestId("goal-plan-button").click()
+  await expect(page.getByTestId("ai-plan-result")).toContainText("AI-план")
+  await expect(
+    page.getByTestId("goal-item").filter({ hasText: "Подготовить демо защиты" }),
+  ).toBeVisible()
+  await expect(page.getByText("AI-план").first()).toBeVisible()
+})
+
+test("desktop RAG panel answers a question from knowledge documents", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
+
+  await page.goto("/")
+  await expect(page.getByTestId("workspace-title")).toBeVisible()
+
+  await page.getByTestId("rag-question-input").fill(
+    "на какой неделе была самая длинная пробежка",
+  )
+  await page.getByTestId("rag-submit").click()
+  await expect(page.getByTestId("rag-answer")).toContainText(/15 км|недел/i)
+})
+
 test("desktop sidebar navigation buttons scroll to their dashboard sections", async ({
   page,
 }, testInfo) => {
@@ -130,4 +175,53 @@ test("mobile dashboard keeps the primary content usable", async ({
     fullPage: true,
     path: screenshotPath("dashboard-mobile.png"),
   })
+})
+
+test("live Supabase flow persists created goals and task status", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
+  test.skip(
+    !process.env.E2E_DEMO_EMAIL || !process.env.E2E_DEMO_PASSWORD,
+    "requires E2E_DEMO_EMAIL and E2E_DEMO_PASSWORD",
+  )
+
+  const title = `E2E persistence ${Date.now()}`
+
+  await page.goto("/")
+  await page.getByTestId("login-trigger").click()
+  await page.getByTestId("login-email-input").fill(process.env.E2E_DEMO_EMAIL!)
+  await page
+    .getByTestId("login-password-input")
+    .fill(process.env.E2E_DEMO_PASSWORD!)
+  await page.getByTestId("login-submit").click()
+  await expect(page.getByTestId("mode-badge")).toContainText("Supabase")
+
+  await page.getByTestId("new-goal-button").click()
+  await page.getByTestId("goal-title-input").fill(title)
+  await page
+    .getByTestId("goal-context-input")
+    .fill("Проверка сохранения цели через Supabase Data API.")
+  await page.getByTestId("goal-submit").click()
+  await expect(page.getByTestId("goal-item").filter({ hasText: title })).toBeVisible()
+
+  await page.reload()
+  await expect(page.getByTestId("goal-item").filter({ hasText: title })).toBeVisible()
+
+  const firstTask = page.getByTestId("task-item").first()
+  const checkbox = firstTask.getByTestId("task-checkbox")
+  const initiallyChecked = await checkbox.isChecked()
+  const taskUpdate = page.waitForResponse(
+    (response) =>
+      response.url().includes("/rest/v1/tasks") &&
+      response.request().method() === "PATCH" &&
+      response.ok(),
+  )
+  await checkbox.click()
+  await taskUpdate
+  await expect(checkbox).toBeChecked({ checked: !initiallyChecked })
+  await page.reload()
+  await expect(page.getByTestId("mode-badge")).toContainText("Supabase")
+  await expect(page.getByTestId("task-item").first().getByTestId("task-checkbox"))
+    .toBeChecked({ checked: !initiallyChecked })
 })

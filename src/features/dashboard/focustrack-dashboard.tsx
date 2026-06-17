@@ -22,15 +22,27 @@ import {
 
 import {
   createGoal,
+  createGoalOnServer,
+  createLocalGoal,
   loadWorkspace,
+  requestGoalClarification,
+  requestGoalPlan,
+  requestRagAnswer,
   requestWeeklyReview,
   toggleTask,
+  updateTaskStatusOnServer,
 } from "@/lib/focustrack-api"
 import { signInWithOAuth, signInWithPassword, signOut } from "@/lib/auth"
 import { getSupabaseClient } from "@/lib/supabase"
 import { useMountEffect } from "@/hooks/use-mount-effect"
 import { trackEvent } from "@/lib/analytics"
-import type { FocusTask, Goal, NewGoalInput, Workspace } from "@/lib/domain"
+import type {
+  AiSession,
+  FocusTask,
+  Goal,
+  NewGoalInput,
+  Workspace,
+} from "@/lib/domain"
 import { demoWorkspace } from "@/lib/demo-data"
 import { getEffortLabel, getGoalTasks, getStatusLabel } from "@/lib/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -134,6 +146,36 @@ function statusVariant(status: Goal["status"] | FocusTask["status"]) {
   return "outline"
 }
 
+function getAiSessionTypeLabel(type: AiSession["type"]) {
+  const labels: Record<AiSession["type"], string> = {
+    clarify: "AI-уточнение",
+    plan: "AI-план",
+    review: "AI-ревью",
+    rag: "RAG-ответ",
+  }
+
+  return labels[type]
+}
+
+function getAiSessionStatusLabel(status: AiSession["status"]) {
+  const labels: Record<AiSession["status"], string> = {
+    queued: "В очереди",
+    completed: "Готово",
+    failed: "Ошибка",
+  }
+
+  return labels[status]
+}
+
+function buildClarifiedContext(
+  questions: string[],
+  answers: Record<string, string>,
+) {
+  return Object.fromEntries(
+    questions.map((question) => [question, answers[question]?.trim() ?? ""]),
+  )
+}
+
 function updateWorkspace(
   queryClient: ReturnType<typeof useQueryClient>,
   updater: (workspace: Workspace) => Workspace,
@@ -143,39 +185,159 @@ function updateWorkspace(
   )
 }
 
-function CreateGoalDialog() {
+type GoalCreationStep = "draft" | "answering" | "planned"
+
+function CreateGoalDialog({ workspace }: { workspace: Workspace }) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NewGoalInput>({
     title: "",
     description: "",
     targetDate: "2026-07-20",
   })
+  const [step, setStep] = useState<GoalCreationStep>("draft")
+  const [questions, setQuestions] = useState<string[]>([])
+  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [plan, setPlan] = useState("")
   const queryClient = useQueryClient()
   const canSubmit = draft.title.trim().length >= 3
+  const hasQuestions = questions.length > 0
+  const canPlan =
+    hasQuestions &&
+    questions.every((question) => (answers[question] ?? "").trim().length >= 2)
 
-  const handleSubmit = () => {
-    if (!canSubmit) return
-
-    updateWorkspace(queryClient, (workspace) => createGoal(workspace, draft))
-    trackEvent({ name: "goal_created", params: { source: "dashboard" } })
+  const resetForm = () => {
     setDraft({ title: "", description: "", targetDate: "2026-07-20" })
-    setOpen(false)
+    setStep("draft")
+    setQuestions([])
+    setAnswers({})
+    setPlan("")
   }
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen)
+
+    if (!nextOpen) {
+      resetForm()
+    }
+  }
+
+  const createGoalMutation = useMutation({
+    mutationFn: async () => {
+      const currentWorkspace =
+        queryClient.getQueryData<Workspace>(workspaceQueryKey) ?? workspace
+
+      if (currentWorkspace.mode === "supabase") {
+        const goal = await createGoalOnServer(draft)
+        return { mode: "supabase" as const, goal }
+      }
+
+      const nextWorkspace = createGoal(currentWorkspace, draft)
+      return { mode: "demo" as const, workspace: nextWorkspace }
+    },
+    onSuccess: async (result) => {
+      if (result.mode === "supabase") {
+        await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+      } else {
+        queryClient.setQueryData(workspaceQueryKey, result.workspace)
+      }
+
+      trackEvent({ name: "goal_created", params: { source: "dashboard" } })
+      toast.success("Цель добавлена")
+      handleOpenChange(false)
+    },
+    onError: (error) => {
+      toast.error("Цель не добавлена", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    },
+  })
+
+  const clarifyMutation = useMutation({
+    mutationFn: () => requestGoalClarification(draft),
+    onSuccess: (result) => {
+      setQuestions(result.questions)
+      setAnswers(
+        Object.fromEntries(result.questions.map((question) => [question, ""])),
+      )
+      setStep("answering")
+      trackEvent({ name: "ai_clarify_completed", params: {} })
+    },
+    onError: (error) => {
+      toast.error("AI-уточнение не выполнено", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    },
+  })
+
+  const planMutation = useMutation({
+    mutationFn: async () => {
+      const currentWorkspace =
+        queryClient.getQueryData<Workspace>(workspaceQueryKey) ?? workspace
+      const clarifiedContext = buildClarifiedContext(questions, answers)
+
+      if (currentWorkspace.mode === "supabase") {
+        const goal = await createGoalOnServer(draft, clarifiedContext)
+        const result = await requestGoalPlan({ goal, answers })
+        return { mode: "supabase" as const, goal, result }
+      }
+
+      const goal = createLocalGoal(draft, clarifiedContext)
+      const result = await requestGoalPlan({ goal, answers })
+      const nextWorkspace: Workspace = {
+        ...currentWorkspace,
+        goals: [goal, ...currentWorkspace.goals],
+        aiSessions: [
+          {
+            id: `session-plan-${Date.now()}`,
+            goalId: goal.id,
+            type: "plan",
+            model: result.model,
+            status: "completed",
+            summary: result.plan,
+            createdAt: new Date().toISOString(),
+          },
+          ...currentWorkspace.aiSessions,
+        ],
+      }
+
+      return { mode: "demo" as const, goal, result, workspace: nextWorkspace }
+    },
+    onSuccess: async (result) => {
+      setPlan(result.result.plan)
+      setStep("planned")
+
+      if (result.mode === "supabase") {
+        await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+      } else {
+        queryClient.setQueryData(workspaceQueryKey, result.workspace)
+      }
+
+      trackEvent({
+        name: "ai_plan_completed",
+        params: { goalId: result.goal.id },
+      })
+      toast.success("AI-план готов")
+    },
+    onError: (error) => {
+      toast.error("AI-план не сформирован", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    },
+  })
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm" data-testid="new-goal-button">
           <PlusIcon data-icon="inline-start" />
           Новая цель
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Новая цель</DialogTitle>
           <DialogDescription>
-            Цель появится в демо-рабочем пространстве и будет готова для
-            AI-уточнения.
+            Пройдите AI-уточнение, получите план задач или добавьте цель сразу.
           </DialogDescription>
         </DialogHeader>
         <FieldGroup>
@@ -228,14 +390,97 @@ function CreateGoalDialog() {
             />
           </Field>
         </FieldGroup>
-        <DialogFooter>
+        {step === "answering" && (
+          <div className="flex flex-col gap-3 rounded-lg border p-3">
+            <div>
+              <h3 className="font-medium">AI-вопросы</h3>
+              <p className="text-muted-foreground text-sm">
+                Ответы попадут в контекст цели и в запрос на AI-план.
+              </p>
+            </div>
+            {questions.map((question, index) => (
+              <Field key={question}>
+                <FieldLabel htmlFor={`clarify-answer-${index}`}>
+                  {question}
+                </FieldLabel>
+                <Textarea
+                  id={`clarify-answer-${index}`}
+                  data-testid="clarify-answer-input"
+                  value={answers[question] ?? ""}
+                  onChange={(event) =>
+                    setAnswers((current) => ({
+                      ...current,
+                      [question]: event.target.value,
+                    }))
+                  }
+                  placeholder="Короткий ответ для планирования"
+                />
+              </Field>
+            ))}
+          </div>
+        )}
+        {step === "planned" && (
+          <Alert data-testid="ai-plan-result">
+            <SparklesIcon />
+            <AlertTitle>AI-план готов</AlertTitle>
+            <AlertDescription className="whitespace-pre-line">
+              {plan}
+            </AlertDescription>
+          </Alert>
+        )}
+        <DialogFooter className="sticky bottom-0 z-10">
+          {step === "draft" && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!canSubmit || createGoalMutation.isPending}
+              onClick={() => createGoalMutation.mutate()}
+              data-testid="goal-submit"
+            >
+              {createGoalMutation.isPending ? (
+                <Loader2Icon data-icon="inline-start" />
+              ) : (
+                <PlusIcon data-icon="inline-start" />
+              )}
+              Добавить без AI
+            </Button>
+          )}
+          {step === "draft" && (
+            <Button
+              type="button"
+              disabled={!canSubmit || clarifyMutation.isPending}
+              onClick={() => clarifyMutation.mutate()}
+              data-testid="goal-clarify-button"
+            >
+              {clarifyMutation.isPending ? (
+                <Loader2Icon data-icon="inline-start" />
+              ) : (
+                <SparklesIcon data-icon="inline-start" />
+              )}
+              Уточнить с AI
+            </Button>
+          )}
+          {step === "answering" && (
+            <Button
+              type="button"
+              disabled={!canPlan || planMutation.isPending}
+              onClick={() => planMutation.mutate()}
+              data-testid="goal-plan-button"
+            >
+              {planMutation.isPending ? (
+                <Loader2Icon data-icon="inline-start" />
+              ) : (
+                <SparklesIcon data-icon="inline-start" />
+              )}
+              Сформировать AI-план
+            </Button>
+          )}
           <Button
-            disabled={!canSubmit}
-            onClick={handleSubmit}
-            data-testid="goal-submit"
+            type="button"
+            variant={step === "planned" ? "default" : "ghost"}
+            onClick={() => handleOpenChange(false)}
           >
-            <PlusIcon data-icon="inline-start" />
-            Добавить
+            {step === "planned" ? "Готово" : "Закрыть"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -781,7 +1026,7 @@ function SessionsTable({ workspace }: { workspace: Workspace }) {
             <TableBody>
               {workspace.aiSessions.map((session) => (
                 <TableRow key={session.id}>
-                  <TableCell>{session.type}</TableCell>
+                  <TableCell>{getAiSessionTypeLabel(session.type)}</TableCell>
                   <TableCell>{session.model}</TableCell>
                   <TableCell>
                     <Badge
@@ -789,7 +1034,7 @@ function SessionsTable({ workspace }: { workspace: Workspace }) {
                         session.status === "failed" ? "blocked" : "done",
                       )}
                     >
-                      {session.status}
+                      {getAiSessionStatusLabel(session.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-md">{session.summary}</TableCell>
@@ -804,15 +1049,104 @@ function SessionsTable({ workspace }: { workspace: Workspace }) {
 }
 
 function KnowledgePanel({ workspace }: { workspace: Workspace }) {
+  const [question, setQuestion] = useState(
+    "на какой неделе была самая длинная пробежка",
+  )
+  const [selectedDocumentId, setSelectedDocumentId] = useState(
+    workspace.knowledgeDocuments[0]?.id ?? "",
+  )
+  const [answer, setAnswer] = useState("")
+  const queryClient = useQueryClient()
+  const selectedDocument =
+    workspace.knowledgeDocuments.find(
+      (document) => document.id === selectedDocumentId,
+    ) ?? workspace.knowledgeDocuments[0]
+  const canAsk =
+    question.trim().length >= 5 && workspace.knowledgeDocuments.length > 0
+  const ragMutation = useMutation({
+    mutationFn: () =>
+      requestRagAnswer({
+        question,
+        documents: selectedDocument
+          ? [selectedDocument]
+          : workspace.knowledgeDocuments,
+        selectedDocumentId: selectedDocument?.id,
+      }),
+    onSuccess: async (result) => {
+      setAnswer(result.answer)
+      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+      trackEvent({ name: "rag_answer_completed", params: {} })
+    },
+    onError: (error) => {
+      toast.error("RAG-ответ не получен", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    },
+  })
+
   return (
-    <Card>
+    <Card data-testid="knowledge-panel">
       <CardHeader>
         <CardTitle>Knowledge/RAG</CardTitle>
         <CardDescription>
           Ответы по вашим заметкам и истории целей.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="flex flex-col gap-4">
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="rag-source">Источник</FieldLabel>
+            <Select
+              value={selectedDocument?.id ?? ""}
+              onValueChange={setSelectedDocumentId}
+            >
+              <SelectTrigger id="rag-source" data-testid="rag-source-select">
+                <SelectValue placeholder="Источник знаний" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {workspace.knowledgeDocuments.map((document) => (
+                    <SelectItem key={document.id} value={document.id}>
+                      {document.title}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="rag-question">Вопрос по заметкам</FieldLabel>
+            <Textarea
+              id="rag-question"
+              data-testid="rag-question-input"
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              placeholder="Например, на какой неделе была самая длинная пробежка?"
+            />
+          </Field>
+          <Button
+            type="button"
+            disabled={!canAsk || ragMutation.isPending}
+            onClick={() => ragMutation.mutate()}
+            data-testid="rag-submit"
+          >
+            {ragMutation.isPending ? (
+              <Loader2Icon data-icon="inline-start" />
+            ) : (
+              <BookOpenIcon data-icon="inline-start" />
+            )}
+            Спросить по заметкам
+          </Button>
+        </FieldGroup>
+        {answer && (
+          <Alert data-testid="rag-answer">
+            <BookOpenIcon />
+            <AlertTitle>Ответ по заметкам</AlertTitle>
+            <AlertDescription className="whitespace-pre-line">
+              {answer}
+            </AlertDescription>
+          </Alert>
+        )}
         {workspace.knowledgeDocuments.map((document) => (
           <div key={document.id} className="rounded-lg border p-3">
             <div className="flex items-center justify-between gap-3">
@@ -858,6 +1192,40 @@ export function FocusTrackDashboard() {
         params: { goalId: selectedGoal.id },
       })
     },
+    onError: (error) => {
+      toast.error("AI Review не выполнен", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    },
+  })
+  const taskMutation = useMutation({
+    mutationFn: async ({
+      taskId,
+      done,
+    }: {
+      taskId: string
+      done: boolean
+    }) => {
+      const currentWorkspace =
+        queryClient.getQueryData<Workspace>(workspaceQueryKey) ?? workspace
+
+      if (currentWorkspace.mode === "supabase") {
+        await updateTaskStatusOnServer(taskId, done)
+      }
+
+      return { taskId, done, mode: currentWorkspace.mode }
+    },
+    onSuccess: async (result) => {
+      if (result.mode === "supabase") {
+        await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+      }
+    },
+    onError: async (error) => {
+      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+      toast.error("Статус задачи не сохранён", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    },
   })
   const doneCount = workspace.tasks.filter(
     (task) => task.status === "done",
@@ -868,6 +1236,7 @@ export function FocusTrackDashboard() {
 
   const handleToggleTask = (taskId: string, done: boolean) => {
     updateWorkspace(queryClient, (current) => toggleTask(current, taskId, done))
+    taskMutation.mutate({ taskId, done })
     trackEvent({ name: "task_toggled", params: { taskId, done } })
   }
 
@@ -977,12 +1346,12 @@ export function FocusTrackDashboard() {
                     </Badge>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Фронт не хранит OpenRouter API key; AI работает через Edge
+                    Браузер не хранит OpenRouter API key; AI работает через Edge
                     Functions.
                   </TooltipContent>
                 </Tooltip>
                 <AuthControls />
-                <CreateGoalDialog />
+                <CreateGoalDialog workspace={workspace} />
               </div>
             </div>
           </header>
