@@ -73,6 +73,7 @@ https://github.com/sborisov88/focustrack-ai
 - все сдачные материалы ДЗ 1-6: `submissions/`;
 - матрица приемки: `submissions/acceptance-matrix.md`;
 - evidence проекта: `submissions/final-project/evidence/`;
+- демо-доступ: `DEMO_ACCESS.md`;
 - production demo: `https://focustrack-ai.vercel.app`;
 - финальный tag: `final-project-submitted`.
 
@@ -113,6 +114,7 @@ https://github.com/sborisov88/focustrack-ai
 Стек: React, TypeScript, shadcn/ui, Supabase Cloud, PostgreSQL, RLS, Supabase Edge Functions, OpenRouter.
 GitHub: https://github.com/sborisov88/focustrack-ai
 Production URL: https://focustrack-ai.vercel.app
+Демо-доступ: DEMO_ACCESS.md
 Материалы проектной работы: submissions/final-project/
 Матрица приемки всех ДЗ и проекта: submissions/acceptance-matrix.md
 Финальный checkpoint: tag final-project-submitted

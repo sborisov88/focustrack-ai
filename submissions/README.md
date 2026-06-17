@@ -28,6 +28,7 @@ https://github.com/sborisov88/focustrack-ai
 - матрица приемки по всем ДЗ и проекту: `submissions/acceptance-matrix.md`;
 - evidence финального проекта: `submissions/final-project/evidence/`;
 - evidence по отдельным ДЗ: `submissions/hw1/evidence/` ... `submissions/hw6/evidence/`;
+- демо-доступ для проверки production: `DEMO_ACCESS.md`;
 - production demo: `https://focustrack-ai.vercel.app`.
 
 ## Git tags сдачи

@@ -28,6 +28,7 @@
 - финальная проектная работа: `submissions/final-project/README.md`;
 - матрица приемки: `submissions/acceptance-matrix.md`;
 - production demo: `https://focustrack-ai.vercel.app`;
+- демо-доступ: `DEMO_ACCESS.md`;
 - опубликованный финальный checkpoint: `final-project-submitted`;
 - опубликованные checkpoints по ДЗ: `hw1-submitted`, `hw2-submitted`, `hw3-submitted`, `hw4-submitted`, `hw5-submitted`, `hw6-submitted`.
 
