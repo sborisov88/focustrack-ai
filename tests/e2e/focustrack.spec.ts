@@ -105,6 +105,31 @@ test("desktop sidebar navigation buttons scroll to their dashboard sections", as
   await expectSidebarNavigationTarget(page, "Обзор", "overview")
 })
 
+test("email/password login dialog renders and validates input", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
+
+  await page.goto("/")
+  await page.getByRole("button", { name: "Войти" }).click()
+
+  const dialog = page.getByRole("dialog")
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByText("Вход по email")).toBeVisible()
+
+  const email = dialog.getByLabel("Email")
+  const password = dialog.getByLabel("Пароль")
+  await expect(email).toBeVisible()
+  await expect(password).toBeVisible()
+
+  const submit = dialog.getByRole("button", { name: "Войти" })
+  await expect(submit).toBeDisabled()
+
+  await email.fill("demo@focustrack.ai")
+  await password.fill("focustrack-demo")
+  await expect(submit).toBeEnabled()
+})
+
 test("mobile dashboard keeps the primary content usable", async ({
   page,
 }, testInfo) => {

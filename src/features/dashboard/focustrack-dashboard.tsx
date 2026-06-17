@@ -12,6 +12,7 @@ import {
   GaugeIcon,
   LayoutDashboardIcon,
   LogInIcon,
+  LogOutIcon,
   Loader2Icon,
   PlusIcon,
   RefreshCcwIcon,
@@ -25,7 +26,9 @@ import {
   requestWeeklyReview,
   toggleTask,
 } from "@/lib/focustrack-api"
-import { signInWithOAuth } from "@/lib/auth"
+import { signInWithOAuth, signInWithPassword, signOut } from "@/lib/auth"
+import { getSupabaseClient } from "@/lib/supabase"
+import { useMountEffect } from "@/hooks/use-mount-effect"
 import { trackEvent } from "@/lib/analytics"
 import type { FocusTask, Goal, NewGoalInput, Workspace } from "@/lib/domain"
 import { demoWorkspace } from "@/lib/demo-data"
@@ -273,6 +276,184 @@ function AuthButtons() {
         frontend.
       </TooltipContent>
     </Tooltip>
+  )
+}
+
+function useAuthEmail() {
+  const [email, setEmail] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+
+  useMountEffect(() => {
+    const supabase = getSupabaseClient()
+    if (!supabase) return
+
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => setEmail(data.session?.user.email ?? null))
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setEmail(session?.user.email ?? null)
+      void queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+    })
+
+    return () => subscription.unsubscribe()
+  })
+
+  return email
+}
+
+function LoginDialog() {
+  const [open, setOpen] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [isPending, setIsPending] = useState(false)
+  const queryClient = useQueryClient()
+  const canSubmit =
+    email.trim().length > 3 && password.length >= 6 && !isPending
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return
+
+    setIsPending(true)
+
+    try {
+      await signInWithPassword(email.trim(), password)
+      trackEvent({ name: "password_sign_in", params: { method: "password" } })
+      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+      setPassword("")
+      setOpen(false)
+      toast.success("Вход выполнен")
+    } catch (error) {
+      toast.error("Не удалось войти", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" variant="outline" size="sm">
+          <LogInIcon data-icon="inline-start" />
+          Войти
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Вход по email</DialogTitle>
+          <DialogDescription>
+            Войдите, чтобы видеть свои цели, задачи и AI-сессии из Supabase.
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            void handleSubmit()
+          }}
+        >
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="login-email">Email</FieldLabel>
+              <Input
+                id="login-email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@example.com"
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="login-password">Пароль</FieldLabel>
+              <Input
+                id="login-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Минимум 6 символов"
+              />
+              <FieldDescription>
+                Демо-доступ: demo@focustrack.ai
+              </FieldDescription>
+            </Field>
+          </FieldGroup>
+          <DialogFooter className="mt-4">
+            <Button type="submit" disabled={!canSubmit}>
+              {isPending ? (
+                <Loader2Icon data-icon="inline-start" />
+              ) : (
+                <LogInIcon data-icon="inline-start" />
+              )}
+              Войти
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function SignedInControls({ email }: { email: string }) {
+  const [isPending, setIsPending] = useState(false)
+  const queryClient = useQueryClient()
+
+  const handleSignOut = async () => {
+    setIsPending(true)
+
+    try {
+      await signOut()
+      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+      trackEvent({ name: "sign_out", params: {} })
+      toast.success("Вы вышли из аккаунта")
+    } catch (error) {
+      toast.error("Не удалось выйти", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Badge variant="outline" className="max-w-[180px] truncate" title={email}>
+        {email}
+      </Badge>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={isPending}
+        onClick={handleSignOut}
+      >
+        {isPending ? (
+          <Loader2Icon data-icon="inline-start" />
+        ) : (
+          <LogOutIcon data-icon="inline-start" />
+        )}
+        Выйти
+      </Button>
+    </div>
+  )
+}
+
+function AuthControls() {
+  const email = useAuthEmail()
+
+  if (email) {
+    return <SignedInControls email={email} />
+  }
+
+  return (
+    <>
+      <AuthButtons />
+      <LoginDialog />
+    </>
   )
 }
 
@@ -766,7 +947,7 @@ export function FocusTrackDashboard() {
                     Functions.
                   </TooltipContent>
                 </Tooltip>
-                <AuthButtons />
+                <AuthControls />
                 <CreateGoalDialog />
               </div>
             </div>

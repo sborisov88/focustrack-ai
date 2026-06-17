@@ -22,3 +22,31 @@ export async function signInWithOAuth(provider: SupportedOAuthProvider) {
     throw error
   }
 }
+
+export async function signInWithPassword(email: string, password: string) {
+  const supabase = getSupabaseClient()
+
+  if (!supabase || !hasSupabaseConfig()) {
+    throw new Error("Supabase не настроен для текущего окружения.")
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function signOut() {
+  const supabase = getSupabaseClient()
+
+  if (!supabase) {
+    return
+  }
+
+  const { error } = await supabase.auth.signOut()
+
+  if (error) {
+    throw error
+  }
+}
