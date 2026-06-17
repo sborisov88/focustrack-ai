@@ -50,6 +50,7 @@ pnpm run build -> pass
 pnpm run test:e2e -> pass
 pnpm audit --audit-level high -> No known vulnerabilities found
 Vercel production deploy -> READY, https://focustrack-ai.vercel.app
+GitHub Actions CI + Vercel deploy -> success, run 27682163117
 Production frontend smoke -> 200
 GET /functions/v1/health -> 200
 POST /functions/v1/ai-weekly-review без JWT -> 401
@@ -73,6 +74,9 @@ POST /functions/v1/ai-weekly-review без JWT -> 401
 Production evidence:
 
 - `submissions/hw6/evidence/logs/vercel-deploy.log`;
+- `submissions/hw6/evidence/logs/github-actions-final-run.json`;
+- `submissions/hw6/evidence/logs/github-actions-final-production-smoke.log`;
+- `submissions/hw6/evidence/logs/github-run-27682163117/vercel-deploy-url.txt`;
 - `submissions/hw6/evidence/logs/vercel-production-smoke.log`;
 - `submissions/hw6/evidence/logs/playwright-production-capture.log`;
 - `submissions/hw6/evidence/media/vercel-production/`.

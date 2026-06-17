@@ -75,6 +75,7 @@ Supabase recheck:
 6. Получен публичный URL: `https://focustrack-ai.vercel.app`.
 7. Выполнен production smoke: frontend `200`, health `200`, protected AI endpoint без JWT `401`.
 8. Записаны Playwright screenshots/video с публичного URL.
+9. После push в `main` GitHub Actions run `27682163117` успешно прошёл quality gate и `vercel-frontend-deploy`.
 
 Evidence:
 
@@ -83,6 +84,9 @@ Evidence:
 - `output/verification/logs/vercel-env-ls.log`;
 - `output/verification/logs/vercel-deploy.log`;
 - `output/verification/logs/vercel-production-smoke.log`;
+- `output/verification/logs/github-actions-final-run.json`;
+- `output/verification/logs/github-actions-final-production-smoke.log`;
+- `output/verification/github-run-27682163117/vercel-deploy-url/vercel-deploy-url.txt`;
 - `output/verification/logs/playwright-production-capture.log`;
 - `output/playwright/production/`.
 

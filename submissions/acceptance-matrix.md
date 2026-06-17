@@ -15,6 +15,7 @@
 | `pnpm run test:e2e` | pass, 2 Playwright сценария | `output/verification/logs/e2e.log` |
 | Supabase smoke | health 200, protected AI endpoint 401 without JWT | `output/verification/logs/supabase-smoke.log` |
 | Vercel production deploy | READY, public frontend URL works | `output/verification/logs/vercel-deploy.log`, `output/verification/logs/vercel-production-smoke.log` |
+| GitHub Actions deploy after push | success, quality gate and Vercel deploy job passed | `output/verification/logs/github-actions-final-run.json`, `output/verification/logs/github-actions-final-production-smoke.log` |
 | Production Playwright capture | screenshots and videos saved | `output/playwright/production/` |
 
 ## ДЗ 1
@@ -66,7 +67,7 @@
 
 | Критерий | Артефакт | Проверка | Evidence |
 | --- | --- | --- | --- |
-| CI/CD работает | `.github/workflows/ci.yml`, `vercel.json` | quality gate есть, Supabase deploy job есть, Vercel frontend deploy job добавлен | `submissions/hw6/evidence/logs/vercel-deploy.log` |
+| CI/CD работает | `.github/workflows/ci.yml`, `vercel.json` | quality gate и Vercel frontend deploy job успешно прошли после push в `main` | `submissions/hw6/evidence/logs/github-actions-final-run.json` |
 | Не менее 2 интеграций | `docs/integrations/integration_documentation.md` | Google OAuth entry point, analytics helper, Supabase health, OpenRouter | `submissions/hw6/README.md` |
 | Audit проведен | `docs/security/security_audit.md` | `pnpm audit --audit-level high` pass | `submissions/hw6/evidence/logs/audit.log` |
 | Monitoring + health check | `supabase/functions/health/` | `GET /functions/v1/health = 200` | `submissions/hw6/evidence/logs/supabase-smoke.log` |

@@ -45,6 +45,7 @@ pnpm dev
 ```text
 lint/typecheck/unit/build/audit/e2e -> pass
 Vercel production frontend -> 200
+GitHub Actions CI + Vercel deploy -> success, run 27682163117
 GET /functions/v1/health -> 200
 POST /functions/v1/ai-weekly-review без JWT -> 401
 Playwright screenshots/video -> output/playwright/ и output/playwright/production/

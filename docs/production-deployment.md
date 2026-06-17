@@ -133,6 +133,15 @@ Production alias: https://focustrack-ai.vercel.app
 Deployment id: dpl_5xmKGgg6cF5my2adSDKMHzqU3rzh
 ```
 
+Фактический автоматический deploy через GitHub Actions:
+
+```text
+Run: https://github.com/sborisov88/focustrack-ai/actions/runs/27682163117
+Quality gate: success
+Vercel frontend deploy: success
+Production alias: https://focustrack-ai.vercel.app
+```
+
 ## GitHub Actions deploy
 
 В `.github/workflows/ci.yml` добавлен job `vercel-frontend-deploy`.
@@ -169,6 +178,7 @@ protected_ai_without_jwt_status=401
 
 ```text
 output/verification/logs/vercel-production-smoke.log
+output/verification/logs/github-actions-final-production-smoke.log
 ```
 
 ## Playwright evidence

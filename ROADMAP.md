@@ -13,7 +13,7 @@
 - Подготовлены отдельные сдачные папки ДЗ 1–6 и проектной работы в `submissions/`.
 - Сформирована матрица приемки `submissions/acceptance-matrix.md`.
 - Playwright e2e, скриншоты, видео и логи проверок разложены по `submissions/*/evidence/`.
-- Разрыв по ДЗ 6 закрыт через Vercel production deploy: `https://focustrack-ai.vercel.app`.
+- Разрыв по ДЗ 6 закрыт через Vercel production deploy: `https://focustrack-ai.vercel.app`; GitHub Actions run `27682163117` успешно собрал и задеплоил frontend после push в `main`.
 
 ---
 
