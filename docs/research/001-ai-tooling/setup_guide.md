@@ -19,14 +19,14 @@
 ```bash
 cd focustrack-ai
 git status --short --branch
-ls README.md docs/ai-tooling-evaluation
+ls README.md docs/research/001-ai-tooling
 ```
 
 Ожидаемый результат:
 
 - ветка `main` синхронизирована с `origin/main`;
 - в репозитории есть `README.md`;
-- проектные материалы лежат в `docs/ai-tooling-evaluation/`.
+- проектные материалы лежат в `docs/research/001-ai-tooling/`.
 
 ## 3. Git и GitHub
 
@@ -45,7 +45,7 @@ origin  https://github.com/sborisov88/focustrack-ai.git
 Коммиты и push выполняются из локального терминала через Codex:
 
 ```bash
-git add README.md docs/ai-tooling-evaluation
+git add README.md docs/research/001-ai-tooling
 git commit -m "..."
 git push origin main
 ```
@@ -78,9 +78,9 @@ git push origin main
 
 ```bash
 cd focustrack-ai
-ls docs/ai-tooling-evaluation/report.md
-ls docs/ai-tooling-evaluation/comparison_table.md
-ls docs/ai-tooling-evaluation/practice/GoalCard.tsx
+ls docs/research/001-ai-tooling/report.md
+ls docs/research/001-ai-tooling/comparison_table.md
+ls docs/research/001-ai-tooling/practice/GoalCard.tsx
 ```
 
 ## 7. Что не настраивалось на этом этапе
