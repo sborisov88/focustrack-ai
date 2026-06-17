@@ -1,20 +1,20 @@
-# FocusTrack AI — ДЗ 1
+# FocusTrack AI — AI Tooling Evaluation
 
-Репозиторий для сдачи ДЗ 1 курса Otus «ИИ-агенты: продвинутое внедрение и использование».
+Репозиторий с исследованием выбора AI coding assistant для разработки проекта **FocusTrack AI**.
 
-Тема ДЗ: сравнительный анализ и настройка AI-инструментов для разработки проекта **FocusTrack AI**.
+FocusTrack AI — будущий fullstack-продукт для отслеживания целей обучения и профессионального роста с AI-планировщиком.
 
-## Проверяемые материалы
+## Материалы
 
 | Файл | Описание |
 |------|----------|
-| [docs/hw1-tool-analysis/report.md](./docs/hw1-tool-analysis/report.md) | Итоговый отчёт |
-| [docs/hw1-tool-analysis/comparison_table.md](./docs/hw1-tool-analysis/comparison_table.md) | Сравнительная таблица Cloud и IDE/CLI-агентов |
-| [docs/hw1-tool-analysis/tool_selection.md](./docs/hw1-tool-analysis/tool_selection.md) | Обоснование выбора Codex |
-| [docs/hw1-tool-analysis/setup_guide.md](./docs/hw1-tool-analysis/setup_guide.md) | Настройка рабочего окружения |
-| [docs/hw1-tool-analysis/practice_log.md](./docs/hw1-tool-analysis/practice_log.md) | Журнал практической работы |
-| [docs/hw1-tool-analysis/practice/](./docs/hw1-tool-analysis/practice/) | Пример кода, созданный с помощью AI-агента |
+| [docs/ai-tooling-evaluation/report.md](./docs/ai-tooling-evaluation/report.md) | Итоговый отчёт |
+| [docs/ai-tooling-evaluation/comparison_table.md](./docs/ai-tooling-evaluation/comparison_table.md) | Сравнительная таблица Cloud и IDE/CLI-агентов |
+| [docs/ai-tooling-evaluation/tool_selection.md](./docs/ai-tooling-evaluation/tool_selection.md) | Обоснование выбора Codex |
+| [docs/ai-tooling-evaluation/setup_guide.md](./docs/ai-tooling-evaluation/setup_guide.md) | Настройка рабочего окружения |
+| [docs/ai-tooling-evaluation/practice_log.md](./docs/ai-tooling-evaluation/practice_log.md) | Журнал практической работы |
+| [docs/ai-tooling-evaluation/practice/](./docs/ai-tooling-evaluation/practice/) | Пример кода, созданный с помощью AI-агента |
 
 ## Короткий вывод
 
-Для FocusTrack AI выбран **Codex** как основной AI coding assistant: он лучше всего совпал с фактическим workflow ДЗ — локальный репозиторий, git, терминал, проверка артефактов, коммиты и push в GitHub.
+Для FocusTrack AI выбран **Codex** как основной AI coding assistant: он лучше всего совпал с рабочим процессом проекта — локальный репозиторий, git, терминал, проверка изменений, коммиты и push в GitHub.

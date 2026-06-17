@@ -19,14 +19,14 @@
 ```bash
 cd focustrack-ai
 git status --short --branch
-ls README.md docs/hw1-tool-analysis
+ls README.md docs/ai-tooling-evaluation
 ```
 
 Ожидаемый результат:
 
 - ветка `main` синхронизирована с `origin/main`;
 - в репозитории есть `README.md`;
-- материалы ДЗ лежат в `docs/hw1-tool-analysis/`.
+- проектные материалы лежат в `docs/ai-tooling-evaluation/`.
 
 ## 3. Git и GitHub
 
@@ -45,47 +45,46 @@ origin  https://github.com/sborisov88/focustrack-ai.git
 Коммиты и push выполняются из локального терминала через Codex:
 
 ```bash
-git add README.md docs/hw1-tool-analysis
+git add README.md docs/ai-tooling-evaluation
 git commit -m "..."
 git push origin main
 ```
 
-## 4. MCP и дополнительные инструменты
+## 4. Дополнительные инструменты
 
 В текущей работе использовались:
 
 | Инструмент | Назначение |
 |------------|------------|
-| context-mode | Индексация и сверка больших markdown-артефактов без перегрузки контекста |
-| Browser | Проверка Otus во встроенном браузере |
-| web search | Актуализация исследования по официальным источникам |
 | git / shell | Проверка статуса, состава репозитория, diff, commit и push |
+| web search | Актуализация исследования по официальным источникам |
+| MCP/tools | Работа с локальными файлами и проверками |
 
 ## 5. Проверка работы агента
 
 Практический тест Codex:
 
-1. прочитать обычное и расширенное ДЗ 1;
-2. сверить требования с репозиторием;
-3. обновить `comparison_table.md`, `tool_selection.md`, `setup_guide.md`, `practice_log.md`, `report.md`;
-4. проверить структуру репозитория;
+1. изучить структуру локального репозитория;
+2. обновить проектные документы;
+3. сгенерировать пример TypeScript/React-кода;
+4. проверить `git diff`, `git status` и состав файлов;
 5. сделать commit и push.
 
 ## 6. Тестовый проект
 
-Создан репозиторий FocusTrack AI с материалами ДЗ и практическим кодом.
+Создан репозиторий FocusTrack AI с проектными материалами и практическим кодом.
 
 Проверка:
 
 ```bash
 cd focustrack-ai
-ls docs/hw1-tool-analysis/report.md
-ls docs/hw1-tool-analysis/comparison_table.md
-ls docs/hw1-tool-analysis/practice/GoalCard.tsx
+ls docs/ai-tooling-evaluation/report.md
+ls docs/ai-tooling-evaluation/comparison_table.md
+ls docs/ai-tooling-evaluation/practice/GoalCard.tsx
 ```
 
 ## 7. Что не настраивалось на этом этапе
 
-- полноценный frontend — будет в следующих ДЗ;
-- Supabase CLI / `supabase start` — в backend-этапе;
-- OpenRouter API key — не нужен для ДЗ 1 и не хранится в git.
+- полноценный frontend — следующий этап разработки;
+- Supabase CLI / `supabase start` — backend-этап;
+- OpenRouter API key — не нужен на текущем этапе и не хранится в git.
