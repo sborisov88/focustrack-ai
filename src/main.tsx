@@ -4,6 +4,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import App from "./App"
 import "./index.css"
+import { initAnalytics } from "./lib/analytics"
+
+initAnalytics()
 
 const queryClient = new QueryClient({
   defaultOptions: {

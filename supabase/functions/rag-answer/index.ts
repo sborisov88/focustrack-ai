@@ -6,6 +6,9 @@ import {
   jsonResponse,
   readJson,
 } from "../_shared/openrouter.ts"
+import { createLogger } from "../_shared/logger.ts"
+
+const log = createLogger("rag-answer")
 
 type RagRequest = {
   question: string
@@ -22,6 +25,9 @@ export default {
 
     try {
       const body = await readJson<RagRequest>(request)
+      log.info("RAG-запрос по документам", {
+        documentCount: body.documents?.length ?? 0,
+      })
       const { content, model } = await callOpenRouter([
         {
           role: "system",
@@ -34,16 +40,15 @@ export default {
         },
       ])
 
-      return jsonResponse({
+      return jsonResponse(request, {
         type: "rag-answer",
         model,
         answer: content,
       })
     } catch (error) {
-      return jsonResponse(
-        { error: error instanceof Error ? error.message : String(error) },
-        500
-      )
+      const message = error instanceof Error ? error.message : String(error)
+      log.error("Ошибка обработки запроса", { message })
+      return jsonResponse(request, { error: message }, 500)
     }
   },
 }

@@ -93,7 +93,7 @@ test("desktop goal creation supports AI clarify and AI plan flow", async ({
   await expect(page.getByTestId("workspace-title")).toBeVisible()
 
   await page.getByTestId("new-goal-button").click()
-  await page.getByTestId("goal-title-input").fill("Подготовить демо защиты")
+  await page.getByTestId("goal-title-input").fill("Подготовить демо продукта")
   await page
     .getByTestId("goal-context-input")
     .fill("Нужно показать AI-уточнение, AI-план и RAG без лишних шагов.")
@@ -103,13 +103,13 @@ test("desktop goal creation supports AI clarify and AI plan flow", async ({
   await expect(answers.first()).toBeVisible()
   const answerCount = await answers.count()
   for (let index = 0; index < answerCount; index += 1) {
-    await answers.nth(index).fill(`Ответ ${index + 1} для плана защиты`)
+    await answers.nth(index).fill(`Ответ ${index + 1} для плана запуска`)
   }
 
   await page.getByTestId("goal-plan-button").click()
   await expect(page.getByTestId("ai-plan-result")).toContainText("AI-план")
   await expect(
-    page.getByTestId("goal-item").filter({ hasText: "Подготовить демо защиты" }),
+    page.getByTestId("goal-item").filter({ hasText: "Подготовить демо продукта" }),
   ).toBeVisible()
   await expect(page.getByText("AI-план").first()).toBeVisible()
 })

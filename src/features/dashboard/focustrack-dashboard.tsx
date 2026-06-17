@@ -1301,22 +1301,20 @@ export function FocusTrackDashboard() {
           <SidebarGroup>
             <SidebarGroupLabel>Инфраструктура</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <DatabaseIcon />
-                    <span>
-                      {workspace.mode === "supabase" ? "Supabase" : "Демо"}
-                    </span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton>
-                    <SparklesIcon />
-                    <span>OpenRouter</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
+              {/* Статусные индикаторы режима и провайдера — не действия, поэтому
+                  рендерятся как обычные строки, а не кликабельные кнопки. */}
+              <div className="text-muted-foreground flex flex-col gap-1 px-2 py-1 text-sm">
+                <div className="flex items-center gap-2">
+                  <DatabaseIcon className="size-4" />
+                  <span>
+                    {workspace.mode === "supabase" ? "Supabase" : "Демо"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <SparklesIcon className="size-4" />
+                  <span>OpenRouter</span>
+                </div>
+              </div>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
@@ -1481,24 +1479,6 @@ export function FocusTrackDashboard() {
                       </div>
                     ))}
                   </CardContent>
-                  <CardFooter>
-                    <Select
-                      defaultValue={workspace.knowledgeDocuments[0]?.id}
-                    >
-                      <SelectTrigger data-testid="knowledge-source-select">
-                        <SelectValue placeholder="Источник знаний" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {workspace.knowledgeDocuments.map((document) => (
-                            <SelectItem key={document.id} value={document.id}>
-                              {document.title}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </CardFooter>
                 </Card>
               </aside>
             </main>

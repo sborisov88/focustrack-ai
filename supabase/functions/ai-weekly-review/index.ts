@@ -6,6 +6,9 @@ import {
   jsonResponse,
   readJson,
 } from "../_shared/openrouter.ts"
+import { createLogger } from "../_shared/logger.ts"
+
+const log = createLogger("ai-weekly-review")
 
 type WeeklyReviewRequest = {
   weekStart: string
@@ -21,6 +24,10 @@ export default {
 
     try {
       const body = await readJson<WeeklyReviewRequest>(request)
+      log.info("Запрос на недельный обзор", {
+        completed: body.completedTasks?.length ?? 0,
+        blocked: body.blockedTasks?.length ?? 0,
+      })
       const { content, model } = await callOpenRouter([
         {
           role: "system",
@@ -33,16 +40,15 @@ export default {
         },
       ])
 
-      return jsonResponse({
+      return jsonResponse(request, {
         type: "weekly-review",
         model,
         review: content,
       })
     } catch (error) {
-      return jsonResponse(
-        { error: error instanceof Error ? error.message : String(error) },
-        500
-      )
+      const message = error instanceof Error ? error.message : String(error)
+      log.error("Ошибка обработки запроса", { message })
+      return jsonResponse(request, { error: message }, 500)
     }
   },
 }

@@ -44,18 +44,31 @@ pnpm dev
 7. показать Supabase migration/RLS/functions;
 8. показать Playwright evidence.
 
-Фактический smoke 17 июня 2026:
+Фактический smoke 17 июня 2026 (ветка `audit-remediation-2026-06-17`, все шаги EXIT 0):
 
 ```text
-lint/typecheck/unit/build/audit/e2e -> pass
-Playwright e2e -> 6 выполненных сценариев: dashboard, AI-clarify/AI-plan, RAG, sidebar, login dialog, mobile usability
-Live Supabase e2e -> создание цели и task toggle сохраняются после reload
-Vercel production frontend -> 200
-GitHub Actions CI + Vercel deploy -> success
-GET /functions/v1/health -> 200
-POST /functions/v1/ai-weekly-review без JWT -> 401
+typecheck/lint/unit/build/e2e -> pass
+unit -> 12 passed в 2 файлах (src/lib/progress.test.ts + src/lib/focustrack-api.test.ts)
+Playwright e2e -> 6 passed / 8 skipped: desktop dashboard flow, AI-clarify+AI-plan, RAG,
+                  sidebar-навигация, login dialog, mobile usability
+                  (skip — кросс-проектные дубли desktop/mobile и live-Supabase сценарий,
+                  требующий env E2E_DEMO_EMAIL/E2E_DEMO_PASSWORD)
+GET /functions/v1/health -> {service, status:"ok", checks, checkedAt}
+POST /functions/v1/ai-weekly-review без JWT -> 401 (verify_jwt=true)
 Playwright screenshots/video -> output/playwright/ и output/playwright/production/
 ```
+
+Изменения этой итерации (актуализация по аудиту):
+
+- убраны 2 неинтерактивные «мёртвые» кнопки UI: декоративный селектор (`data-testid="knowledge-source-select"`)
+  удалён из карточки «Категории целей» (рабочий селектор источника RAG — `rag-source-select`); индикаторы
+  Supabase/OpenRouter в sidebar теперь обычные статусные строки, а не кликабельные кнопки;
+- расширено unit-покрытие: добавлен `src/lib/focustrack-api.test.ts` (валидация RAG-вопроса и пустого списка
+  документов, демо-фоллбэки AI/RAG без сессии, пересчёт прогресса в `toggleTask` и edge на несуществующую задачу);
+- бэкенд: структурированное JSON-логирование (`supabase/functions/_shared/logger.ts`) и явный CORS-allowlist
+  вместо wildcard `*` (`supabase/functions/_shared/openrouter.ts`, `Vary: Origin`);
+- фронтенд: реальная инициализация Яндекс.Метрики (`src/lib/analytics.ts` -> `initAnalytics()` из `src/main.tsx`),
+  активна только при заданном `VITE_YANDEX_METRIKA_ID`, иначе безопасный no-op.
 
 Повторная сверка требований: `submissions/reverification-audit-2026-06-17.md`.
 
@@ -101,7 +114,7 @@ https://github.com/sborisov88/focustrack-ai
 | Production deploy    | `docs/production-deployment.md`, `vercel.json` |
 | Security             | `docs/security/security_audit.md`         |
 | Release notes        | `docs/progress/release_notes.md`          |
-| Presentation outline | `presentation/README.md`                  |
+| Presentation outline | `submissions/final-project/presentation.md` |
 | Evidence             | `submissions/final-project/evidence/`, `output/playwright/`, `output/playwright/production/` |
 
 ## Текст для отправки темы/проекта

@@ -2,10 +2,16 @@
 
 ## Проверенные критерии
 
-- frontend-приложение запускается и собирается;
-- реализованы минимум 3 функции из ТЗ: цели, задачи, прогресс, AI Review, responsive dashboard;
-- есть unit-тесты и Playwright e2e;
-- сохранены скриншоты и видео.
+Подтверждено сборкой и тестами 2026-06-17 (ветка `audit-remediation-2026-06-17`): typecheck, lint, unit, build, e2e — все с EXIT 0.
+
+- frontend-приложение запускается и собирается (build EXIT=0);
+- реализованы минимум 3 функции из ТЗ: цели, задачи, прогресс, AI Review, RAG, responsive dashboard;
+- правила проекта подключены для AI-агента в нативном формате Cursor: `.cursor/rules/focustrack.mdc` (`alwaysApply`, зеркало `AGENTS.md`);
+- unit-тесты: 12 passed в 2 файлах (`progress.test.ts` + `focustrack-api.test.ts`), включая обработку ошибок и edge-кейсы;
+- Playwright e2e: 6 passed / 8 skipped (skip — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, требующий env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`);
+- отчёт о разработке содержит примеры промптов и пример мультимодальной отладки (`docs/frontend/development_report.md`);
+- сохранены скриншоты и видео;
+- Google OAuth: entry point реальный (`src/lib/auth.ts`), но автоматического e2e-доказательства входа через Google нет — провайдерский сценарий проверяется вручную.
 
 ## Проверенные файлы
 
@@ -13,21 +19,25 @@
 - `src/lib/progress.ts`
 - `src/lib/progress.test.ts`
 - `src/lib/focustrack-api.ts`
+- `src/lib/focustrack-api.test.ts` — unit-тесты обработки ошибок и edge-кейсов API-слоя
+- `src/lib/analytics.ts` — `initAnalytics` / `trackEvent` (Яндекс.Метрика, активна при `VITE_YANDEX_METRIKA_ID`)
+- `src/lib/auth.ts` — Google OAuth entry point через Supabase Auth
 - `tests/e2e/focustrack.spec.ts`
+- `.cursor/rules/focustrack.mdc` — правила проекта для AI в нативном формате Cursor
 - `docs/frontend/development_report.md`
 
 ## Логи
 
-- `logs/lint.log`
-- `logs/typecheck.log`
-- `logs/unit-test.log`
-- `logs/build.log`
-- `logs/e2e.log`
+- `logs/lint.log` (EXIT=0)
+- `logs/typecheck.log` (EXIT=0)
+- `logs/unit-test.log` — 12 passed в 2 файлах (EXIT=0)
+- `logs/build.log` (EXIT=0)
+- `logs/e2e.log` — 6 passed / 8 skipped (EXIT=0)
 
 ## Медиа
 
 - `media/dashboard-desktop-initial.png` — личный планировщик с категориями целей и жизненными целями (полумарафон, IELTS, подушка безопасности, лендинг пет-проекта);
 - `media/dashboard-desktop-after-flow.png` — дашборд после прохождения пользовательского сценария по целям и задачам;
 - `media/dashboard-mobile.png` — адаптивный мобильный вид планировщика;
-- `media/*.webm`;
-- `media/html-report/index.html`.
+- `media/*.webm` — записи прохождения e2e-сценариев (desktop/mobile);
+- `media/playwright-report.html` — HTML-отчёт Playwright.

@@ -6,7 +6,10 @@
  RUN  v4.1.9 /Users/sborisov/Otus/ИИ-агенты продвинутое внедрение и использование/focustrack-ai
 
 
- Test Files  1 passed (1)
-      Tests  3 passed (3)
-   Start at  12:44:27
-   Duration  158ms (transform 17ms, setup 0ms, import 26ms, tests 2ms, environment 0ms)
+ Test Files  2 passed (2)
+      Tests  12 passed (12)
+   Start at  17:01:14
+   Duration  114ms (transform 47ms, setup 0ms, import 66ms, tests 5ms, environment 0ms)
+
+
+EXIT=0

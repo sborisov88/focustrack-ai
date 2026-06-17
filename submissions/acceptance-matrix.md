@@ -9,7 +9,7 @@
 | `pnpm install --frozen-lockfile` | pass | `output/verification/logs/pnpm-install.log` |
 | `pnpm run lint` | pass | `output/verification/logs/lint.log` |
 | `pnpm run typecheck` | pass | `output/verification/logs/typecheck.log` |
-| `pnpm run test` | pass, 3 unit tests | `output/verification/logs/unit-test.log` |
+| `pnpm run test` | pass, 12 unit tests в 2 файлах | `output/verification/logs/unit-test.log` |
 | `pnpm run build` | pass | `output/verification/logs/build.log` |
 | `pnpm audit --audit-level high` | pass, no known vulnerabilities | `output/verification/logs/audit.log` |
 | `pnpm run test:e2e` | pass, 6 выполненных Playwright сценариев, 8 project-specific skipped | `output/verification/logs/e2e.log` |
@@ -26,7 +26,7 @@
 | Все 6 шагов задания | `docs/research/001-ai-tooling/report.md` | структура отчета покрывает требования, сравнение, выбор, настройку и практику | `submissions/hw1/evidence/README.md` |
 | Минимум 4 инструмента, 2 cloud + 2 IDE/CLI | `docs/research/001-ai-tooling/comparison_table.md` | таблица содержит 7 инструментов | `submissions/hw1/evidence/logs/` |
 | Выбор обоснован | `docs/research/001-ai-tooling/tool_selection.md` | выбран Codex, альтернативы рассмотрены | `submissions/hw1/README.md` |
-| Инструмент установлен и проверен | `docs/research/001-ai-tooling/setup_guide.md`, `output/verification/logs/tooling.log` | версии Node, pnpm, npx, Supabase CLI сохранены | `submissions/hw1/evidence/logs/tooling.log` |
+| Инструмент установлен и проверен | `docs/research/001-ai-tooling/setup_guide.md`, `submissions/hw1/evidence/logs/tooling.log` | версии Node, pnpm, npx, Supabase CLI сохранены | `submissions/hw1/evidence/logs/tooling.log` |
 
 ## ДЗ 2
 
@@ -51,27 +51,31 @@
 | Критерий | Артефакт | Проверка | Evidence |
 | --- | --- | --- | --- |
 | Приложение запускается | `package.json`, `src/` | build и Playwright прошли | `submissions/hw4/evidence/logs/` |
-| Не менее 3 функций из ТЗ | `src/features/dashboard/focustrack-dashboard.tsx` | цель, задачи, прогресс, AI Review, категории целей, responsive UI на демо с жизненными целями | `submissions/hw4/evidence/media/` |
+| Не менее 3 функций из ТЗ | `src/features/dashboard/focustrack-dashboard.tsx` | цель, задачи, прогресс, AI Review, категории целей, responsive UI на демо с жизненными целями; удалены 2 неинтерактивные «мёртвые» кнопки (декоративный Select категорий и sidebar-индикаторы Supabase/OpenRouter заменены на статусные строки) | `submissions/hw4/evidence/media/` |
 | Адаптивность | `tests/e2e/focustrack.spec.ts` | desktop и mobile сценарии Playwright | `submissions/hw4/evidence/logs/e2e.log` |
-| Не менее 3 тестов | `src/lib/progress.test.ts`, `tests/e2e/focustrack.spec.ts` | 3 unit tests и 6 выполненных e2e сценариев | `submissions/hw4/evidence/logs/unit-test.log`, `submissions/hw4/evidence/logs/e2e.log` |
+| Не менее 3 тестов | `src/lib/progress.test.ts`, `src/lib/focustrack-api.test.ts`, `tests/e2e/focustrack.spec.ts` | 12 unit-тестов в 2 файлах (включая обработку ошибок RAG-вопроса/документов, демо-фоллбэки и edge-кейсы toggleTask) и 6 выполненных e2e сценариев из 8 (8 skipped) | `submissions/hw4/evidence/logs/unit-test.log`, `submissions/hw4/evidence/logs/e2e.log` |
+| AI-инструменты подключены | `.cursor/rules/focustrack.mdc`, `AGENTS.md` | Cursor-правила в нативном формате (`alwaysApply`, зеркало корневого `AGENTS.md`) | `.cursor/rules/focustrack.mdc` |
+| Аналитика поведения | `src/lib/analytics.ts`, `src/main.tsx` | Яндекс.Метрика инициализируется в `main.tsx` до рендера (активна только при `VITE_YANDEX_METRIKA_ID > 0`, иначе безопасный no-op); `trackEvent` отправляет reachGoal-события в UI | `submissions/hw4/evidence/logs/` |
 
 ## ДЗ 5
 
 | Критерий | Артефакт | Проверка | Evidence |
 | --- | --- | --- | --- |
 | Backend работает | `supabase/migrations/`, `supabase/functions/` | remote database up to date, health 200 | `submissions/hw5/evidence/logs/supabase-smoke.log` |
-| Не менее 3 endpoints | `supabase/functions/` | ai-clarify, ai-plan, ai-weekly-review, rag-answer, health | `submissions/hw5/evidence/logs/supabase-smoke.log` |
-| E2E интеграция | `src/lib/focustrack-api.ts`, `tests/e2e/focustrack.spec.ts` | UI вызывает `ai-clarify`, `ai-plan`, `rag-answer`; создание цели и task toggle сохраняются через Supabase при активной сессии | `submissions/hw5/evidence/logs/e2e.log`, `submissions/hw5/evidence/logs/live-supabase-e2e.log` |
-| Auth + RLS/middleware | `supabase/migrations/`, `supabase/config.toml` | AI/RAG functions protected, no-JWT smoke 401 | `submissions/hw5/evidence/logs/supabase-smoke.log` |
+| Не менее 3 endpoints | `supabase/functions/`, `docs/backend/backend_documentation.md` | ai-clarify, ai-plan, ai-weekly-review, rag-answer (POST, JWT) + health (GET, открыт); контракты запроса/ответа задокументированы JSON-примерами в backend_documentation.md | `submissions/hw5/evidence/logs/supabase-smoke.log` |
+| E2E интеграция | `src/lib/focustrack-api.ts`, `src/lib/focustrack-api.test.ts`, `tests/e2e/focustrack.spec.ts` | UI вызывает `ai-clarify`, `ai-plan`, `rag-answer`; создание цели и task toggle сохраняются через Supabase при активной сессии; обработка ошибок/edge-кейсов покрыта unit-тестами (12 unit всего), e2e 6 passed / 8 skipped | `submissions/hw5/evidence/logs/e2e.log`, `submissions/hw5/evidence/logs/live-supabase-e2e.log` |
+| Auth + RLS/middleware | `supabase/migrations/`, `supabase/config.toml`, `supabase/functions/_shared/openrouter.ts` | AI/RAG functions protected (`verify_jwt=true`), health открыт (`verify_jwt=false`); CORS wildcard `*` заменён на явный allowlist с `Vary: Origin` (`openrouter.ts:42`, `health/index.ts:24`); no-JWT smoke 401 | `submissions/hw5/evidence/logs/supabase-smoke.log` |
+| Структурированное логирование | `supabase/functions/_shared/logger.ts` | `logEvent`/`createLogger` пишут строки JSON `{level, ts, fn, message, ...}` (info/warn/error); подключено в ai-clarify, ai-plan, ai-weekly-review, rag-answer, health и в `callOpenRouter` (латентность и ошибки модели) | `submissions/hw5/evidence/logs/supabase-smoke.log` |
 
 ## ДЗ 6
 
 | Критерий | Артефакт | Проверка | Evidence |
 | --- | --- | --- | --- |
 | CI/CD работает | `.github/workflows/ci.yml`, `vercel.json` | quality gate и Vercel frontend deploy job успешно прошли после push в `main` | `submissions/hw6/evidence/logs/github-actions-final-run.json` |
-| Не менее 2 интеграций | `docs/integrations/integration_documentation.md` | Google OAuth entry point, analytics helper, Supabase health, OpenRouter | `submissions/hw6/README.md` |
+| Не менее 2 интеграций | `docs/integrations/integration_documentation.md`, `src/lib/auth.ts`, `src/lib/analytics.ts` | Google OAuth через Supabase Auth (entry point реальный; автоматического e2e-доказательства входа через Google нет, проверяется вручную), Яндекс.Метрика (`initAnalytics`), Supabase health, OpenRouter | `submissions/hw6/README.md` |
 | Audit проведен | `docs/security/security_audit.md` | `pnpm audit --audit-level high` pass | `submissions/hw6/evidence/logs/audit.log` |
-| Monitoring + health check | `supabase/functions/health/` | `GET /functions/v1/health = 200` | `submissions/hw6/evidence/logs/supabase-smoke.log` |
+| Использование AI задокументировано | `docs/integrations/integration_documentation.md`, `docs/security/security_audit.md` | применение AI на этапах интеграций и аудита безопасности описано (раздел «Использование AI в аудите безопасности») | `submissions/hw6/README.md` |
+| Monitoring + health check | `supabase/functions/health/`, `src/lib/analytics.ts` | `GET /functions/v1/health = 200`; Яндекс.Метрика инициализируется на фронтенде при заданном `VITE_YANDEX_METRIKA_ID` | `submissions/hw6/evidence/logs/supabase-smoke.log` |
 | Работающее приложение по публичной ссылке | `https://focustrack-ai.vercel.app` | production smoke 200, Playwright screenshots/video с публичного URL | `submissions/hw6/evidence/media/vercel-production/` |
 
 ## Проектная работа
@@ -79,6 +83,6 @@
 | Критерий | Артефакт | Проверка | Evidence |
 | --- | --- | --- | --- |
 | MVP работает | `src/`, `supabase/`, `vercel.json` | build, unit, e2e, live Supabase e2e, Supabase smoke pass; production frontend URL работает | `submissions/final-project/evidence/`, `submissions/final-project/evidence/media/vercel-production/` |
-| Артефакты защиты | `README.md`, `docs/architecture/architecture.md`, `presentation/README.md` | документы существуют и связаны | `submissions/final-project/README.md` |
+| Артефакты защиты | `README.md`, `docs/architecture/architecture.md`, `submissions/final-project/presentation.md` | документы существуют и связаны | `submissions/final-project/README.md` |
 | AI применен | `supabase/functions/`, `src/lib/focustrack-api.ts`, `tests/e2e/focustrack.spec.ts`, `docs/prompts/` | OpenRouter model and secrets configured server-side; UI запускает AI-уточнение, AI-планирование и RAG-вопрос по личным заметкам пользователя | `submissions/final-project/evidence/logs/supabase-smoke.log`, `submissions/final-project/evidence/logs/e2e.log` |
-| Презентация | `presentation/README.md` | 10-minute outline prepared | `submissions/final-project/README.md` |
+| Презентация | `submissions/final-project/presentation.md` | 10-minute outline prepared | `submissions/final-project/README.md` |

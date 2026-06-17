@@ -6,6 +6,9 @@ import {
   jsonResponse,
   readJson,
 } from "../_shared/openrouter.ts"
+import { createLogger } from "../_shared/logger.ts"
+
+const log = createLogger("ai-plan")
 
 type PlanRequest = {
   goalTitle: string
@@ -20,6 +23,9 @@ export default {
 
     try {
       const body = await readJson<PlanRequest>(request)
+      log.info("Запрос на построение плана", {
+        answerCount: Object.keys(body.answers ?? {}).length,
+      })
       const { content, model } = await callOpenRouter([
         {
           role: "system",
@@ -32,16 +38,15 @@ export default {
         },
       ])
 
-      return jsonResponse({
+      return jsonResponse(request, {
         type: "plan",
         model,
         plan: content,
       })
     } catch (error) {
-      return jsonResponse(
-        { error: error instanceof Error ? error.message : String(error) },
-        500
-      )
+      const message = error instanceof Error ? error.message : String(error)
+      log.error("Ошибка обработки запроса", { message })
+      return jsonResponse(request, { error: message }, 500)
     }
   },
 }

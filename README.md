@@ -79,5 +79,4 @@ pnpm run test:e2e
 | [docs/production-deployment.md](./docs/production-deployment.md)                                     | Vercel production deployment            |
 | [docs/security/security_audit.md](./docs/security/security_audit.md)                                | Аудит безопасности                      |
 | [DEMO_ACCESS.md](./DEMO_ACCESS.md)                                                                  | Публичный демо-доступ для проверки      |
-| [submissions/](./submissions/)                                                                      | Пакет сдачи ДЗ 1-6 и проектной работы   |
 | [AGENTS.md](./AGENTS.md)                                                                             | Проектные инструкции для AI-агента      |

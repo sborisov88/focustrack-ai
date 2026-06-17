@@ -1,5 +1,33 @@
 # Security audit
 
+## Использование AI в аудите безопасности
+
+AI применялся как инженерный инструмент на этапе аудита — для систематического обхода поверхности атаки, ускорения ревью и формализации результатов. AI не заменял ручную проверку: каждый вывод сверялся с реальным кодом, миграциями и настройками функций.
+
+Как AI использовался на практике:
+
+- **Анализ кода по OWASP-категориям.** Frontend, Edge Functions и интеграция с OpenRouter прогонялись по категориям OWASP (Injection, Broken Access Control, Sensitive Data Exposure, Security Logging) с просьбой найти конкретные строки, нарушающие категорию, а не общие рекомендации.
+- **Ревью RLS / JWT / секретов.** AI помогал сверить, что RLS включён на всех пользовательских таблицах, что AI/RAG-функции закрыты `verify_jwt=true`, а ключи OpenRouter и Supabase service role нигде не утекают во frontend и в текст ошибок.
+- **Генерация и сопровождение чек-листа.** На основе найденных рисков AI помогал собрать production checklist и держать таблицу рисков в актуальном состоянии после правок.
+
+Каждый кандидат-риск, предложенный AI, проверялся вручную: открывался исходный файл, миграция или конфиг функции, и только подтверждённые находки попадали в таблицу рисков.
+
+Примеры промптов аудита:
+
+```text
+Проверь Edge Functions в supabase/functions по OWASP Broken Access Control.
+Для каждой функции укажи значение verify_jwt и заголовки CORS.
+Найди функции, которые отдают Access-Control-Allow-Origin: * или доступны без JWT,
+и приведи file:line. Не давай общих советов — только конкретные строки.
+```
+
+```text
+Просканируй frontend (src/) и Edge Functions на утечку секретов:
+OPENROUTER_API_KEY, Supabase service role key. Проверь, что во frontend
+используется только publishable key, а текст ошибок не содержит значений
+заголовков и ключей. Верни список найденных мест с путями.
+```
+
 ## Проверенная поверхность
 
 - frontend code;
@@ -22,6 +50,8 @@
 | Ошибки могут раскрыть секреты   | частично закрыто | функции возвращают сообщение без headers и key values                  |
 | Публичные AI Edge Functions     | исправлено       | `verify_jwt=true` для AI/RAG функций; публичным оставлен только health |
 | Секреты в Git                   | не найдено       | `.env.local` в `.gitignore`, `.env.example` без секретов               |
+| CORS с wildcard `*`             | исправлено       | заменён на allowlist `ALLOWED_ORIGINS` с `Vary: Origin` в Edge Functions |
+| Нет структурированных логов     | исправлено       | добавлен `_shared/logger.ts` (JSON, уровни info\|warn\|error)          |
 
 ## OWASP notes
 
@@ -39,7 +69,11 @@ Frontend не строит SQL вручную. CRUD идёт через Supabase
 
 ### Security Logging
 
-Для MVP логируются AI-сессии без секретов. Production-версия должна добавить централизованные алерты.
+Edge Functions используют структурированное JSON-логирование (`supabase/functions/_shared/logger.ts`): функции `logEvent(level, fn, message, fields)` и `createLogger(fn)`, уровни `info | warn | error`, каждая запись — отдельная строка JSON вида `{level, ts, fn, message, ...поля}`. Логирование подключено в `ai-clarify`, `ai-plan`, `ai-weekly-review`, `rag-answer`, `health`, а вызов модели (`_shared/openrouter.ts`) пишет латентность (`latencyMs`) и ошибки модели. Секреты и значения ключей в логи не попадают. Единый JSON-формат с уровнями упрощает фильтрацию и анализ инцидентов — в том числе AI-инструментами — в логах Supabase. Production-версия должна добавить централизованные алерты поверх этих логов.
+
+### Cross-Origin (CORS)
+
+Wildcard `Access-Control-Allow-Origin: *` заменён на явный allowlist. Список источников берётся из секрета `ALLOWED_ORIGINS` (значения через запятую; по умолчанию — продакшн-домен Vercel и `http://localhost:5173`). Хелпер `corsHeaders(request)` отражает в `Access-Control-Allow-Origin` только источник из allowlist и добавляет `Vary: Origin`, чтобы кэш не смешивал ответы для разных источников. Логика реализована в `_shared/openrouter.ts` и продублирована в `health/index.ts`; сигнатура ответа теперь `jsonResponse(request, body, status = 200)`.
 
 ## npm audit
 
@@ -63,7 +97,8 @@ No known vulnerabilities found
 - оставить `verify_jwt=true` для AI/RAG-функций;
 - добавить rate limits;
 - настроить OAuth provider secrets в Supabase;
-- ограничить CORS доменом деплоя;
+- держать `ALLOWED_ORIGINS` в актуальном состоянии (выполнено: CORS переведён на allowlist с `Vary: Origin`);
+- настроить централизованные алерты поверх JSON-логов (выполнено: структурированное логирование в `_shared/logger.ts`);
 - включить Supabase alerts;
 - добавить регулярный dependency audit в CI.
 

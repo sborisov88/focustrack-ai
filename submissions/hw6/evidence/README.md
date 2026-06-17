@@ -2,11 +2,15 @@
 
 ## Проверенные критерии
 
-- CI/CD gate описан и локально воспроизведён;
-- есть минимум 2 интеграции: Google OAuth entry point, analytics helper, Supabase health, OpenRouter через Edge Functions;
-- audit проведён;
+- CI/CD gate описан и локально воспроизведён (typecheck, lint, unit 12 passed, build, e2e 6 passed / 8 skipped — EXIT 0, ветка `audit-remediation-2026-06-17`);
+- есть минимум 2 интеграции: Google OAuth entry point (Supabase Auth), реальная инициализация Яндекс.Метрики (`initAnalytics`, активна при `VITE_YANDEX_METRIKA_ID > 0`, без ID — no-op), Supabase health, OpenRouter через Edge Functions;
+- audit проведён; использование AI в аудите задокументировано в `docs/security/security_audit.md`;
 - health-check работает;
+- структурированное JSON-логирование Edge Functions реализовано (`supabase/functions/_shared/logger.ts`, уровни `info|warn|error`); пример AI-промпта для анализа логов — в `docs/integrations/integration_documentation.md`;
+- CORS переведён с wildcard `*` на явный allowlist;
 - RAG experiment задокументирован (ответы по личным заметкам пользователя: журнал тренировок, бюджет, план IELTS).
+
+Замечание по OAuth: entry point Google реальный (Supabase Auth), сквозной вход проверяется вручную — автоматизированного e2e-доказательства полного OAuth-цикла в evidence нет.
 
 ## Проверенные файлы
 
@@ -15,6 +19,10 @@
 - `docs/security/security_audit.md`
 - `docs/research/002-knowledge-rag/experiment.md`
 - `supabase/functions/health/`
+- `supabase/functions/_shared/logger.ts`
+- `supabase/functions/_shared/openrouter.ts` (CORS allowlist, логирование вызовов модели)
+- `src/lib/analytics.ts`
+- `src/lib/focustrack-api.test.ts`
 - `tests/e2e/focustrack.spec.ts`
 
 ## Логи
@@ -26,6 +34,8 @@
 - `logs/audit.log`
 - `logs/e2e.log`
 - `logs/supabase-smoke.log`
+
+Актуальный прогон на ветке `audit-remediation-2026-06-17` (после доработок логирования, аналитики, CORS и unit-тестов): unit `12 passed` в 2 файлах (`progress.test.ts` + `focustrack-api.test.ts`), e2e `6 passed / 8 skipped` (6 проходящих: desktop dashboard flow, AI clarify+plan, RAG, sidebar-навигация, login-диалог, mobile usability; 8 skipped — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, требующий env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`).
 
 ## Медиа
 
