@@ -1,0 +1,13 @@
+Verification time: 2026-06-17 Europe/Moscow
+
+node: v26.3.0
+pnpm: 10.28.2
+npx: /opt/homebrew/bin/npx
+supabase: 2.106.0
+git branch: main
+linked Supabase project: wbxyyvvuqrhqtuywfeto
+
+Notes:
+- Playwright is available through the project dependency and `npx`.
+- Supabase CLI is installed and can access the linked project.
+- The repository intentionally keeps real secrets out of git.

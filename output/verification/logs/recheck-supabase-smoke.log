@@ -1,0 +1,9 @@
+Recheck time: 2026-06-17 Europe/Moscow
+functions: ai-clarify, ai-plan, ai-weekly-review, health, rag-answer
+has OPENROUTER_API_KEY: true
+has OPENROUTER_MODEL: true
+migrations include 20260617024511: true
+migrations include 20260617033231: true
+db push dry-run: Remote database is up to date
+health status: 200
+ai-weekly-review without JWT status: 401

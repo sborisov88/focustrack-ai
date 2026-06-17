@@ -1,0 +1,31 @@
+
+> focustrack-ai@0.1.0 test:e2e /Users/sborisov/Otus/ИИ-агенты продвинутое внедрение и использование/focustrack-ai
+> playwright test
+
+[WebServer] (node:89219) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:89273) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [plugin builtin:vite-reporter]
+[WebServer] (!) Some chunks are larger than 500 kB after minification. Consider:
+[WebServer] - Using dynamic import() to code-split the application
+[WebServer] - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+[WebServer] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+[WebServer] (node:89287) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:89317) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 2 workers
+
+(node:89331) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89332) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  -  1 [chromium-mobile] › tests/e2e/focustrack.spec.ts:13:1 › desktop dashboard flow renders and updates local state
+  ✓  3 [chromium-mobile] › tests/e2e/focustrack.spec.ts:68:1 › mobile dashboard keeps the primary content usable (602ms)
+  ✓  2 [chromium-desktop] › tests/e2e/focustrack.spec.ts:13:1 › desktop dashboard flow renders and updates local state (1.1s)
+  -  4 [chromium-desktop] › tests/e2e/focustrack.spec.ts:68:1 › mobile dashboard keeps the primary content usable
+
+  2 skipped
+  2 passed (4.7s)

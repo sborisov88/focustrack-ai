@@ -1,0 +1,12 @@
+
+> focustrack-ai@0.1.0 test /Users/sborisov/Otus/ИИ-агенты продвинутое внедрение и использование/focustrack-ai
+> vitest run
+
+
+ RUN  v4.1.9 /Users/sborisov/Otus/ИИ-агенты продвинутое внедрение и использование/focustrack-ai
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  13:09:50
+   Duration  143ms (transform 14ms, setup 0ms, import 21ms, tests 2ms, environment 0ms)

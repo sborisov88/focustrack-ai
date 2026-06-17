@@ -1,0 +1,12 @@
+Vercel CLI 54.14.0 (Node.js 26.3.0)
+Retrieving project…
+> Environment Variables found for sborisov88s-projects/focustrack-ai [288ms]
+
+ name                               value               environments        created
+ VITE_SUPABASE_PUBLISHABLE_KEY      Encrypted           Production          8s ago
+ VITE_SUPABASE_URL                  Encrypted           Production          14s ago
+
+Common next commands:
+- `vercel env add`
+- `vercel env rm`
+- `vercel env pull`

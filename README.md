@@ -6,7 +6,9 @@
 
 ## Статус
 
-Проект находится на ранней стадии: зафиксирована идея продукта, выбран основной AI coding assistant, подготовлены первые проектные материалы, правила работы Codex отправлены на проверку, добавлен пример кода для доменной логики прогресса.
+Проект доведён до MVP-кандидата для ДЗ 1–6 и проектной работы: есть shadcn frontend, Supabase schema/RLS, Edge Functions для OpenRouter, CI quality gate, Vercel production deploy, Playwright e2e, скриншоты/видео и отдельные папки сдачи.
+
+Production URL: https://focustrack-ai.vercel.app
 
 ## MVP
 
@@ -17,12 +19,14 @@
 
 ## Стек
 
-| Слой | Технологии |
-|------|------------|
-| Frontend | React, TypeScript, Vite, Tailwind, Recharts |
-| Backend / DB / Auth | Supabase Cloud, PostgreSQL, Auth, RLS |
-| AI-слой | Supabase Edge Functions, OpenRouter |
-| Разработка | Codex, git, GitHub |
+| Слой                | Технологии                                             |
+| ------------------- | ------------------------------------------------------ |
+| Frontend            | React, TypeScript, Vite, shadcn/ui, Tailwind, Recharts |
+| Backend / DB / Auth | Supabase Cloud, PostgreSQL, Auth, RLS                  |
+| AI-слой             | Supabase Edge Functions, OpenRouter                    |
+| Production deploy   | Vercel                                                 |
+| Тестирование        | Vitest, Playwright                                     |
+| Разработка          | Codex, git, GitHub Actions                             |
 
 ## Дорожная карта
 
@@ -35,22 +39,47 @@
 3. **Milestone 3: Product specification** — описание продукта, user stories, техническая спецификация и ADR.
 4. **Milestone 4: Frontend MVP** — интерфейс, дашборд, состояние и пользовательские сценарии.
 5. **Milestone 5: Backend and AI functions** — Supabase, RLS, Edge Functions, OpenRouter.
-6. **Milestone 6: Knowledge/RAG experiments** — эксперименты с ответами по данным и документам.
+6. **Milestone 6: Knowledge/RAG experiments** — CI/CD, OAuth, аналитика, безопасность и RAG-эксперимент.
 7. **Final: MVP and presentation** — финальная сборка, демо и материалы для защиты продукта.
+
+## Запуск
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Проверка:
+
+```bash
+pnpm run lint
+pnpm run typecheck
+pnpm run test
+pnpm run build
+pnpm run test:e2e
+```
 
 ## Документация
 
-| Раздел | Содержание |
-|--------|------------|
-| [docs/research/001-ai-tooling/report.md](./docs/research/001-ai-tooling/report.md) | Итоговый отчёт по выбору AI-инструмента |
-| [docs/research/001-ai-tooling/comparison_table.md](./docs/research/001-ai-tooling/comparison_table.md) | Сравнение AI coding assistants и cloud-инструментов |
-| [docs/research/001-ai-tooling/tool_selection.md](./docs/research/001-ai-tooling/tool_selection.md) | Обоснование выбора Codex |
-| [docs/research/001-ai-tooling/setup_guide.md](./docs/research/001-ai-tooling/setup_guide.md) | Настройка рабочего окружения |
-| [docs/research/001-ai-tooling/practice_log.md](./docs/research/001-ai-tooling/practice_log.md) | Журнал практической работы |
-| [docs/research/001-ai-tooling/practice/](./docs/research/001-ai-tooling/practice/) | Пример кода, созданный с помощью AI-агента |
-| [AGENTS.md](./AGENTS.md) | Проектные инструкции для Codex |
-| [docs/prompts/](./docs/prompts/) | Rules, промпт-шаблоны и методология работы с AI-агентом |
-| [docs/backend/backend_architecture.md](./docs/backend/backend_architecture.md) | Архитектура backend-а и AI-функций |
+| Раздел                                                                                                 | Содержание                                              |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| [docs/research/001-ai-tooling/report.md](./docs/research/001-ai-tooling/report.md)                     | Итоговый отчёт по выбору AI-инструмента                 |
+| [docs/research/001-ai-tooling/comparison_table.md](./docs/research/001-ai-tooling/comparison_table.md) | Сравнение AI coding assistants и cloud-инструментов     |
+| [docs/research/001-ai-tooling/tool_selection.md](./docs/research/001-ai-tooling/tool_selection.md)     | Обоснование выбора Codex                                |
+| [docs/research/001-ai-tooling/setup_guide.md](./docs/research/001-ai-tooling/setup_guide.md)           | Настройка рабочего окружения                            |
+| [docs/research/001-ai-tooling/practice_log.md](./docs/research/001-ai-tooling/practice_log.md)         | Журнал практической работы                              |
+| [docs/research/001-ai-tooling/practice/](./docs/research/001-ai-tooling/practice/)                     | Пример кода, созданный с помощью AI-агента              |
+| [AGENTS.md](./AGENTS.md)                                                                               | Проектные инструкции для Codex                          |
+| [docs/prompts/](./docs/prompts/)                                                                       | Rules, промпт-шаблоны и методология работы с AI-агентом |
+| [docs/backend/backend_architecture.md](./docs/backend/backend_architecture.md)                         | Архитектура backend-а и AI-функций                      |
+| [docs/product/](./docs/product/)                                                                       | ДЗ 3: описание продукта, UI-концепции, user stories, ТЗ |
+| [docs/frontend/development_report.md](./docs/frontend/development_report.md)                           | ДЗ 4: отчёт по frontend                                 |
+| [docs/backend/backend_documentation.md](./docs/backend/backend_documentation.md)                       | ДЗ 5: backend-документация                              |
+| [docs/integrations/integration_documentation.md](./docs/integrations/integration_documentation.md)     | ДЗ 6: CI/CD и интеграции                                |
+| [docs/production-deployment.md](./docs/production-deployment.md)                                       | Vercel production deployment                            |
+| [docs/security/security_audit.md](./docs/security/security_audit.md)                                   | ДЗ 6: аудит безопасности                                |
+| [submissions/](./submissions/)                                                                         | Отдельные папки сдачи ДЗ 1–6 и проекта                  |
+| [presentation/](./presentation/)                                                                       | План защиты проекта                                     |
 
 ## Текущий выбор AI-инструмента
 

@@ -8,9 +8,12 @@
 
 - Завершён выбор AI coding assistant.
 - Правила Codex, промпт-шаблоны, методология и A/B-проверка качества правил отправлены на проверку.
-- Зафиксирована backend-архитектура на Supabase, RLS, Edge Functions и OpenRouter.
+- Зафиксирована и реализована backend-архитектура на Supabase, RLS, Edge Functions и OpenRouter.
 - Основной AI coding assistant проекта — **Codex**.
-- Следующий продуктовый этап — описание продукта, user stories, техническая спецификация и первые UI-концепции.
+- Подготовлены отдельные сдачные папки ДЗ 1–6 и проектной работы в `submissions/`.
+- Сформирована матрица приемки `submissions/acceptance-matrix.md`.
+- Playwright e2e, скриншоты, видео и логи проверок разложены по `submissions/*/evidence/`.
+- Разрыв по ДЗ 6 закрыт через Vercel production deploy: `https://focustrack-ai.vercel.app`.
 
 ---
 
@@ -71,7 +74,7 @@
 - `docs/architecture/adr/001-tech-stack.md`
 - `docs/product/ui_concepts/`
 
-**Статус:** следующий этап.
+**Статус:** подготовлено и проверено; сдачная папка `submissions/hw3/`.
 
 ## Этап 4: Frontend MVP
 
@@ -87,8 +90,10 @@
 
 **Ожидаемые материалы:**
 
-- `frontend/`
-- `docs/frontend/frontend_report.md`
+- `src/`
+- `docs/frontend/development_report.md`
+
+**Статус:** MVP реализован в корне Vite-приложения и проверен Playwright; сдачная папка `submissions/hw4/`.
 
 ## Этап 5: Backend and AI functions
 
@@ -108,7 +113,9 @@
 - `supabase/functions/`
 - `docs/backend/backend_architecture.md`
 - `docs/backend/backend_report.md`
-- `docs/architecture/security.md`
+- `docs/security/security_audit.md`
+
+**Статус:** миграции и Edge Functions подготовлены, cloud database синхронизирована, smoke `health=200` и protected AI endpoint `401`; сдачная папка `submissions/hw5/`.
 
 ## Этап 6: Knowledge/RAG experiments
 
@@ -124,6 +131,8 @@
 **Ожидаемые материалы:**
 
 - `docs/research/002-knowledge-rag/`
+
+**Статус:** controlled RAG experiment, CI/security/integration evidence и Vercel production deploy подготовлены в `submissions/hw6/`.
 
 ## Финал: MVP and presentation
 
@@ -141,3 +150,5 @@
 - `docs/progress/development_log.md`
 - `docs/progress/release_notes.md`
 - `presentation/`
+
+**Статус:** подготовлены материалы, architecture document, Playwright evidence, production URL `https://focustrack-ai.vercel.app` и папка `submissions/final-project/`.

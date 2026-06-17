@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.vercel/
 
 # Build
 dist/
@@ -20,6 +21,8 @@ build/
 # Logs
 *.log
 npm-debug.log*
+!output/verification/logs/*.log
+!submissions/**/evidence/logs/*.log
 
 # Supabase
 .branches
