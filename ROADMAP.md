@@ -1,8 +1,19 @@
-# FocusTrack AI Roadmap
+# Дорожная карта FocusTrack AI
 
 Публичная дорожная карта описывает развитие одного продукта от исследования рабочего процесса до MVP и финальной презентации.
 
-## Milestone 1: AI Tooling
+## Текущий статус
+
+На 17 июня 2026:
+
+- **ДЗ 1 отправлено** в Otus как ссылка на GitHub-репозиторий.
+- **ДЗ 2 подготовлено**: правила Codex, промпт-шаблоны, методология и A/B-проверка качества правил.
+- Основной AI coding assistant проекта — **Codex**.
+- Следующий продуктовый этап — **ДЗ 3: описание продукта, user stories, техническая спецификация и первые UI-концепции**.
+
+---
+
+## Этап 1: AI tooling
 
 **Цель:** выбрать основной AI coding assistant для разработки FocusTrack AI.
 
@@ -13,29 +24,33 @@
 - обоснование выбора Codex;
 - пример практической работы агента с кодом.
 
-**Статус:** завершено.
+**Статус:** завершено и отправлено.
 
 **Материалы:** [docs/research/001-ai-tooling/](./docs/research/001-ai-tooling/)
 
-## Milestone 2: Prompting Workflow
+## Этап 2: prompting workflow
 
-**Цель:** описать устойчивый процесс работы с AI-агентом.
+**Цель:** описать устойчивый процесс работы с Codex в проекте FocusTrack AI.
 
-**План:**
+**Результат:**
 
-- правила для агента в контексте FocusTrack AI;
-- промпт-шаблоны для компонентов, рефакторинга, тестов, исправления ошибок и Edge Functions;
+- правила для Codex в контексте FocusTrack AI;
+- 7 промпт-шаблонов RTCF для компонентов, рефакторинга, тестов, исправления ошибок, декомпозиции, Edge Functions и проверки публичной документации;
 - методология сложных запросов;
-- журнал проверки качества промптов.
+- A/B-проверка качества ответа до и после правил.
 
-**Ожидаемые материалы:**
+**Материалы:**
 
-- `docs/prompts/agent_rules.md`
-- `docs/prompts/prompt_templates.md`
-- `docs/prompts/prompt_methodology.md`
-- `docs/prompts/testing.md`
+- `AGENTS.md`
+- `docs/hw2-prompts/hw_ai_rules.md`
+- `docs/hw2-prompts/rules.md`
+- `docs/hw2-prompts/prompt_templates.md`
+- `docs/hw2-prompts/prompt_methodology.md`
+- `docs/hw2-prompts/testing.md`
 
-## Milestone 3: Product Specification
+**Статус:** подготовлено.
+
+## Этап 3: Product specification
 
 **Цель:** подготовить продуктовую и техническую основу MVP.
 
@@ -55,7 +70,9 @@
 - `docs/architecture/adr/001-tech-stack.md`
 - `docs/product/ui_concepts/`
 
-## Milestone 4: Frontend MVP
+**Статус:** следующий этап.
+
+## Этап 4: Frontend MVP
 
 **Цель:** собрать рабочий интерфейс FocusTrack AI.
 
@@ -72,7 +89,7 @@
 - `frontend/`
 - `docs/frontend/frontend_report.md`
 
-## Milestone 5: Backend and AI Functions
+## Этап 5: Backend and AI functions
 
 **Цель:** подключить хранилище данных, авторизацию и серверные AI-вызовы.
 
@@ -91,7 +108,7 @@
 - `docs/backend/backend_report.md`
 - `docs/architecture/security.md`
 
-## Milestone 6: Knowledge/RAG Experiments
+## Этап 6: Knowledge/RAG experiments
 
 **Цель:** проверить, нужен ли продукту слой ответов по данным и документам.
 
@@ -106,7 +123,7 @@
 
 - `docs/research/002-knowledge-rag/`
 
-## Final: MVP and Presentation
+## Финал: MVP and presentation
 
 **Цель:** довести FocusTrack AI до демонстрируемого MVP.
 
