@@ -12,10 +12,10 @@ function screenshotPath(name: string) {
 
 async function expectSidebarNavigationTarget(
   page: Page,
-  name: string,
+  testid: string,
   sectionId: string,
 ) {
-  const button = page.getByRole("button", { exact: true, name })
+  const button = page.getByTestId(testid)
 
   await button.click()
   await expect(button).toHaveAttribute("data-active", "true")
@@ -48,38 +48,34 @@ test("desktop dashboard flow renders and updates local state", async ({
 
   await page.goto("/")
   await expect(page).toHaveTitle(/FocusTrack AI/)
-  await expect(
-    page.getByRole("heading", {
-      name: "Рабочее пространство FocusTrack AI",
-    }),
-  ).toBeVisible()
-  await expect(page.getByText("AI-планировщик целей")).toBeVisible()
+  await expect(page.getByTestId("workspace-title")).toBeVisible()
+  await expect(page.getByTestId("sidebar-tagline")).toBeVisible()
   await page.screenshot({
     fullPage: true,
     path: screenshotPath("dashboard-desktop-initial.png"),
   })
 
-  await page.getByRole("button", { name: "Новая цель" }).click()
-  await page.getByLabel("Название").fill("Прочитать 12 книг за год")
+  await page.getByTestId("new-goal-button").click()
+  await page.getByTestId("goal-title-input").fill("Прочитать 12 книг за год")
   await page
-    .getByLabel("Контекст")
+    .getByTestId("goal-context-input")
     .fill("Одна книга в месяц, заметки и краткие конспекты после каждой.")
-  await page.getByRole("button", { name: "Добавить" }).click()
+  await page.getByTestId("goal-submit").click()
   await expect(
-    page.getByRole("button", { name: /Прочитать 12 книг за год/ }),
+    page.getByTestId("goal-item").filter({ hasText: "Прочитать 12 книг за год" }),
   ).toBeVisible()
 
-  const task = page.getByRole("checkbox", {
-    name: "Отметить задачу Базовый объём 15 км в неделю",
-  })
+  const task = page
+    .getByTestId("task-item")
+    .filter({ hasText: "Базовый объём 15 км в неделю" })
+    .getByTestId("task-checkbox")
   await task.click()
   await expect(task).toBeChecked()
 
-  await page.getByRole("button", { name: "AI Review" }).click()
-  const reviewPanel = page.getByRole("complementary")
-  await expect(
-    reviewPanel.getByText(/Тестовый weekly review|Демо-режим/),
-  ).toBeVisible()
+  await page.getByTestId("ai-review-button").click()
+  await expect(page.getByTestId("ai-review-panel")).toContainText(
+    /Тестовый weekly review|Демо-режим/,
+  )
   await page.screenshot({
     fullPage: true,
     path: screenshotPath("dashboard-desktop-after-flow.png"),
@@ -92,17 +88,13 @@ test("desktop sidebar navigation buttons scroll to their dashboard sections", as
   test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
 
   await page.goto("/")
-  await expect(
-    page.getByRole("heading", {
-      name: "Рабочее пространство FocusTrack AI",
-    }),
-  ).toBeVisible()
+  await expect(page.getByTestId("workspace-title")).toBeVisible()
 
-  await expectSidebarNavigationTarget(page, "Цели", "goals")
-  await expectSidebarNavigationTarget(page, "Задачи", "tasks")
-  await expectSidebarNavigationTarget(page, "AI-план", "ai-plan")
-  await expectSidebarNavigationTarget(page, "Обзоры", "reviews")
-  await expectSidebarNavigationTarget(page, "Обзор", "overview")
+  await expectSidebarNavigationTarget(page, "nav-goals", "goals")
+  await expectSidebarNavigationTarget(page, "nav-tasks", "tasks")
+  await expectSidebarNavigationTarget(page, "nav-ai-plan", "ai-plan")
+  await expectSidebarNavigationTarget(page, "nav-reviews", "reviews")
+  await expectSidebarNavigationTarget(page, "nav-overview", "overview")
 })
 
 test("email/password login dialog renders and validates input", async ({
@@ -111,22 +103,17 @@ test("email/password login dialog renders and validates input", async ({
   test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
 
   await page.goto("/")
-  await page.getByRole("button", { name: "Войти" }).click()
+  await page.getByTestId("login-trigger").click()
 
-  const dialog = page.getByRole("dialog")
-  await expect(dialog).toBeVisible()
-  await expect(dialog.getByText("Вход по email")).toBeVisible()
+  await expect(page.getByTestId("login-dialog")).toBeVisible()
+  await expect(page.getByTestId("login-email-input")).toBeVisible()
+  await expect(page.getByTestId("login-password-input")).toBeVisible()
 
-  const email = dialog.getByLabel("Email")
-  const password = dialog.getByLabel("Пароль")
-  await expect(email).toBeVisible()
-  await expect(password).toBeVisible()
-
-  const submit = dialog.getByRole("button", { name: "Войти" })
+  const submit = page.getByTestId("login-submit")
   await expect(submit).toBeDisabled()
 
-  await email.fill("demo@focustrack.ai")
-  await password.fill("focustrack-demo")
+  await page.getByTestId("login-email-input").fill("demo@focustrack.ai")
+  await page.getByTestId("login-password-input").fill("focustrack-demo")
   await expect(submit).toBeEnabled()
 })
 
@@ -136,13 +123,9 @@ test("mobile dashboard keeps the primary content usable", async ({
   test.skip(testInfo.project.name !== "chromium-mobile", "mobile-only flow")
 
   await page.goto("/")
-  await expect(
-    page.getByRole("heading", {
-      name: "Рабочее пространство FocusTrack AI",
-    }),
-  ).toBeVisible()
-  await expect(page.getByRole("button", { name: "Новая цель" })).toBeVisible()
-  await expect(page.getByText("Категории целей")).toBeVisible()
+  await expect(page.getByTestId("workspace-title")).toBeVisible()
+  await expect(page.getByTestId("new-goal-button")).toBeVisible()
+  await expect(page.getByTestId("categories-card")).toBeVisible()
   await page.screenshot({
     fullPage: true,
     path: screenshotPath("dashboard-mobile.png"),

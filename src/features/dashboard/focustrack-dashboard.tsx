@@ -165,7 +165,7 @@ function CreateGoalDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
+        <Button size="sm" data-testid="new-goal-button">
           <PlusIcon data-icon="inline-start" />
           Новая цель
         </Button>
@@ -183,6 +183,7 @@ function CreateGoalDialog() {
             <FieldLabel htmlFor="goal-title">Название</FieldLabel>
             <Input
               id="goal-title"
+              data-testid="goal-title-input"
               value={draft.title}
               onChange={(event) =>
                 setDraft((current) => ({
@@ -197,6 +198,7 @@ function CreateGoalDialog() {
             <FieldLabel htmlFor="goal-description">Контекст</FieldLabel>
             <Textarea
               id="goal-description"
+              data-testid="goal-context-input"
               value={draft.description}
               onChange={(event) =>
                 setDraft((current) => ({
@@ -214,6 +216,7 @@ function CreateGoalDialog() {
             <FieldLabel htmlFor="goal-date">Дедлайн</FieldLabel>
             <Input
               id="goal-date"
+              data-testid="goal-date-input"
               type="date"
               value={draft.targetDate}
               onChange={(event) =>
@@ -226,7 +229,11 @@ function CreateGoalDialog() {
           </Field>
         </FieldGroup>
         <DialogFooter>
-          <Button disabled={!canSubmit} onClick={handleSubmit}>
+          <Button
+            disabled={!canSubmit}
+            onClick={handleSubmit}
+            data-testid="goal-submit"
+          >
             <PlusIcon data-icon="inline-start" />
             Добавить
           </Button>
@@ -262,6 +269,7 @@ function AuthButtons() {
           size="sm"
           disabled={isSigningIn}
           onClick={handleGoogleSignIn}
+          data-testid="google-signin-button"
         >
           {isSigningIn ? (
             <Loader2Icon data-icon="inline-start" />
@@ -337,12 +345,17 @@ function LoginDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          data-testid="login-trigger"
+        >
           <LogInIcon data-icon="inline-start" />
           Войти
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent data-testid="login-dialog">
         <DialogHeader>
           <DialogTitle>Вход по email</DialogTitle>
           <DialogDescription>
@@ -360,6 +373,7 @@ function LoginDialog() {
               <FieldLabel htmlFor="login-email">Email</FieldLabel>
               <Input
                 id="login-email"
+                data-testid="login-email-input"
                 type="email"
                 autoComplete="email"
                 value={email}
@@ -371,6 +385,7 @@ function LoginDialog() {
               <FieldLabel htmlFor="login-password">Пароль</FieldLabel>
               <Input
                 id="login-password"
+                data-testid="login-password-input"
                 type="password"
                 autoComplete="current-password"
                 value={password}
@@ -383,7 +398,7 @@ function LoginDialog() {
             </Field>
           </FieldGroup>
           <DialogFooter className="mt-4">
-            <Button type="submit" disabled={!canSubmit}>
+            <Button type="submit" disabled={!canSubmit} data-testid="login-submit">
               {isPending ? (
                 <Loader2Icon data-icon="inline-start" />
               ) : (
@@ -421,7 +436,12 @@ function SignedInControls({ email }: { email: string }) {
 
   return (
     <div className="flex items-center gap-2">
-      <Badge variant="outline" className="max-w-[180px] truncate" title={email}>
+      <Badge
+        variant="outline"
+        className="max-w-[180px] truncate"
+        title={email}
+        data-testid="user-email"
+      >
         {email}
       </Badge>
       <Button
@@ -430,6 +450,7 @@ function SignedInControls({ email }: { email: string }) {
         size="sm"
         disabled={isPending}
         onClick={handleSignOut}
+        data-testid="signout-button"
       >
         {isPending ? (
           <Loader2Icon data-icon="inline-start" />
@@ -467,7 +488,7 @@ function GoalList({
   onSelectGoal: (goalId: string) => void
 }) {
   return (
-    <Card>
+    <Card data-testid="goal-list">
       <CardHeader>
         <CardTitle>Цели</CardTitle>
         <CardDescription>
@@ -479,6 +500,7 @@ function GoalList({
           <button
             key={goal.id}
             type="button"
+            data-testid="goal-item"
             onClick={() => onSelectGoal(goal.id)}
             className="bg-card hover:bg-accent aria-pressed:border-primary flex flex-col gap-2 rounded-lg border p-3 text-left transition-colors"
             aria-pressed={goal.id === selectedGoalId}
@@ -535,7 +557,11 @@ function GoalDetail({
             <CardTitle className="text-2xl">{goal.title}</CardTitle>
             <CardDescription>{goal.description}</CardDescription>
           </div>
-          <Button onClick={onRequestReview} disabled={isReviewPending}>
+          <Button
+            onClick={onRequestReview}
+            disabled={isReviewPending}
+            data-testid="ai-review-button"
+          >
             {isReviewPending ? (
               <Loader2Icon data-icon="inline-start" />
             ) : (
@@ -557,9 +583,11 @@ function GoalDetail({
               {tasks.map((task) => (
                 <div
                   key={task.id}
+                  data-testid="task-item"
                   className="bg-card flex items-start gap-3 rounded-lg border p-3"
                 >
                   <Checkbox
+                    data-testid="task-checkbox"
                     checked={task.status === "done"}
                     onCheckedChange={(checked) =>
                       onToggleTask(task.id, checked === true)
@@ -648,7 +676,7 @@ function AiReviewPanel({
     .toSorted((left, right) => right.createdAt.localeCompare(left.createdAt))[0]
 
   return (
-    <Card>
+    <Card data-testid="ai-review-panel">
       <CardHeader>
         <CardTitle>AI Review</CardTitle>
         <CardDescription>
@@ -877,6 +905,7 @@ export function FocusTrackDashboard() {
                   <SidebarMenuItem key={label}>
                     <SidebarMenuButton
                       type="button"
+                      data-testid={`nav-${id}`}
                       isActive={id === activeNavItemId}
                       onClick={() => handleNavigate(id)}
                     >
@@ -912,7 +941,9 @@ export function FocusTrackDashboard() {
         </SidebarContent>
         <SidebarFooter>
           <div className="px-2 py-2">
-            <Badge variant="outline">AI-планировщик целей</Badge>
+            <Badge variant="outline" data-testid="sidebar-tagline">
+              AI-планировщик целей
+            </Badge>
           </div>
         </SidebarFooter>
       </Sidebar>
@@ -923,7 +954,10 @@ export function FocusTrackDashboard() {
               <div className="flex items-center gap-3">
                 <SidebarTrigger />
                 <div>
-                  <h1 className="text-xl font-semibold tracking-normal">
+                  <h1
+                    className="text-xl font-semibold tracking-normal"
+                    data-testid="workspace-title"
+                  >
                     Рабочее пространство FocusTrack AI
                   </h1>
                   <p className="text-muted-foreground text-sm">
@@ -935,7 +969,7 @@ export function FocusTrackDashboard() {
               <div className="flex flex-wrap items-center gap-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" data-testid="mode-badge">
                       <DatabaseIcon />
                       {workspace.mode === "supabase"
                         ? "Supabase подключен"
@@ -1014,7 +1048,7 @@ export function FocusTrackDashboard() {
                 <div id="ai-plan" className="scroll-mt-4">
                   <AiReviewPanel workspace={workspace} goal={selectedGoal} />
                 </div>
-                <Card>
+                <Card data-testid="categories-card">
                   <CardHeader>
                     <CardTitle>Категории целей</CardTitle>
                     <CardDescription>
@@ -1041,7 +1075,7 @@ export function FocusTrackDashboard() {
                     <Select
                       defaultValue={workspace.knowledgeDocuments[0]?.id}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger data-testid="knowledge-source-select">
                         <SelectValue placeholder="Источник знаний" />
                       </SelectTrigger>
                       <SelectContent>
