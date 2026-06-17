@@ -11,6 +11,8 @@
 |------|----------|
 | [docs/project_description.md](./docs/project_description.md) | Описание продукта, MVP, ЦА |
 | [docs/adr/001-tech-stack.md](./docs/adr/001-tech-stack.md) | Архитектурное решение по стеку |
+| [docs/hw1-tool-analysis/report.md](./docs/hw1-tool-analysis/report.md) | ДЗ 1: отчёт по выбору AI-инструмента |
+| [docs/hw1-tool-analysis/comparison_table.md](./docs/hw1-tool-analysis/comparison_table.md) | ДЗ 1: сравнительная таблица Cloud и IDE/CLI-агентов |
 
 ## Стек (зафиксирован)
 
