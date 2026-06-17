@@ -936,10 +936,10 @@ function GoalDetail({
           <TabsContent value="questions" className="pt-4">
             <Alert>
               <SparklesIcon />
-              <AlertTitle>AI-уточнение цели</AlertTitle>
+              <AlertTitle>Контекст цели, уточнённый с AI</AlertTitle>
               <AlertDescription>
-                Уточнить контекст, критерии успеха, сроки и ограничения, прежде
-                чем разбивать цель на задачи.
+                Контекст, критерии успеха, сроки и ограничения, уточнённые при
+                создании цели и использованные для разбивки на задачи.
               </AlertDescription>
             </Alert>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
