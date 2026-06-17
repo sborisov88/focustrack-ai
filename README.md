@@ -49,7 +49,8 @@
 | [docs/research/001-ai-tooling/practice_log.md](./docs/research/001-ai-tooling/practice_log.md) | Журнал практической работы |
 | [docs/research/001-ai-tooling/practice/](./docs/research/001-ai-tooling/practice/) | Пример кода, созданный с помощью AI-агента |
 | [AGENTS.md](./AGENTS.md) | Проектные инструкции для Codex |
-| [docs/hw2-prompts/](./docs/hw2-prompts/) | Rules, промпт-шаблоны и методология ДЗ 2 |
+| [docs/prompts/](./docs/prompts/) | Rules, промпт-шаблоны и методология работы с AI-агентом |
+| [docs/backend/backend_architecture.md](./docs/backend/backend_architecture.md) | Архитектура backend-а и AI-функций |
 
 ## Текущий выбор AI-инструмента
 
@@ -57,4 +58,4 @@
 
 ## Правила работы с AI-агентом
 
-Проектные правила для Codex находятся в [AGENTS.md](./AGENTS.md). Это основной файл постоянных инструкций для выбранного AI coding assistant. Материалы ДЗ 2 находятся в [docs/hw2-prompts/](./docs/hw2-prompts/).
+Проектные правила для Codex находятся в [AGENTS.md](./AGENTS.md). Это основной файл постоянных инструкций для выбранного AI coding assistant. Промпт-шаблоны и методология работы с агентом находятся в [docs/prompts/](./docs/prompts/).

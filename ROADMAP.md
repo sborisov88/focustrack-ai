@@ -6,10 +6,11 @@
 
 На 17 июня 2026:
 
-- **ДЗ 1 отправлено** в Otus как ссылка на GitHub-репозиторий.
-- **ДЗ 2 подготовлено**: правила Codex, промпт-шаблоны, методология и A/B-проверка качества правил.
+- Завершён выбор AI coding assistant.
+- Подготовлены правила Codex, промпт-шаблоны, методология и A/B-проверка качества правил.
+- Зафиксирована backend-архитектура на Supabase, RLS, Edge Functions и OpenRouter.
 - Основной AI coding assistant проекта — **Codex**.
-- Следующий продуктовый этап — **ДЗ 3: описание продукта, user stories, техническая спецификация и первые UI-концепции**.
+- Следующий продуктовый этап — описание продукта, user stories, техническая спецификация и первые UI-концепции.
 
 ---
 
@@ -42,11 +43,11 @@
 **Материалы:**
 
 - `AGENTS.md`
-- `docs/hw2-prompts/hw_ai_rules.md`
-- `docs/hw2-prompts/rules.md`
-- `docs/hw2-prompts/prompt_templates.md`
-- `docs/hw2-prompts/prompt_methodology.md`
-- `docs/hw2-prompts/testing.md`
+- `docs/prompts/project_ai_rules.md`
+- `docs/prompts/rules.md`
+- `docs/prompts/prompt_templates.md`
+- `docs/prompts/prompt_methodology.md`
+- `docs/prompts/testing.md`
 
 **Статус:** подготовлено.
 
@@ -105,6 +106,7 @@
 
 - `supabase/migrations/`
 - `supabase/functions/`
+- `docs/backend/backend_architecture.md`
 - `docs/backend/backend_report.md`
 - `docs/architecture/security.md`
 
