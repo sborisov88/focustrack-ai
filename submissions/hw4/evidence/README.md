@@ -26,8 +26,8 @@
 
 ## Медиа
 
-- `media/dashboard-desktop-initial.png`
-- `media/dashboard-desktop-after-flow.png`
-- `media/dashboard-mobile.png`
-- `media/*.webm`
-- `media/html-report/index.html`
+- `media/dashboard-desktop-initial.png` — личный планировщик с категориями целей и жизненными целями (полумарафон, IELTS, подушка безопасности, лендинг пет-проекта);
+- `media/dashboard-desktop-after-flow.png` — дашборд после прохождения пользовательского сценария по целям и задачам;
+- `media/dashboard-mobile.png` — адаптивный мобильный вид планировщика;
+- `media/*.webm`;
+- `media/html-report/index.html`.

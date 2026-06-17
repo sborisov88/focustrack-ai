@@ -42,7 +42,7 @@
 | --- | --- | --- | --- |
 | Все 7 шагов | `docs/product/` | описание, UI-концепции, stories, ТЗ и ADR есть | `submissions/hw3/README.md` |
 | Не менее 3 UI-концепций | `docs/product/ui_concepts/ui_description.md` | UI-концепции описаны | `submissions/hw3/evidence/media/` |
-| Не менее 5 User Stories и Gherkin AC | `docs/product/user_stories.md` | stories и Given/When/Then критерии оформлены | `submissions/hw3/evidence/README.md` |
+| Не менее 5 User Stories и Gherkin AC | `docs/product/user_stories.md` | stories и Given/When/Then критерии оформлены для жизненных целей (полумарафон, IELTS, подушка безопасности, лендинг пет-проекта) | `submissions/hw3/evidence/README.md` |
 | ТЗ готово для AI-инженера | `docs/product/technical_specification.md` | проверено сборкой и e2e MVP | `submissions/hw3/evidence/logs/e2e.log` |
 
 ## ДЗ 4
@@ -50,7 +50,7 @@
 | Критерий | Артефакт | Проверка | Evidence |
 | --- | --- | --- | --- |
 | Приложение запускается | `package.json`, `src/` | build и Playwright прошли | `submissions/hw4/evidence/logs/` |
-| Не менее 3 функций из ТЗ | `src/features/dashboard/focustrack-dashboard.tsx` | цель, задачи, прогресс, AI Review, responsive UI | `submissions/hw4/evidence/media/` |
+| Не менее 3 функций из ТЗ | `src/features/dashboard/focustrack-dashboard.tsx` | цель, задачи, прогресс, AI Review, категории целей, responsive UI на демо с жизненными целями | `submissions/hw4/evidence/media/` |
 | Адаптивность | `tests/e2e/focustrack.spec.ts` | desktop и mobile сценарии Playwright | `submissions/hw4/evidence/logs/e2e.log` |
 | Не менее 3 тестов | `src/lib/progress.test.ts`, `tests/e2e/focustrack.spec.ts` | 3 unit tests и 2 e2e сценария | `submissions/hw4/evidence/logs/unit-test.log` |
 
@@ -79,5 +79,5 @@
 | --- | --- | --- | --- |
 | MVP работает | `src/`, `supabase/`, `vercel.json` | build, e2e, Supabase smoke pass; production frontend URL работает | `submissions/final-project/evidence/`, `submissions/final-project/evidence/media/vercel-production/` |
 | Артефакты защиты | `README.md`, `docs/architecture/architecture.md`, `presentation/README.md` | документы существуют и связаны | `submissions/final-project/README.md` |
-| AI применен | `supabase/functions/`, `docs/prompts/` | OpenRouter model and secrets configured server-side | `submissions/final-project/evidence/logs/supabase-smoke.log` |
+| AI применен | `supabase/functions/`, `docs/prompts/` | OpenRouter model and secrets configured server-side; AI-планирование целей и RAG по личным заметкам пользователя | `submissions/final-project/evidence/logs/supabase-smoke.log` |
 | Презентация | `presentation/README.md` | 10-minute outline prepared | `submissions/final-project/README.md` |

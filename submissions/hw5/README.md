@@ -22,7 +22,8 @@
 - `authenticated` с CRUD-правами через RLS;
 - Supabase Edge Functions;
 - OpenRouter через Supabase secrets;
-- AI/RAG функции с `verify_jwt=true`, публичный только `health`.
+- AI/RAG функции с `verify_jwt=true`, публичный только `health`;
+- `rag-answer` отвечает по личным заметкам пользователя (журнал тренировок, бюджет, план подготовки к IELTS).
 
 ## Проверка
 

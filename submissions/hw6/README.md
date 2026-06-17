@@ -27,7 +27,7 @@ https://focustrack-ai.vercel.app
 - JWT protection for AI/RAG Edge Functions;
 - GitHub Actions quality gate;
 - Vercel production deployment;
-- controlled RAG experiment через OpenRouter.
+- controlled RAG experiment через OpenRouter (ответы по личным заметкам пользователя: журнал тренировок, бюджет, план IELTS).
 
 ## Проверка
 

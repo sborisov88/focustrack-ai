@@ -6,7 +6,7 @@
 - есть минимум 2 интеграции: Google OAuth entry point, analytics helper, Supabase health, OpenRouter через Edge Functions;
 - audit проведён;
 - health-check работает;
-- RAG experiment задокументирован.
+- RAG experiment задокументирован (ответы по личным заметкам пользователя: журнал тренировок, бюджет, план IELTS).
 
 ## Проверенные файлы
 
@@ -29,7 +29,7 @@
 
 ## Медиа
 
-- `media/dashboard-desktop-initial.png`
-- `media/dashboard-desktop-after-flow.png`
-- `media/dashboard-mobile.png`
-- `media/*.webm`
+- `media/dashboard-desktop-initial.png` — личный планировщик с категориями целей и жизненными целями (полумарафон, IELTS, подушка безопасности, лендинг пет-проекта);
+- `media/dashboard-desktop-after-flow.png` — дашборд после прохождения сценария по целям и задачам;
+- `media/dashboard-mobile.png` — адаптивный мобильный вид планировщика;
+- `media/*.webm`.

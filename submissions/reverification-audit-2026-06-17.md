@@ -35,7 +35,7 @@ Supabase recheck:
 | --- | --- | --- |
 | ДЗ 1 | OK | Покрыты 6 шагов: требования, сравнение >=4 инструментов, выбор Codex, настройка, практика, отчёт. |
 | ДЗ 2 | OK | Есть `AGENTS.md`, >=10 rules, >=5 RTCF templates, методология, A/B testing. |
-| ДЗ 3 | OK | Есть описание продукта, >=3 UI-концепции, >=5 stories, Given/When/Then criteria, ТЗ и обработка ошибок. |
+| ДЗ 3 | OK | Есть описание продукта (AI-планировщик личных и рабочих целей), >=3 UI-концепции, >=5 stories по жизненным целям (полумарафон, IELTS, подушка безопасности, лендинг пет-проекта), Given/When/Then criteria, ТЗ и обработка ошибок. |
 | ДЗ 4 | OK | Frontend собирается, есть >=3 функции из ТЗ, адаптивность, unit/e2e, скриншоты и видео. |
 | ДЗ 5 | OK | Supabase backend работает, >=3 endpoints, RLS/JWT, e2e-интеграция, документация. |
 | ДЗ 6 | OK после исправления | CI quality gate, Supabase deploy job, Vercel frontend deploy job, production URL и evidence добавлены. |

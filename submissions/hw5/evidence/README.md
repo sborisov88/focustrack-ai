@@ -6,6 +6,7 @@
 - база данных синхронизирована с remote project;
 - есть не менее 3 endpoints;
 - AI/RAG функции защищены JWT;
+- `rag-answer` отвечает по личным заметкам пользователя (журнал тренировок, бюджет, план IELTS);
 - frontend интегрирован с Supabase client и Edge Functions;
 - OpenRouter используется только серверно через Supabase secrets.
 
@@ -28,5 +29,5 @@
 
 ## Медиа
 
-- `media/dashboard-desktop-after-flow.png`
-- `media/*.webm`
+- `media/dashboard-desktop-after-flow.png` — личный планировщик с жизненными целями после интеграции с backend и AI Review;
+- `media/*.webm`.
