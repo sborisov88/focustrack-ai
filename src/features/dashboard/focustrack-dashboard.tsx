@@ -39,6 +39,7 @@ import {
   updateTaskStatusOnServer,
 } from "@/lib/focustrack-api"
 import {
+  getOAuthErrorMessage,
   signInWithOAuth,
   signInWithPassword,
   signOut,
@@ -599,7 +600,7 @@ function AuthButtons() {
       trackEvent({ name: "oauth_started", params: { provider: "google" } })
     } catch (error) {
       toast.error("OAuth вход не запущен", {
-        description: error instanceof Error ? error.message : String(error),
+        description: getOAuthErrorMessage(error),
       })
       setIsSigningIn(false)
     }

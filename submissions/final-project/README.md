@@ -29,9 +29,21 @@ https://focustrack-ai.vercel.app
 Локально:
 
 ```bash
-pnpm install
-pnpm dev
+./start.sh
 ```
+
+`start.sh` закрывает one-command запуск для проверки: проект использует облачный backend на Supabase Cloud,
+поэтому локально поднимается только frontend.
+
+Порядок работы скрипта:
+
+1. проверяет наличие `node` и `pnpm`;
+2. если `node_modules` отсутствует, запускает `pnpm install --frozen-lockfile`;
+3. проверяет production frontend `https://focustrack-ai.vercel.app`;
+4. проверяет Supabase health endpoint `/functions/v1/health`;
+5. если проверки успешны, запускает локальный Vite frontend на `http://127.0.0.1:5173`.
+
+Для smoke без долгоживущего dev-сервера: `FOCUSTRACK_CHECK_ONLY=1 ./start.sh`.
 
 Проверочный сценарий (на жизненной цели):
 
@@ -53,6 +65,7 @@ Playwright e2e -> 7 passed / 9 skipped: desktop dashboard flow, AI-clarify+AI-pl
                   (skip — кросс-проектные дубли desktop/mobile и live-Supabase сценарий,
                   требующий env E2E_DEMO_EMAIL/E2E_DEMO_PASSWORD)
 GET /functions/v1/health -> {service, status:"ok", checks, checkedAt}
+FOCUSTRACK_CHECK_ONLY=1 ./start.sh -> production frontend 200, Supabase health 200
 POST /functions/v1/ai-weekly-review без JWT -> 401
 POST /functions/v1/ai-weekly-review с publishable/anon JWT -> 401 после deploy обновлённых функций
 Playwright screenshots/video -> output/playwright/ и output/playwright/production/

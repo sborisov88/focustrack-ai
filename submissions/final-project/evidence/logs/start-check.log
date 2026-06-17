@@ -1,0 +1,8 @@
+FocusTrack AI local start
+Frontend: local Vite dev server
+Backend: Supabase Cloud (PostgreSQL, Auth, RLS, Edge Functions)
+Production frontend: https://focustrack-ai.vercel.app
+Backend health: https://wbxyyvvuqrhqtuywfeto.supabase.co/functions/v1/health
+OK production frontend: 200, 638 bytes, 253 ms
+OK Supabase health: 200, 184 bytes, 200 ms
+Check-only mode completed. Set FOCUSTRACK_CHECK_ONLY=0 or omit it to start Vite.

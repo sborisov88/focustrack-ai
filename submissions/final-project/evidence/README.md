@@ -52,6 +52,7 @@
 - `logs/unit-test.log` — unit-тесты (`src/lib/progress.test.ts` + `src/lib/focustrack-api.test.ts`), 12 passed.
 - `logs/e2e.log` — Playwright: 6 passed / 8 skipped, включая AI-clarify/AI-plan и RAG.
 - `logs/live-supabase-e2e.log` — live login, создание цели и task toggle через Supabase с проверкой после reload (требует env `E2E_DEMO_EMAIL`/`E2E_DEMO_PASSWORD`).
+- `logs/start-check.log` — `FOCUSTRACK_CHECK_ONLY=1 ./start.sh`, one-command cloud-only smoke: production frontend 200 и Supabase health 200.
 - `logs/supabase-smoke.log`
 - `logs/tooling.log`
 

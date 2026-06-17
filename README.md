@@ -52,6 +52,33 @@ Production URL: https://focustrack-ai.vercel.app
 
 ## Запуск
 
+Проект использует облачный backend: PostgreSQL, Auth, RLS и Edge Functions работают в Supabase Cloud,
+а локально поднимается только frontend. Поэтому вместо `docker compose` в репозитории есть `start.sh`.
+
+Что делает `start.sh`:
+
+1. проверяет наличие `node` и `pnpm`;
+2. если `node_modules` отсутствует, запускает `pnpm install --frozen-lockfile`;
+3. проверяет production frontend `https://focustrack-ai.vercel.app`;
+4. проверяет Supabase health endpoint `/functions/v1/health`;
+5. если проверки успешны, запускает локальный Vite frontend на `http://127.0.0.1:5173`.
+
+Режим `FOCUSTRACK_CHECK_ONLY=1` выполняет только проверки и завершает скрипт без запуска dev-сервера.
+
+Одна команда для проверки и локального запуска:
+
+```bash
+./start.sh
+```
+
+Быстрая проверка без запуска dev-сервера:
+
+```bash
+FOCUSTRACK_CHECK_ONLY=1 ./start.sh
+```
+
+Ручной эквивалент:
+
 ```bash
 pnpm install
 pnpm dev

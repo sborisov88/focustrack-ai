@@ -95,6 +95,57 @@ Flow:
 
 Статус проверки: entry point реальный и собирается. Сквозной (end-to-end) вход именно через Google проверяется вручную — автоматизированного e2e-доказательства полного OAuth-цикла в evidence нет. e2e-сценарий логина в наборе покрывает диалог входа, а live-Supabase сценарий пропускается без env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`.
 
+### Настройка Google OAuth в Supabase Cloud
+
+Cloud-проект: `wbxyyvvuqrhqtuywfeto` (`VITE_SUPABASE_URL` / fallback в `src/lib/supabase.ts`).
+
+Callback URL Supabase Auth (обязателен в Google Cloud Console):
+
+```text
+https://wbxyyvvuqrhqtuywfeto.supabase.co/auth/v1/callback
+```
+
+#### Шаг 1. Google Cloud Console
+
+1. Открыть [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials**.
+2. Создать **OAuth client ID** типа **Web application**.
+3. Заполнить:
+   - **Authorized JavaScript origins:**
+     - `https://focustrack-ai.vercel.app`
+     - `http://127.0.0.1:5173` (локальный `pnpm dev` / `start.sh`)
+   - **Authorized redirect URIs:**
+     - `https://wbxyyvvuqrhqtuywfeto.supabase.co/auth/v1/callback`
+4. Сохранить **Client ID** и **Client Secret**.
+
+#### Шаг 2. Supabase Dashboard
+
+1. [Supabase Dashboard](https://supabase.com/dashboard) → проект → **Authentication** → **Providers** → **Google**.
+2. Включить **Enable Sign in with Google**.
+3. Вставить Client ID и Client Secret из Google Cloud Console.
+
+#### Шаг 3. Redirect URLs в Supabase
+
+**Authentication** → **URL Configuration**:
+
+| Поле | Значение |
+|------|----------|
+| Site URL | `https://focustrack-ai.vercel.app` |
+| Redirect URLs | `https://focustrack-ai.vercel.app`, `http://127.0.0.1:5173` |
+
+Frontend после OAuth возвращает пользователя на `globalThis.location.origin` (`src/lib/auth.ts`), поэтому origin приложения должен быть в allow-list Supabase.
+
+#### Проверка и типичные ошибки
+
+| Симптом | Причина | Действие |
+|---------|---------|----------|
+| `provider is not enabled` | Google выключен или без credentials в Supabase | Включить провайдер, вставить Client ID/Secret |
+| `Invalid redirect URL` | Origin приложения не в Redirect URLs | Добавить URL в Supabase URL Configuration |
+| Ошибка Google `redirect_uri_mismatch` | Неверный callback в Google Cloud | Добавить Supabase callback URI (см. выше) |
+
+UI маппит ошибку `provider is not enabled` на понятный toast через `getOAuthErrorMessage()` в `src/lib/auth.ts` (см. также `DEMO_ACCESS.md`).
+
+До настройки OAuth доступен вход по email/password, включая публичный demo-аккаунт из `DEMO_ACCESS.md`.
+
 Yandex ID можно подключить как custom OIDC provider в Supabase Auth после регистрации приложения в кабинете провайдера.
 
 ## Аналитика
