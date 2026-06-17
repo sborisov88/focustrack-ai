@@ -50,6 +50,8 @@ test("desktop dashboard flow renders and updates local state", async ({
   await expect(page).toHaveTitle(/FocusTrack AI/)
   await expect(page.getByTestId("workspace-title")).toBeVisible()
   await expect(page.getByTestId("sidebar-tagline")).toBeVisible()
+  // Anonymous demo mode shows the "changes are not saved" banner.
+  await expect(page.getByTestId("demo-banner")).toBeVisible()
   await page.screenshot({
     fullPage: true,
     path: screenshotPath("dashboard-desktop-initial.png"),
@@ -196,6 +198,8 @@ test("live Supabase flow persists created goals and task status", async ({
     .fill(process.env.E2E_DEMO_PASSWORD!)
   await page.getByTestId("login-submit").click()
   await expect(page.getByTestId("mode-badge")).toContainText("Supabase")
+  // After login the demo banner disappears.
+  await expect(page.getByTestId("demo-banner")).toHaveCount(0)
 
   await page.getByTestId("new-goal-button").click()
   await page.getByTestId("goal-title-input").fill(title)

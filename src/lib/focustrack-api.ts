@@ -156,6 +156,15 @@ const emptyReview: WeeklyReview = {
   risks: [],
 }
 
+// Monday of the current week as YYYY-MM-DD (used when the workspace has no week).
+function currentWeekStart(): string {
+  const now = new Date()
+  const mondayOffset = (now.getDay() + 6) % 7
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - mondayOffset)
+  return monday.toISOString().slice(0, 10)
+}
+
 async function getSupabaseContext(): Promise<SupabaseContext | null> {
   const supabase = getSupabaseClient()
 
@@ -262,16 +271,16 @@ export async function loadWorkspace(): Promise<Workspace> {
         .order("created_at"),
     ])
 
-  const goalRows = (goalsRes.data ?? []) as DbGoalRow[]
-
-  // Authenticated but no rows yet: keep the demo workspace visible so the
-  // dashboard always has content to render.
-  if (goalsRes.error || goalRows.length === 0) {
+  // On a read error keep the demo workspace visible as a graceful fallback.
+  if (goalsRes.error) {
     return { ...demoWorkspace, mode: "supabase" }
   }
 
+  const goalRows = (goalsRes.data ?? []) as DbGoalRow[]
   const reviewRows = (reviewRes.data ?? []) as DbReviewRow[]
 
+  // Real workspace for the signed-in user. `goals` may be empty — the dashboard
+  // renders an explicit empty state instead of borrowing the demo goals.
   return {
     mode: "supabase",
     goals: goalRows.map(mapGoal),
@@ -569,12 +578,31 @@ export async function requestWeeklyReview(
 
     if (!error && data?.review) {
       if (context) {
+        const weekStart =
+          workspace.weeklyReview.weekStart || currentWeekStart()
+        const { error: reviewError } = await context.supabase
+          .from("weekly_reviews")
+          .upsert(
+            {
+              user_id: context.userId,
+              week_start: weekStart,
+              summary: data.review,
+              recommendations: [],
+              risks: [],
+            },
+            { onConflict: "user_id,week_start" },
+          )
+
+        if (reviewError) {
+          throw reviewError
+        }
+
         await saveAiSession(context, {
           goalId,
           type: "review",
           model: data.model ?? "google/gemini-2.5-flash-lite",
           input: {
-            weekStart: workspace.weeklyReview.weekStart,
+            weekStart,
             completedTasks,
             blockedTasks,
             goalProgress: goal?.progressPercent ?? 0,

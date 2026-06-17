@@ -1171,25 +1171,37 @@ export function FocusTrackDashboard() {
     initialData: demoWorkspace,
   })
   const workspace = workspaceQuery.data
-  const [selectedGoalId, setSelectedGoalId] = useState(workspace.goals[0].id)
+  const [selectedGoalId, setSelectedGoalId] = useState(
+    workspace.goals[0]?.id ?? "",
+  )
   const [activeNavItemId, setActiveNavItemId] = useState(navItems[0].id)
   const selectedGoal =
     workspace.goals.find((goal) => goal.id === selectedGoalId) ??
     workspace.goals[0]
   const selectedTasks = useMemo(
-    () => getGoalTasks(selectedGoal.id, workspace.tasks),
-    [selectedGoal.id, workspace.tasks],
+    () =>
+      selectedGoal ? getGoalTasks(selectedGoal.id, workspace.tasks) : [],
+    [selectedGoal, workspace.tasks],
   )
   const reviewMutation = useMutation({
-    mutationFn: () => requestWeeklyReview(workspace, selectedGoal.id),
-    onSuccess: (session) => {
-      updateWorkspace(queryClient, (current) => ({
-        ...current,
-        aiSessions: [session, ...current.aiSessions],
-      }))
+    mutationFn: () => {
+      if (!selectedGoal) {
+        throw new Error("Выберите цель для недельного обзора.")
+      }
+      return requestWeeklyReview(workspace, selectedGoal.id)
+    },
+    onSuccess: async (session) => {
+      if (workspace.mode === "supabase") {
+        await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+      } else {
+        updateWorkspace(queryClient, (current) => ({
+          ...current,
+          aiSessions: [session, ...current.aiSessions],
+        }))
+      }
       trackEvent({
         name: "weekly_review_completed",
-        params: { goalId: selectedGoal.id },
+        params: { goalId: selectedGoal?.id ?? "" },
       })
     },
     onError: (error) => {
@@ -1356,6 +1368,18 @@ export function FocusTrackDashboard() {
             </div>
           </header>
           <ScrollArea className="flex-1">
+            {workspace.mode === "demo" && (
+              <div className="px-4 pt-4">
+                <Alert data-testid="demo-banner">
+                  <SparklesIcon />
+                  <AlertTitle>Демо-режим</AlertTitle>
+                  <AlertDescription>
+                    Изменения не сохраняются. Войдите, чтобы вести свои цели и
+                    задачи в своём аккаунте — они будут видны только вам.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
             <main
               id="overview"
               className="grid scroll-mt-4 gap-4 p-4 xl:grid-cols-[320px_minmax(0,1fr)_360px]"
@@ -1397,13 +1421,28 @@ export function FocusTrackDashboard() {
               </section>
               <section className="flex min-w-0 flex-col gap-4">
                 <div id="tasks" className="scroll-mt-4">
-                  <GoalDetail
-                    goal={selectedGoal}
-                    tasks={selectedTasks}
-                    onToggleTask={handleToggleTask}
-                    onRequestReview={() => reviewMutation.mutate()}
-                    isReviewPending={reviewMutation.isPending}
-                  />
+                  {selectedGoal ? (
+                    <GoalDetail
+                      goal={selectedGoal}
+                      tasks={selectedTasks}
+                      onToggleTask={handleToggleTask}
+                      onRequestReview={() => reviewMutation.mutate()}
+                      isReviewPending={reviewMutation.isPending}
+                    />
+                  ) : (
+                    <Card data-testid="empty-state">
+                      <CardHeader>
+                        <CardTitle>У вас пока нет целей</CardTitle>
+                        <CardDescription>
+                          Создайте первую цель — она сохранится в вашем аккаунте
+                          и будет видна только вам.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <CreateGoalDialog workspace={workspace} />
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
                 <div className="grid gap-4 lg:grid-cols-2">
                   <ProgressChart goals={workspace.goals} />
@@ -1415,7 +1454,9 @@ export function FocusTrackDashboard() {
               </section>
               <aside className="flex flex-col gap-4">
                 <div id="ai-plan" className="scroll-mt-4">
-                  <AiReviewPanel workspace={workspace} goal={selectedGoal} />
+                  {selectedGoal && (
+                    <AiReviewPanel workspace={workspace} goal={selectedGoal} />
+                  )}
                 </div>
                 <Card data-testid="categories-card">
                   <CardHeader>
