@@ -1,43 +1,79 @@
-# Настройка Cursor для FocusTrack AI
+# Настройка Codex для FocusTrack AI
 
-## 1. Установка
+## 1. Доступ к инструменту
 
-1. Скачать Cursor с https://cursor.com
-2. Установить на macOS, запустить
-3. Войти в аккаунт (Sign in)
+1. Войти в Codex через аккаунт OpenAI / ChatGPT.
+2. Открыть локальную папку проекта `focustrack-ai`.
+3. Убедиться, что Codex видит рабочую директорию, git-статус и файлы репозитория.
+
+Актуальная справка OpenAI:
+
+- Codex: https://developers.openai.com/codex
+- Codex CLI: https://developers.openai.com/codex/cli
+- Codex IDE extension: https://developers.openai.com/codex/ide
 
 ## 2. Открытие проекта
 
-1. **File → Open Folder**
-2. Выбрать папку `focustrack-ai`
-3. Убедиться, что в корне видны `README.md` и `docs/hw1-tool-analysis/`
+Проверка локального проекта:
+
+```bash
+cd focustrack-ai
+git status --short --branch
+ls README.md docs/hw1-tool-analysis
+```
+
+Ожидаемый результат:
+
+- ветка `main` синхронизирована с `origin/main`;
+- в репозитории есть `README.md`;
+- материалы ДЗ лежат в `docs/hw1-tool-analysis/`.
 
 ## 3. Git и GitHub
 
-1. В терминале Cursor: `git status` — репозиторий уже инициализирован
-2. Remote: `https://github.com/sborisov88/focustrack-ai`
-3. Коммиты и push выполняются из встроенного терминала или через агента
+Проверка remote:
 
-## 4. MCP-серверы
+```bash
+git remote -v
+```
 
-**Cursor Settings → MCP → Add server** (или редактирование `~/.cursor/mcp.json`):
+Ожидаемый remote:
 
-| Сервер | Назначение |
-|--------|------------|
-| Context7 | Актуальная документация библиотек (React, Supabase) |
-| cursor-ide-browser | Просмотр и отладка UI в браузере |
+```text
+origin  https://github.com/sborisov88/focustrack-ai.git
+```
 
-После добавления — перезапустить Cursor или обновить MCP.
+Коммиты и push выполняются из локального терминала через Codex:
+
+```bash
+git add README.md docs/hw1-tool-analysis
+git commit -m "..."
+git push origin main
+```
+
+## 4. MCP и дополнительные инструменты
+
+В текущей работе использовались:
+
+| Инструмент | Назначение |
+|------------|------------|
+| context-mode | Индексация и сверка больших markdown-артефактов без перегрузки контекста |
+| Browser | Проверка Otus во встроенном браузере |
+| web search | Актуализация исследования по официальным источникам |
+| git / shell | Проверка статуса, состава репозитория, diff, commit и push |
 
 ## 5. Проверка работы агента
 
-1. Открыть чат Agent (Composer)
-2. Задать тестовый запрос: «Прочитай README.md и кратко перечисли стек проекта»
-3. Агент должен прочитать локальный файл и ответить по содержимому
+Практический тест Codex:
+
+1. прочитать обычное и расширенное ДЗ 1;
+2. сверить требования с репозиторием;
+3. обновить `comparison_table.md`, `tool_selection.md`, `setup_guide.md`, `practice_log.md`, `report.md`;
+4. проверить структуру репозитория;
+5. сделать commit и push.
 
 ## 6. Тестовый проект
 
-Создан репозиторий FocusTrack AI с документацией и практическим кодом (см. `practice/` и `practice_log.md`).
+Создан репозиторий FocusTrack AI с материалами ДЗ и практическим кодом.
 
 Проверка:
 
@@ -50,6 +86,6 @@ ls docs/hw1-tool-analysis/practice/GoalCard.tsx
 
 ## 7. Что не настраивалось на этом этапе
 
-- `.cursor/rules/` — будет в ДЗ 2
-- Supabase CLI / `supabase start` — в ДЗ 5
-- OpenRouter API key — в Supabase secrets, в ДЗ 5
+- полноценный frontend — будет в следующих ДЗ;
+- Supabase CLI / `supabase start` — в backend-этапе;
+- OpenRouter API key — не нужен для ДЗ 1 и не хранится в git.
