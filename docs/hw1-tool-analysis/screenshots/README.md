@@ -16,21 +16,21 @@
 ### 2. Результат работы агента
 
 Показать одно из:
-- файлы `docs/project_description.md` / `docs/adr/` в редакторе;
-- или файлы `practice/GoalCard.tsx`, `progress.ts` в редакторе.
+- файлы `docs/hw1-tool-analysis/report.md` / `comparison_table.md` в редакторе;
+- или файлы `docs/hw1-tool-analysis/practice/GoalCard.tsx`, `progress.ts` в редакторе.
 
-### 3. Репозиторий или ZIP
+### 3. Репозиторий GitHub
 
 Показать:
 - GitHub https://github.com/sborisov88/focustrack-ai в браузере;
-- или Finder с папкой `hw1-tool-analysis` / архивом `hw1-tool-analysis.zip`.
+- открытую папку `docs/hw1-tool-analysis/` или файл `report.md`.
 
 ## Имена файлов (рекомендация)
 
 ```
 01-cursor-chat-prompt.png
 02-cursor-result-files.png
-03-github-or-zip.png
+03-github-repository.png
 ```
 
-Положите скриншоты в эту папку `screenshots/` и добавьте в ZIP перед отправкой **или** прикрепите отдельно к сообщению на Otus.
+Скриншоты можно прикрепить отдельно к сообщению на Otus, если преподаватель попросит визуальное подтверждение.

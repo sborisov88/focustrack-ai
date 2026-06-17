@@ -1,33 +1,20 @@
-# FocusTrack AI
+# FocusTrack AI — ДЗ 1
 
-Трекер целей обучения и профессионального роста с AI-планировщиком (clarify → plan → weekly review).
+Репозиторий для сдачи ДЗ 1 курса Otus «ИИ-агенты: продвинутое внедрение и использование».
 
-**Репозиторий:** https://github.com/sborisov88/focustrack-ai  
-**Статус:** ранняя стадия — документация и подготовка инфраструктуры
+Тема ДЗ: сравнительный анализ и настройка AI-инструментов для разработки проекта **FocusTrack AI**.
 
-## Документация
+## Проверяемые материалы
 
 | Файл | Описание |
 |------|----------|
-| [docs/project_description.md](./docs/project_description.md) | Описание продукта, MVP, ЦА |
-| [docs/adr/001-tech-stack.md](./docs/adr/001-tech-stack.md) | Архитектурное решение по стеку |
-| [docs/hw1-tool-analysis/report.md](./docs/hw1-tool-analysis/report.md) | ДЗ 1: отчёт по выбору AI-инструмента |
-| [docs/hw1-tool-analysis/comparison_table.md](./docs/hw1-tool-analysis/comparison_table.md) | ДЗ 1: сравнительная таблица Cloud и IDE/CLI-агентов |
+| [docs/hw1-tool-analysis/report.md](./docs/hw1-tool-analysis/report.md) | Итоговый отчёт |
+| [docs/hw1-tool-analysis/comparison_table.md](./docs/hw1-tool-analysis/comparison_table.md) | Сравнительная таблица Cloud и IDE/CLI-агентов |
+| [docs/hw1-tool-analysis/tool_selection.md](./docs/hw1-tool-analysis/tool_selection.md) | Обоснование выбора Cursor |
+| [docs/hw1-tool-analysis/setup_guide.md](./docs/hw1-tool-analysis/setup_guide.md) | Настройка рабочего окружения |
+| [docs/hw1-tool-analysis/practice_log.md](./docs/hw1-tool-analysis/practice_log.md) | Журнал практической работы |
+| [docs/hw1-tool-analysis/practice/](./docs/hw1-tool-analysis/practice/) | Пример кода, созданный с помощью AI-агента |
 
-## Стек (зафиксирован)
+## Короткий вывод
 
-- **Frontend:** React 18, TypeScript, Vite, Tailwind, Recharts
-- **Backend:** Supabase Cloud (PostgreSQL, Auth, RLS)
-- **AI:** OpenRouter via Supabase Edge Functions
-
-## Быстрый старт
-
-> Код приложения появится на следующих этапах. Сейчас — только документация.
-
-```bash
-# после появления frontend/ и supabase/
-cp .env.example frontend/.env.local
-# заполнить VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY
-
-cd frontend && npm install && npm run dev
-```
+Для FocusTrack AI выбран **Cursor** как основной IDE-агент: он лучше подходит для длительной локальной разработки с git, rules, MCP и будущим fullstack-кодом, чем cloud-конструкторы быстрых прототипов.

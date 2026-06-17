@@ -10,7 +10,7 @@
 
 1. **File → Open Folder**
 2. Выбрать папку `focustrack-ai`
-3. Убедиться, что в корне видны `README.md`, `docs/`, `.env.example`
+3. Убедиться, что в корне видны `README.md` и `docs/hw1-tool-analysis/`
 
 ## 3. Git и GitHub
 
@@ -43,7 +43,8 @@
 
 ```bash
 cd focustrack-ai
-ls docs/project_description.md
+ls docs/hw1-tool-analysis/report.md
+ls docs/hw1-tool-analysis/comparison_table.md
 ls docs/hw1-tool-analysis/practice/GoalCard.tsx
 ```
 
