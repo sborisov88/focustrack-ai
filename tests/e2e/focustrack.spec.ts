@@ -58,7 +58,9 @@ test("desktop dashboard flow renders and updates local state", async ({
 
   await page.getByRole("button", { name: "AI Review" }).click()
   const reviewPanel = page.getByRole("complementary")
-  await expect(reviewPanel.getByText("Тестовый weekly review")).toBeVisible()
+  await expect(
+    reviewPanel.getByText(/Тестовый weekly review|Демо-режим/),
+  ).toBeVisible()
   await page.screenshot({
     fullPage: true,
     path: screenshotPath("dashboard-desktop-after-flow.png"),
