@@ -78,4 +78,5 @@ pnpm run test:e2e
 | [docs/integrations/integration_documentation.md](./docs/integrations/integration_documentation.md)  | CI/CD и интеграции                      |
 | [docs/production-deployment.md](./docs/production-deployment.md)                                     | Vercel production deployment            |
 | [docs/security/security_audit.md](./docs/security/security_audit.md)                                | Аудит безопасности                      |
+| [submissions/](./submissions/)                                                                      | Пакет сдачи ДЗ 1-6 и проектной работы   |
 | [AGENTS.md](./AGENTS.md)                                                                             | Проектные инструкции для AI-агента      |

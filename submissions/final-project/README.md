@@ -59,6 +59,36 @@ Playwright screenshots/video -> output/playwright/ и output/playwright/producti
 
 Повторная сверка требований: `submissions/reverification-audit-2026-06-17.md`.
 
+## Что отправлять преподавателю
+
+Основная ссылка:
+
+```text
+https://github.com/sborisov88/focustrack-ai
+```
+
+Дополнительные ориентиры внутри репозитория:
+
+- финальный проект: `submissions/final-project/`;
+- все сдачные материалы ДЗ 1-6: `submissions/`;
+- матрица приемки: `submissions/acceptance-matrix.md`;
+- evidence проекта: `submissions/final-project/evidence/`;
+- production demo: `https://focustrack-ai.vercel.app`;
+- финальный tag: `final-project-submitted`.
+
+История сквозной разработки зафиксирована опубликованными Git tags:
+
+| Этап | Tag |
+| ---- | --- |
+| Фаза 0 | [`phase-0-init`](https://github.com/sborisov88/focustrack-ai/tree/phase-0-init) |
+| ДЗ 1 | [`hw1-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw1-submitted) |
+| ДЗ 2 | [`hw2-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw2-submitted) |
+| ДЗ 3 | [`hw3-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw3-submitted) |
+| ДЗ 4 | [`hw4-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw4-submitted) |
+| ДЗ 5 | [`hw5-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw5-submitted) |
+| ДЗ 6 | [`hw6-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw6-submitted) |
+| Проект | [`final-project-submitted`](https://github.com/sborisov88/focustrack-ai/tree/final-project-submitted) |
+
 ## Материалы защиты
 
 | Раздел               | Файл                                      |
@@ -81,6 +111,10 @@ Playwright screenshots/video -> output/playwright/ и output/playwright/producti
 Это веб-приложение — AI-планировщик личных и рабочих целей с AI-уточнением, AI-планом задач, дашбордом прогресса, еженедельным AI-ревью и ответами по личным заметкам (RAG).
 Примеры целей: «Пробежать первый полумарафон», «Сдать IELTS на 7.0», «Сформировать подушку безопасности на 6 месяцев», «Запустить лендинг пет-проекта».
 Стек: React, TypeScript, shadcn/ui, Supabase Cloud, PostgreSQL, RLS, Supabase Edge Functions, OpenRouter.
+GitHub: https://github.com/sborisov88/focustrack-ai
 Production URL: https://focustrack-ai.vercel.app
+Материалы проектной работы: submissions/final-project/
+Матрица приемки всех ДЗ и проекта: submissions/acceptance-matrix.md
+Финальный checkpoint: tag final-project-submitted
 В проекте показываю применение курса: AI coding workflow, rules/prompts, UI/ТЗ, frontend, backend, CI/CD, security и RAG.
 ```
