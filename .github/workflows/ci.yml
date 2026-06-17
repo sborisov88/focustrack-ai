@@ -83,7 +83,12 @@ jobs:
         run: pnpm dlx vercel@54.14.0 build --prod --token "$VERCEL_TOKEN"
 
       - name: Deploy Vercel production artifact
-        run: pnpm dlx vercel@54.14.0 deploy --prebuilt --prod --token "$VERCEL_TOKEN" > vercel-deploy-url.txt
+        run: |
+          deployment_url="$(pnpm dlx vercel@54.14.0 deploy --prebuilt --prod --token "$VERCEL_TOKEN")"
+          {
+            echo "$deployment_url"
+            echo "https://focustrack-ai.vercel.app"
+          } > vercel-deploy-url.txt
 
       - name: Upload Vercel deploy URL
         uses: actions/upload-artifact@v5
