@@ -29,6 +29,19 @@ async function expectSidebarNavigationTarget(
     .toBe(true)
 }
 
+async function openDemoWorkspace(page: Page) {
+  await expect(page.getByTestId("mode-badge")).toContainText("Вход не выполнен")
+  await expect(page.getByTestId("signed-out-empty-state")).toBeVisible()
+  await expect(page.getByTestId("goal-item")).toHaveCount(0)
+  await page.getByTestId("show-demo-button").click()
+  await expect(page.getByTestId("mode-badge")).toContainText("Демо-режим")
+  await expect(page.getByTestId("demo-banner")).toBeVisible()
+}
+
+async function openHeaderNewGoalDialog(page: Page) {
+  await page.locator("header").getByTestId("new-goal-button").click()
+}
+
 test("desktop dashboard flow renders and updates local state", async ({
   page,
 }, testInfo) => {
@@ -50,14 +63,13 @@ test("desktop dashboard flow renders and updates local state", async ({
   await expect(page).toHaveTitle(/FocusTrack AI/)
   await expect(page.getByTestId("workspace-title")).toBeVisible()
   await expect(page.getByTestId("sidebar-tagline")).toBeVisible()
-  // Anonymous demo mode shows the "changes are not saved" banner.
-  await expect(page.getByTestId("demo-banner")).toBeVisible()
+  await openDemoWorkspace(page)
   await page.screenshot({
     fullPage: true,
     path: screenshotPath("dashboard-desktop-initial.png"),
   })
 
-  await page.getByTestId("new-goal-button").click()
+  await openHeaderNewGoalDialog(page)
   await page.getByTestId("goal-title-input").fill("Прочитать 12 книг за год")
   await page
     .getByTestId("goal-context-input")
@@ -66,6 +78,10 @@ test("desktop dashboard flow renders and updates local state", async ({
   await expect(
     page.getByTestId("goal-item").filter({ hasText: "Прочитать 12 книг за год" }),
   ).toBeVisible()
+  await page
+    .getByTestId("goal-item")
+    .filter({ hasText: "Пробежать первый полумарафон" })
+    .click()
 
   const task = page
     .getByTestId("task-item")
@@ -91,8 +107,9 @@ test("desktop goal creation supports AI clarify and AI plan flow", async ({
 
   await page.goto("/")
   await expect(page.getByTestId("workspace-title")).toBeVisible()
+  await openDemoWorkspace(page)
 
-  await page.getByTestId("new-goal-button").click()
+  await openHeaderNewGoalDialog(page)
   await page.getByTestId("goal-title-input").fill("Подготовить демо продукта")
   await page
     .getByTestId("goal-context-input")
@@ -121,6 +138,7 @@ test("desktop RAG panel answers a question from knowledge documents", async ({
 
   await page.goto("/")
   await expect(page.getByTestId("workspace-title")).toBeVisible()
+  await openDemoWorkspace(page)
 
   await page.getByTestId("rag-question-input").fill(
     "на какой неделе была самая длинная пробежка",
@@ -136,6 +154,7 @@ test("desktop sidebar navigation buttons scroll to their dashboard sections", as
 
   await page.goto("/")
   await expect(page.getByTestId("workspace-title")).toBeVisible()
+  await openDemoWorkspace(page)
 
   await expectSidebarNavigationTarget(page, "nav-goals", "goals")
   await expectSidebarNavigationTarget(page, "nav-tasks", "tasks")
@@ -171,6 +190,7 @@ test("mobile dashboard keeps the primary content usable", async ({
 
   await page.goto("/")
   await expect(page.getByTestId("workspace-title")).toBeVisible()
+  await openDemoWorkspace(page)
   await expect(page.getByTestId("new-goal-button")).toBeVisible()
   await expect(page.getByTestId("categories-card")).toBeVisible()
   await page.screenshot({
@@ -201,7 +221,7 @@ test("live Supabase flow persists created goals and task status", async ({
   // After login the demo banner disappears.
   await expect(page.getByTestId("demo-banner")).toHaveCount(0)
 
-  await page.getByTestId("new-goal-button").click()
+  await openHeaderNewGoalDialog(page)
   await page.getByTestId("goal-title-input").fill(title)
   await page
     .getByTestId("goal-context-input")
@@ -228,4 +248,13 @@ test("live Supabase flow persists created goals and task status", async ({
   await expect(page.getByTestId("mode-badge")).toContainText("Supabase")
   await expect(page.getByTestId("task-item").first().getByTestId("task-checkbox"))
     .toBeChecked({ checked: !initiallyChecked })
+
+  await page.getByTestId("signout-button").click()
+  await expect(page.getByTestId("mode-badge")).toContainText("Вход не выполнен")
+  await expect(page.getByTestId("user-email")).toHaveCount(0)
+  await expect(page.getByTestId("signed-out-empty-state")).toBeVisible()
+  await expect(page.getByTestId("goal-item").filter({ hasText: title })).toHaveCount(
+    0,
+  )
+  await expect(page.getByTestId("goal-item")).toHaveCount(0)
 })

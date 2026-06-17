@@ -1,22 +1,38 @@
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
-// Без Supabase-сессии API-слой обязан корректно деградировать в демо-режим и
-// валидировать вход. Мокаем клиента в null, чтобы детерминированно проверить
-// именно эти ветки (валидация + graceful fallback), без сети.
+const supabaseMock = vi.hoisted(() => ({
+  client: null as null | {
+    auth: {
+      getSession: () => Promise<{
+        data: { session: { user: { id: string; email?: string } } | null }
+        error: Error | null
+      }>
+    }
+    from: (table: string) => unknown
+  },
+  hasConfig: false,
+}))
+
 vi.mock("@/lib/supabase", () => ({
-  getSupabaseClient: () => null,
-  hasSupabaseConfig: () => false,
+  getSupabaseClient: () => supabaseMock.client,
+  hasSupabaseConfig: () => supabaseMock.hasConfig,
 }))
 
 import {
   createGoal,
   createLocalGoal,
+  loadWorkspace,
   requestGoalClarification,
   requestGoalPlan,
   requestRagAnswer,
   toggleTask,
 } from "@/lib/focustrack-api"
 import type { Goal, KnowledgeDocument, Workspace } from "@/lib/domain"
+
+beforeEach(() => {
+  supabaseMock.client = null
+  supabaseMock.hasConfig = false
+})
 
 const goal: Goal = {
   id: "g1",
@@ -66,6 +82,60 @@ const baseWorkspace: Workspace = {
   weeklyReview: { weekStart: "", summary: "", recommendations: [], risks: [] },
   knowledgeDocuments: documents,
 }
+
+function createEmptySupabaseClientMock() {
+  const response = Promise.resolve({ data: [], error: null })
+
+  return {
+    auth: {
+      getSession: () =>
+        Promise.resolve({
+          data: {
+            session: { user: { id: "user-1", email: "demo@focustrack.ai" } },
+          },
+          error: null,
+        }),
+    },
+    from: (table: string) => ({
+      select: () => ({
+        order: () =>
+          table === "weekly_reviews"
+            ? { limit: () => response }
+            : response,
+      }),
+    }),
+  }
+}
+
+describe("loadWorkspace", () => {
+  it("без Supabase-сессии возвращает anonymous workspace", async () => {
+    const workspace = await loadWorkspace()
+
+    expect(workspace.mode).toBe("anonymous")
+    expect(workspace.goals).toHaveLength(0)
+    expect(workspace.tasks).toHaveLength(0)
+  })
+
+  it("возвращает demo workspace только по явному signedOutMode", async () => {
+    const workspace = await loadWorkspace({ signedOutMode: "demo" })
+
+    expect(workspace.mode).toBe("demo")
+    expect(workspace.goals.length).toBeGreaterThan(0)
+  })
+
+  it("для авторизованного пользователя с пустой БД возвращает пустой Supabase workspace", async () => {
+    supabaseMock.client = createEmptySupabaseClientMock()
+    supabaseMock.hasConfig = true
+
+    const workspace = await loadWorkspace()
+
+    expect(workspace.mode).toBe("supabase")
+    expect(workspace.goals).toEqual([])
+    expect(workspace.tasks).toEqual([])
+    expect(workspace.aiSessions).toEqual([])
+    expect(workspace.knowledgeDocuments).toEqual([])
+  })
+})
 
 describe("createLocalGoal", () => {
   it("обрезает пробелы и проставляет дефолты черновика", () => {

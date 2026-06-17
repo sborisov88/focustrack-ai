@@ -92,6 +92,15 @@ type RequestRagAnswerParams = {
   selectedDocumentId?: string
 }
 
+export type SignedOutWorkspaceMode = Extract<
+  Workspace["mode"],
+  "anonymous" | "demo"
+>
+
+export type LoadWorkspaceOptions = {
+  signedOutMode?: SignedOutWorkspaceMode
+}
+
 function mapGoal(row: DbGoalRow): Goal {
   return {
     id: row.id,
@@ -154,6 +163,23 @@ const emptyReview: WeeklyReview = {
   summary: "Пока нет недельного обзора — он появится после первого AI Review.",
   recommendations: [],
   risks: [],
+}
+
+function createEmptyWorkspace(mode: Workspace["mode"]): Workspace {
+  return {
+    mode,
+    goals: [],
+    tasks: [],
+    aiSessions: [],
+    weeklyReview: emptyReview,
+    knowledgeDocuments: [],
+  }
+}
+
+export const anonymousWorkspace: Workspace = createEmptyWorkspace("anonymous")
+
+function getSignedOutWorkspace(mode: SignedOutWorkspaceMode = "anonymous") {
+  return mode === "demo" ? demoWorkspace : anonymousWorkspace
 }
 
 // Monday of the current week as YYYY-MM-DD (used when the workspace has no week).
@@ -231,17 +257,20 @@ async function saveAiSession(
   }
 }
 
-export async function loadWorkspace(): Promise<Workspace> {
+export async function loadWorkspace(
+  options: LoadWorkspaceOptions = {},
+): Promise<Workspace> {
   const supabase = getSupabaseClient()
 
   if (!supabase) {
-    return demoWorkspace
+    return getSignedOutWorkspace(options.signedOutMode)
   }
 
-  const { data: sessionData } = await supabase.auth.getSession()
+  const { data: sessionData, error: sessionError } =
+    await supabase.auth.getSession()
 
-  if (!sessionData.session) {
-    return { ...demoWorkspace, mode: "demo" }
+  if (sessionError || !sessionData.session) {
+    return getSignedOutWorkspace(options.signedOutMode)
   }
 
   const [goalsRes, tasksRes, sessionsRes, reviewRes, documentsRes] =
@@ -271,9 +300,10 @@ export async function loadWorkspace(): Promise<Workspace> {
         .order("created_at"),
     ])
 
-  // On a read error keep the demo workspace visible as a graceful fallback.
+  // Do not borrow demo data for a signed-in user; keep the account surface empty
+  // if the read fails so auth state and visible data remain aligned.
   if (goalsRes.error) {
-    return { ...demoWorkspace, mode: "supabase" }
+    return createEmptyWorkspace("supabase")
   }
 
   const goalRows = (goalsRes.data ?? []) as DbGoalRow[]

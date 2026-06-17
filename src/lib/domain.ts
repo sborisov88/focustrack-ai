@@ -2,7 +2,7 @@ export type GoalStatus = "draft" | "active" | "paused" | "completed"
 export type TaskStatus = "todo" | "doing" | "done" | "blocked"
 export type TaskEffort = "S" | "M" | "L"
 export type AiSessionType = "clarify" | "plan" | "review" | "rag"
-export type WorkspaceMode = "demo" | "supabase"
+export type WorkspaceMode = "anonymous" | "demo" | "supabase"
 
 export type Goal = {
   id: string

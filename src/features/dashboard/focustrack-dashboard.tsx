@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 
 import {
+  anonymousWorkspace,
   createGoal,
   createGoalOnServer,
   createLocalGoal,
@@ -41,6 +42,7 @@ import type {
   FocusTask,
   Goal,
   NewGoalInput,
+  WorkspaceMode,
   Workspace,
 } from "@/lib/domain"
 import { demoWorkspace } from "@/lib/demo-data"
@@ -123,6 +125,28 @@ import {
 import { toast } from "sonner"
 
 const workspaceQueryKey = ["focustrack-workspace"] as const
+type WorkspaceQueryIdentity = "anonymous" | "demo" | `user:${string}`
+type WorkspaceQueryKey = readonly [
+  "focustrack-workspace",
+  WorkspaceQueryIdentity,
+]
+
+function getWorkspaceQueryKey(
+  identity: WorkspaceQueryIdentity,
+): WorkspaceQueryKey {
+  return ["focustrack-workspace", identity] as const
+}
+
+function getModeLabel(mode: WorkspaceMode) {
+  if (mode === "supabase") return "Supabase подключен"
+  if (mode === "demo") return "Демо-режим"
+  return "Вход не выполнен"
+}
+
+const supabaseWorkspacePlaceholder: Workspace = {
+  ...anonymousWorkspace,
+  mode: "supabase",
+}
 
 const chartConfig = {
   progress: {
@@ -178,16 +202,23 @@ function buildClarifiedContext(
 
 function updateWorkspace(
   queryClient: ReturnType<typeof useQueryClient>,
+  queryKey: WorkspaceQueryKey,
   updater: (workspace: Workspace) => Workspace,
 ) {
-  queryClient.setQueryData<Workspace>(workspaceQueryKey, (current) =>
-    updater(current ?? demoWorkspace),
+  queryClient.setQueryData<Workspace>(queryKey, (current) =>
+    updater(current ?? anonymousWorkspace),
   )
 }
 
 type GoalCreationStep = "draft" | "answering" | "planned"
 
-function CreateGoalDialog({ workspace }: { workspace: Workspace }) {
+function CreateGoalDialog({
+  workspace,
+  queryKey,
+}: {
+  workspace: Workspace
+  queryKey: WorkspaceQueryKey
+}) {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<NewGoalInput>({
     title: "",
@@ -224,7 +255,7 @@ function CreateGoalDialog({ workspace }: { workspace: Workspace }) {
   const createGoalMutation = useMutation({
     mutationFn: async () => {
       const currentWorkspace =
-        queryClient.getQueryData<Workspace>(workspaceQueryKey) ?? workspace
+        queryClient.getQueryData<Workspace>(queryKey) ?? workspace
 
       if (currentWorkspace.mode === "supabase") {
         const goal = await createGoalOnServer(draft)
@@ -236,9 +267,9 @@ function CreateGoalDialog({ workspace }: { workspace: Workspace }) {
     },
     onSuccess: async (result) => {
       if (result.mode === "supabase") {
-        await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+        await queryClient.invalidateQueries({ queryKey })
       } else {
-        queryClient.setQueryData(workspaceQueryKey, result.workspace)
+        queryClient.setQueryData(queryKey, result.workspace)
       }
 
       trackEvent({ name: "goal_created", params: { source: "dashboard" } })
@@ -272,7 +303,7 @@ function CreateGoalDialog({ workspace }: { workspace: Workspace }) {
   const planMutation = useMutation({
     mutationFn: async () => {
       const currentWorkspace =
-        queryClient.getQueryData<Workspace>(workspaceQueryKey) ?? workspace
+        queryClient.getQueryData<Workspace>(queryKey) ?? workspace
       const clarifiedContext = buildClarifiedContext(questions, answers)
 
       if (currentWorkspace.mode === "supabase") {
@@ -307,9 +338,9 @@ function CreateGoalDialog({ workspace }: { workspace: Workspace }) {
       setStep("planned")
 
       if (result.mode === "supabase") {
-        await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+        await queryClient.invalidateQueries({ queryKey })
       } else {
-        queryClient.setQueryData(workspaceQueryKey, result.workspace)
+        queryClient.setQueryData(queryKey, result.workspace)
       }
 
       trackEvent({
@@ -532,29 +563,52 @@ function AuthButtons() {
   )
 }
 
-function useAuthEmail() {
-  const [email, setEmail] = useState<string | null>(null)
+type AuthState = {
+  email: string | null
+  userId: string | null
+  ready: boolean
+}
+
+function useAuthState() {
+  const [authState, setAuthState] = useState<AuthState>({
+    email: null,
+    userId: null,
+    ready: false,
+  })
   const queryClient = useQueryClient()
 
   useMountEffect(() => {
     const supabase = getSupabaseClient()
-    if (!supabase) return
+    if (!supabase) {
+      setAuthState({ email: null, userId: null, ready: true })
+      return
+    }
 
     void supabase.auth
       .getSession()
-      .then(({ data }) => setEmail(data.session?.user.email ?? null))
+      .then(({ data }) =>
+        setAuthState({
+          email: data.session?.user.email ?? null,
+          userId: data.session?.user.id ?? null,
+          ready: true,
+        }),
+      )
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setEmail(session?.user.email ?? null)
+      setAuthState({
+        email: session?.user.email ?? null,
+        userId: session?.user.id ?? null,
+        ready: true,
+      })
       void queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
     })
 
     return () => subscription.unsubscribe()
   })
 
-  return email
+  return authState
 }
 
 function LoginDialog() {
@@ -658,7 +712,13 @@ function LoginDialog() {
   )
 }
 
-function SignedInControls({ email }: { email: string }) {
+function SignedInControls({
+  email,
+  onSignedOut,
+}: {
+  email: string
+  onSignedOut: () => void
+}) {
   const [isPending, setIsPending] = useState(false)
   const queryClient = useQueryClient()
 
@@ -667,7 +727,12 @@ function SignedInControls({ email }: { email: string }) {
 
     try {
       await signOut()
-      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+      queryClient.removeQueries({ queryKey: workspaceQueryKey })
+      queryClient.setQueryData(
+        getWorkspaceQueryKey("anonymous"),
+        anonymousWorkspace,
+      )
+      onSignedOut()
       trackEvent({ name: "sign_out", params: {} })
       toast.success("Вы вышли из аккаунта")
     } catch (error) {
@@ -708,11 +773,15 @@ function SignedInControls({ email }: { email: string }) {
   )
 }
 
-function AuthControls() {
-  const email = useAuthEmail()
-
-  if (email) {
-    return <SignedInControls email={email} />
+function AuthControls({
+  authState,
+  onSignedOut,
+}: {
+  authState: AuthState
+  onSignedOut: () => void
+}) {
+  if (authState.email) {
+    return <SignedInControls email={authState.email} onSignedOut={onSignedOut} />
   }
 
   return (
@@ -1048,7 +1117,13 @@ function SessionsTable({ workspace }: { workspace: Workspace }) {
   )
 }
 
-function KnowledgePanel({ workspace }: { workspace: Workspace }) {
+function KnowledgePanel({
+  workspace,
+  queryKey,
+}: {
+  workspace: Workspace
+  queryKey: WorkspaceQueryKey
+}) {
   const [question, setQuestion] = useState(
     "на какой неделе была самая длинная пробежка",
   )
@@ -1074,7 +1149,7 @@ function KnowledgePanel({ workspace }: { workspace: Workspace }) {
       }),
     onSuccess: async (result) => {
       setAnswer(result.answer)
-      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+      await queryClient.invalidateQueries({ queryKey })
       trackEvent({ name: "rag_answer_completed", params: {} })
     },
     onError: (error) => {
@@ -1163,14 +1238,62 @@ function KnowledgePanel({ workspace }: { workspace: Workspace }) {
   )
 }
 
+function AnonymousWorkspaceEmptyState({
+  onShowDemo,
+}: {
+  onShowDemo: () => void
+}) {
+  return (
+    <main id="overview" className="p-4">
+      <Card data-testid="signed-out-empty-state">
+        <CardHeader>
+          <CardTitle>Войдите, чтобы видеть свои цели</CardTitle>
+          <CardDescription>
+            После выхода FocusTrack AI очищает рабочее пространство в браузере:
+            цели, задачи, AI-сессии и документы аккаунта не показываются.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onShowDemo}
+            data-testid="show-demo-empty-button"
+          >
+            <SparklesIcon data-icon="inline-start" />
+            Посмотреть демо
+          </Button>
+        </CardContent>
+      </Card>
+    </main>
+  )
+}
+
 export function FocusTrackDashboard() {
   const queryClient = useQueryClient()
+  const authState = useAuthState()
+  const [signedOutMode, setSignedOutMode] =
+    useState<WorkspaceQueryIdentity>("anonymous")
+  const workspaceIdentity: WorkspaceQueryIdentity = authState.userId
+    ? `user:${authState.userId}`
+    : signedOutMode
+  const currentWorkspaceQueryKey = getWorkspaceQueryKey(workspaceIdentity)
+  const workspaceFallback =
+    workspaceIdentity === "demo"
+      ? demoWorkspace
+      : authState.userId
+        ? supabaseWorkspacePlaceholder
+        : anonymousWorkspace
   const workspaceQuery = useQuery({
-    queryKey: workspaceQueryKey,
-    queryFn: loadWorkspace,
-    initialData: demoWorkspace,
+    queryKey: currentWorkspaceQueryKey,
+    queryFn: () =>
+      loadWorkspace({
+        signedOutMode: signedOutMode === "demo" ? "demo" : "anonymous",
+      }),
+    placeholderData: workspaceFallback,
+    enabled: authState.ready,
   })
-  const workspace = workspaceQuery.data
+  const workspace = workspaceQuery.data ?? workspaceFallback
   const [selectedGoalId, setSelectedGoalId] = useState(
     workspace.goals[0]?.id ?? "",
   )
@@ -1192,9 +1315,9 @@ export function FocusTrackDashboard() {
     },
     onSuccess: async (session) => {
       if (workspace.mode === "supabase") {
-        await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+        await queryClient.invalidateQueries({ queryKey: currentWorkspaceQueryKey })
       } else {
-        updateWorkspace(queryClient, (current) => ({
+        updateWorkspace(queryClient, currentWorkspaceQueryKey, (current) => ({
           ...current,
           aiSessions: [session, ...current.aiSessions],
         }))
@@ -1219,7 +1342,8 @@ export function FocusTrackDashboard() {
       done: boolean
     }) => {
       const currentWorkspace =
-        queryClient.getQueryData<Workspace>(workspaceQueryKey) ?? workspace
+        queryClient.getQueryData<Workspace>(currentWorkspaceQueryKey) ??
+        workspace
 
       if (currentWorkspace.mode === "supabase") {
         await updateTaskStatusOnServer(taskId, done)
@@ -1229,11 +1353,11 @@ export function FocusTrackDashboard() {
     },
     onSuccess: async (result) => {
       if (result.mode === "supabase") {
-        await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+        await queryClient.invalidateQueries({ queryKey: currentWorkspaceQueryKey })
       }
     },
     onError: async (error) => {
-      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+      await queryClient.invalidateQueries({ queryKey: currentWorkspaceQueryKey })
       toast.error("Статус задачи не сохранён", {
         description: error instanceof Error ? error.message : String(error),
       })
@@ -1247,9 +1371,23 @@ export function FocusTrackDashboard() {
   ).length
 
   const handleToggleTask = (taskId: string, done: boolean) => {
-    updateWorkspace(queryClient, (current) => toggleTask(current, taskId, done))
+    updateWorkspace(queryClient, currentWorkspaceQueryKey, (current) =>
+      toggleTask(current, taskId, done),
+    )
     taskMutation.mutate({ taskId, done })
     trackEvent({ name: "task_toggled", params: { taskId, done } })
+  }
+
+  const handleShowDemo = () => {
+    setSignedOutMode("demo")
+    setSelectedGoalId("")
+    queryClient.setQueryData(getWorkspaceQueryKey("demo"), demoWorkspace)
+    trackEvent({ name: "demo_mode_opened", params: {} })
+  }
+
+  const handleSignedOut = () => {
+    setSignedOutMode("anonymous")
+    setSelectedGoalId("")
   }
 
   const handleNavigate = (sectionId: string) => {
@@ -1306,9 +1444,7 @@ export function FocusTrackDashboard() {
               <div className="text-muted-foreground flex flex-col gap-1 px-2 py-1 text-sm">
                 <div className="flex items-center gap-2">
                   <DatabaseIcon className="size-4" />
-                  <span>
-                    {workspace.mode === "supabase" ? "Supabase" : "Демо"}
-                  </span>
+                  <span>{getModeLabel(workspace.mode)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <SparklesIcon className="size-4" />
@@ -1350,9 +1486,7 @@ export function FocusTrackDashboard() {
                   <TooltipTrigger asChild>
                     <Badge variant="secondary" data-testid="mode-badge">
                       <DatabaseIcon />
-                      {workspace.mode === "supabase"
-                        ? "Supabase подключен"
-                        : "Демо-режим"}
+                      {getModeLabel(workspace.mode)}
                     </Badge>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -1360,32 +1494,56 @@ export function FocusTrackDashboard() {
                     Functions.
                   </TooltipContent>
                 </Tooltip>
-                <AuthControls />
-                <CreateGoalDialog workspace={workspace} />
+                {workspace.mode === "anonymous" && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleShowDemo}
+                    data-testid="show-demo-button"
+                  >
+                    <SparklesIcon data-icon="inline-start" />
+                    Посмотреть демо
+                  </Button>
+                )}
+                <AuthControls
+                  authState={authState}
+                  onSignedOut={handleSignedOut}
+                />
+                {workspace.mode !== "anonymous" && (
+                  <CreateGoalDialog
+                    workspace={workspace}
+                    queryKey={currentWorkspaceQueryKey}
+                  />
+                )}
               </div>
             </div>
           </header>
           <ScrollArea className="flex-1">
-            {workspace.mode === "demo" && (
-              <div className="px-4 pt-4">
-                <Alert data-testid="demo-banner">
-                  <SparklesIcon />
-                  <AlertTitle>Демо-режим</AlertTitle>
-                  <AlertDescription>
-                    Изменения не сохраняются. Войдите, чтобы вести свои цели и
-                    задачи в своём аккаунте — они будут видны только вам.
-                  </AlertDescription>
-                </Alert>
-              </div>
-            )}
-            <main
-              id="overview"
-              className="grid scroll-mt-4 gap-4 p-4 xl:grid-cols-[320px_minmax(0,1fr)_360px]"
-            >
+            {workspace.mode === "anonymous" ? (
+              <AnonymousWorkspaceEmptyState onShowDemo={handleShowDemo} />
+            ) : (
+              <>
+                {workspace.mode === "demo" && (
+                  <div className="px-4 pt-4">
+                    <Alert data-testid="demo-banner">
+                      <SparklesIcon />
+                      <AlertTitle>Демо-режим</AlertTitle>
+                      <AlertDescription>
+                        Изменения не сохраняются. Войдите, чтобы вести свои цели
+                        и задачи в своём аккаунте — они будут видны только вам.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                )}
+                <main
+                  id="overview"
+                  className="grid scroll-mt-4 gap-4 p-4 xl:grid-cols-[320px_minmax(0,1fr)_360px]"
+                >
               <section id="goals" className="flex scroll-mt-4 flex-col gap-4">
                 <GoalList
                   goals={workspace.goals}
-                  selectedGoalId={selectedGoal.id}
+                  selectedGoalId={selectedGoal?.id ?? ""}
                   onSelectGoal={setSelectedGoalId}
                 />
                 <Card>
@@ -1437,14 +1595,20 @@ export function FocusTrackDashboard() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <CreateGoalDialog workspace={workspace} />
+                        <CreateGoalDialog
+                          workspace={workspace}
+                          queryKey={currentWorkspaceQueryKey}
+                        />
                       </CardContent>
                     </Card>
                   )}
                 </div>
                 <div className="grid gap-4 lg:grid-cols-2">
                   <ProgressChart goals={workspace.goals} />
-                  <KnowledgePanel workspace={workspace} />
+                  <KnowledgePanel
+                    workspace={workspace}
+                    queryKey={currentWorkspaceQueryKey}
+                  />
                 </div>
                 <div id="reviews" className="scroll-mt-4">
                   <SessionsTable workspace={workspace} />
@@ -1481,7 +1645,9 @@ export function FocusTrackDashboard() {
                   </CardContent>
                 </Card>
               </aside>
-            </main>
+                </main>
+              </>
+            )}
           </ScrollArea>
         </div>
       </SidebarInset>
