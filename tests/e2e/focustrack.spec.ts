@@ -1,13 +1,32 @@
 import { mkdirSync } from "node:fs"
 import { join } from "node:path"
 
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 
 const screenshotsDir = join(process.cwd(), "output/playwright/screenshots")
 
 function screenshotPath(name: string) {
   mkdirSync(screenshotsDir, { recursive: true })
   return join(screenshotsDir, name)
+}
+
+async function expectSidebarNavigationTarget(
+  page: Page,
+  name: string,
+  sectionId: string,
+) {
+  const button = page.getByRole("button", { exact: true, name })
+
+  await button.click()
+  await expect(button).toHaveAttribute("data-active", "true")
+  await expect
+    .poll(async () => {
+      const box = await page.locator(`#${sectionId}`).boundingBox()
+      const viewport = page.viewportSize()
+
+      return Boolean(box && viewport && box.y >= 0 && box.y < viewport.height)
+    })
+    .toBe(true)
 }
 
 test("desktop dashboard flow renders and updates local state", async ({
@@ -65,6 +84,25 @@ test("desktop dashboard flow renders and updates local state", async ({
     fullPage: true,
     path: screenshotPath("dashboard-desktop-after-flow.png"),
   })
+})
+
+test("desktop sidebar navigation buttons scroll to their dashboard sections", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
+
+  await page.goto("/")
+  await expect(
+    page.getByRole("heading", {
+      name: "Рабочее пространство FocusTrack AI",
+    }),
+  ).toBeVisible()
+
+  await expectSidebarNavigationTarget(page, "Цели", "goals")
+  await expectSidebarNavigationTarget(page, "Задачи", "tasks")
+  await expectSidebarNavigationTarget(page, "AI-план", "ai-plan")
+  await expectSidebarNavigationTarget(page, "Обзоры", "reviews")
+  await expectSidebarNavigationTarget(page, "Обзор", "overview")
 })
 
 test("mobile dashboard keeps the primary content usable", async ({

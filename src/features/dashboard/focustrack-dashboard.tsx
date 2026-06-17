@@ -117,11 +117,11 @@ const chartConfig = {
 } satisfies ChartConfig
 
 const navItems = [
-  { label: "Обзор", icon: LayoutDashboardIcon },
-  { label: "Цели", icon: TargetIcon },
-  { label: "Задачи", icon: ClipboardListIcon },
-  { label: "AI-план", icon: SparklesIcon },
-  { label: "Обзоры", icon: BarChart3Icon },
+  { id: "overview", label: "Обзор", icon: LayoutDashboardIcon },
+  { id: "goals", label: "Цели", icon: TargetIcon },
+  { id: "tasks", label: "Задачи", icon: ClipboardListIcon },
+  { id: "ai-plan", label: "AI-план", icon: SparklesIcon },
+  { id: "reviews", label: "Обзоры", icon: BarChart3Icon },
 ]
 
 function statusVariant(status: Goal["status"] | FocusTask["status"]) {
@@ -629,6 +629,7 @@ export function FocusTrackDashboard() {
   })
   const workspace = workspaceQuery.data
   const [selectedGoalId, setSelectedGoalId] = useState(workspace.goals[0].id)
+  const [activeNavItemId, setActiveNavItemId] = useState(navItems[0].id)
   const selectedGoal =
     workspace.goals.find((goal) => goal.id === selectedGoalId) ??
     workspace.goals[0]
@@ -661,6 +662,15 @@ export function FocusTrackDashboard() {
     trackEvent({ name: "task_toggled", params: { taskId, done } })
   }
 
+  const handleNavigate = (sectionId: string) => {
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    })
+    setActiveNavItemId(sectionId)
+    trackEvent({ name: "sidebar_navigation_clicked", params: { sectionId } })
+  }
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
@@ -682,9 +692,13 @@ export function FocusTrackDashboard() {
             <SidebarGroupLabel>Навигация</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navItems.map(({ label, icon: Icon }, index) => (
+                {navItems.map(({ id, label, icon: Icon }) => (
                   <SidebarMenuItem key={label}>
-                    <SidebarMenuButton isActive={index === 0}>
+                    <SidebarMenuButton
+                      type="button"
+                      isActive={id === activeNavItemId}
+                      onClick={() => handleNavigate(id)}
+                    >
                       <Icon />
                       <span>{label}</span>
                     </SidebarMenuButton>
@@ -758,8 +772,11 @@ export function FocusTrackDashboard() {
             </div>
           </header>
           <ScrollArea className="flex-1">
-            <main className="grid gap-4 p-4 xl:grid-cols-[320px_minmax(0,1fr)_360px]">
-              <section className="flex flex-col gap-4">
+            <main
+              id="overview"
+              className="grid scroll-mt-4 gap-4 p-4 xl:grid-cols-[320px_minmax(0,1fr)_360px]"
+            >
+              <section id="goals" className="flex scroll-mt-4 flex-col gap-4">
                 <GoalList
                   goals={workspace.goals}
                   selectedGoalId={selectedGoal.id}
@@ -795,21 +812,27 @@ export function FocusTrackDashboard() {
                 </Card>
               </section>
               <section className="flex min-w-0 flex-col gap-4">
-                <GoalDetail
-                  goal={selectedGoal}
-                  tasks={selectedTasks}
-                  onToggleTask={handleToggleTask}
-                  onRequestReview={() => reviewMutation.mutate()}
-                  isReviewPending={reviewMutation.isPending}
-                />
+                <div id="tasks" className="scroll-mt-4">
+                  <GoalDetail
+                    goal={selectedGoal}
+                    tasks={selectedTasks}
+                    onToggleTask={handleToggleTask}
+                    onRequestReview={() => reviewMutation.mutate()}
+                    isReviewPending={reviewMutation.isPending}
+                  />
+                </div>
                 <div className="grid gap-4 lg:grid-cols-2">
                   <ProgressChart goals={workspace.goals} />
                   <KnowledgePanel workspace={workspace} />
                 </div>
-                <SessionsTable workspace={workspace} />
+                <div id="reviews" className="scroll-mt-4">
+                  <SessionsTable workspace={workspace} />
+                </div>
               </section>
               <aside className="flex flex-col gap-4">
-                <AiReviewPanel workspace={workspace} goal={selectedGoal} />
+                <div id="ai-plan" className="scroll-mt-4">
+                  <AiReviewPanel workspace={workspace} goal={selectedGoal} />
+                </div>
                 <Card>
                   <CardHeader>
                     <CardTitle>Готовность сдачи</CardTitle>
