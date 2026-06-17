@@ -1,6 +1,6 @@
 # Release notes
 
-## 0.1.0 — OTUS MVP candidate
+## 0.1.0 — MVP candidate
 
 ### Added
 
@@ -13,7 +13,6 @@
 - Vitest unit tests;
 - Playwright e2e with screenshots and video;
 - GitHub Actions quality gate;
-- submission folders for OTUS homework and final project.
 - Supabase grants hardening: `anon` table access revoked, AI/RAG Edge Functions require JWT.
 
 ### Known limitations

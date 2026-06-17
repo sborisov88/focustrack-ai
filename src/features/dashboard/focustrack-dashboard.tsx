@@ -7,9 +7,9 @@ import {
   CalendarCheckIcon,
   CheckCircle2Icon,
   ClipboardListIcon,
+  CompassIcon,
   DatabaseIcon,
   GaugeIcon,
-  GraduationCapIcon,
   LayoutDashboardIcon,
   LogInIcon,
   Loader2Icon,
@@ -187,7 +187,7 @@ function CreateGoalDialog() {
                   title: event.target.value,
                 }))
               }
-              placeholder="Например, подготовить защиту проекта"
+              placeholder="Например, пробежать первый полумарафон"
             />
           </Field>
           <Field>
@@ -290,7 +290,7 @@ function GoalList({
       <CardHeader>
         <CardTitle>Цели</CardTitle>
         <CardDescription>
-          Фокус на ближайшие этапы курса и проекта.
+          Фокус на ближайшие шаги по вашим целям.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -413,10 +413,10 @@ function GoalDetail({
           <TabsContent value="questions" className="pt-4">
             <Alert>
               <SparklesIcon />
-              <AlertTitle>AI-уточнение перед финальным ТЗ</AlertTitle>
+              <AlertTitle>AI-уточнение цели</AlertTitle>
               <AlertDescription>
-                Уточнить критерии защиты, демо-сценарий, рискованные интеграции,
-                границы RAG и обязательные evidence-артефакты.
+                Уточнить контекст, критерии успеха, сроки и ограничения, прежде
+                чем разбивать цель на задачи.
               </AlertDescription>
             </Alert>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -519,7 +519,7 @@ function AiReviewPanel({
 
 function ProgressChart({ goals }: { goals: Goal[] }) {
   const data = goals.map((goal) => ({
-    name: goal.title.replace("Домашние задания ", "ДЗ "),
+    name: goal.title,
     progress: goal.progressPercent,
   }))
 
@@ -600,7 +600,7 @@ function KnowledgePanel({ workspace }: { workspace: Workspace }) {
       <CardHeader>
         <CardTitle>Knowledge/RAG</CardTitle>
         <CardDescription>
-          Минимальный эксперимент для ДЗ 6: ответы по документам проекта.
+          Ответы по вашим заметкам и истории целей.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -677,12 +677,12 @@ export function FocusTrackDashboard() {
         <SidebarHeader>
           <div className="flex items-center gap-2 px-2 py-1">
             <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
-              <GraduationCapIcon />
+              <CompassIcon />
             </div>
             <div className="flex min-w-0 flex-col">
               <span className="truncate font-semibold">FocusTrack AI</span>
               <span className="text-muted-foreground truncate text-xs">
-                OTUS project
+                Личный планировщик
               </span>
             </div>
           </div>
@@ -731,7 +731,7 @@ export function FocusTrackDashboard() {
         </SidebarContent>
         <SidebarFooter>
           <div className="px-2 py-2">
-            <Badge variant="outline">ДЗ 3-6 + проект</Badge>
+            <Badge variant="outline">AI-планировщик целей</Badge>
           </div>
         </SidebarFooter>
       </Sidebar>
@@ -785,7 +785,7 @@ export function FocusTrackDashboard() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Метрики</CardTitle>
-                    <CardDescription>Для быстрой проверки MVP.</CardDescription>
+                    <CardDescription>Краткая сводка по целям.</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-2 gap-3">
                     <MetricCard
@@ -835,18 +835,17 @@ export function FocusTrackDashboard() {
                 </div>
                 <Card>
                   <CardHeader>
-                    <CardTitle>Готовность сдачи</CardTitle>
+                    <CardTitle>Категории целей</CardTitle>
                     <CardDescription>
-                      Отдельные папки артефактов.
+                      Баланс направлений и источники для AI-ответов.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-3">
                     {[
-                      ["ДЗ 3", "Спецификация"],
-                      ["ДЗ 4", "Frontend MVP"],
-                      ["ДЗ 5", "Backend"],
-                      ["ДЗ 6", "RAG + аудит"],
-                      ["Проект", "MVP + презентация"],
+                      ["Здоровье", "Полумарафон"],
+                      ["Карьера", "IELTS 7.0"],
+                      ["Финансы", "Подушка 6 мес"],
+                      ["Проект", "Лендинг"],
                     ].map(([label, value]) => (
                       <div
                         key={label}
@@ -858,17 +857,19 @@ export function FocusTrackDashboard() {
                     ))}
                   </CardContent>
                   <CardFooter>
-                    <Select defaultValue="hw3">
+                    <Select
+                      defaultValue={workspace.knowledgeDocuments[0]?.id}
+                    >
                       <SelectTrigger>
-                        <SelectValue placeholder="Артефакт" />
+                        <SelectValue placeholder="Источник знаний" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          <SelectItem value="hw3">ДЗ 3</SelectItem>
-                          <SelectItem value="hw4">ДЗ 4</SelectItem>
-                          <SelectItem value="hw5">ДЗ 5</SelectItem>
-                          <SelectItem value="hw6">ДЗ 6</SelectItem>
-                          <SelectItem value="final">Проект</SelectItem>
+                          {workspace.knowledgeDocuments.map((document) => (
+                            <SelectItem key={document.id} value={document.id}>
+                              {document.title}
+                            </SelectItem>
+                          ))}
                         </SelectGroup>
                       </SelectContent>
                     </Select>

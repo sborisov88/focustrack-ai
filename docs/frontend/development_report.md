@@ -1,8 +1,8 @@
-# ДЗ 4 — отчет о разработке frontend
+# Отчет о разработке frontend
 
 ## Цель
 
-Собрать рабочий frontend FocusTrack AI по ТЗ из ДЗ 3 и правилам проекта из `AGENTS.md`.
+Собрать рабочий frontend FocusTrack AI по продуктовому ТЗ и правилам проекта из `AGENTS.md`.
 
 ## Стек
 
@@ -52,7 +52,7 @@
 Использованные подходы:
 
 - сначала требования и user stories, затем код;
-- prompt templates из ДЗ 2 для компонента, тестов и багфикса;
+- переиспользуемые prompt templates для компонента, тестов и багфикса;
 - AI-анализ ошибок TypeScript и ESLint;
 - AI-проверка негативных сценариев: пустые данные, отсутствие Supabase env, ошибка OpenRouter;
 - Playwright для визуальной проверки desktop/mobile.
@@ -64,7 +64,7 @@
 | Нужен запрет прямого `useEffect`           | Добавлены ESLint-правила и `useSyncExternalStore` для mobile state |
 | Supabase env может отсутствовать           | Добавлен demo-mode fallback                                        |
 | OpenRouter ключ нельзя хранить во frontend | AI-вызовы вынесены в Supabase Edge Functions                       |
-| Нужно evidence для сдачи                   | Добавлены Playwright screenshots/video                             |
+| Нужна визуальная регрессия для проверки UI | Добавлены Playwright screenshots/video                             |
 
 ## Тесты
 

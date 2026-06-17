@@ -1,4 +1,4 @@
-# ДЗ 5 — backend documentation
+# Backend documentation
 
 ## Архитектура
 
@@ -63,8 +63,8 @@ supabase/migrations/20260617033231_restrict_anon_table_grants.sql
 ```json
 {
   "weekStart": "2026-06-15",
-  "completedTasks": ["Собрать product specification"],
-  "blockedTasks": ["Деплой frontend"],
+  "completedTasks": ["Пробежка 12 км в темпе 5:40"],
+  "blockedTasks": ["Интервальная тренировка"],
   "goalProgress": 58
 }
 ```
@@ -86,7 +86,7 @@ supabase/migrations/20260617033231_restrict_anon_table_grants.sql
 - Все пользовательские таблицы имеют RLS.
 - Новые таблицы явно выданы роли `authenticated`, так как Cloud Supabase больше не обязан автоматически экспонировать новые таблицы через Data API.
 - AI/RAG Edge Functions развернуты с `verify_jwt=true`.
-- Публичным оставлен только `/functions/v1/health`, чтобы CI и проверяющий могли увидеть состояние сервиса без пользовательской сессии.
+- Публичным оставлен только `/functions/v1/health`, чтобы CI и мониторинг могли увидеть состояние сервиса без пользовательской сессии.
 
 ## Развертывание
 

@@ -1,4 +1,4 @@
-# ДЗ 6 — integration documentation
+# Integration documentation
 
 ## CI/CD
 
@@ -17,7 +17,7 @@ Quality gate выполняет:
 - unit tests;
 - build;
 - Playwright e2e;
-- upload Playwright evidence.
+- upload Playwright артефактов (видео и трейсы).
 
 Frontend deploy job:
 

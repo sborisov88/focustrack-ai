@@ -1,64 +1,24 @@
 # Дорожная карта FocusTrack AI
 
-Публичная дорожная карта описывает развитие одного продукта от исследования рабочего процесса до MVP и финальной презентации.
+Публичная дорожная карта описывает развитие продукта от продуктовой спецификации до MVP и публичного релиза.
 
 ## Текущий статус
 
 На 17 июня 2026:
 
-- Завершён выбор AI coding assistant.
-- Правила Codex, промпт-шаблоны, методология и A/B-проверка качества правил отправлены на проверку.
+- Зафиксирована и реализована продуктовая и техническая спецификация MVP.
+- Собран рабочий frontend на React, TypeScript, Vite и shadcn/ui.
 - Зафиксирована и реализована backend-архитектура на Supabase, RLS, Edge Functions и OpenRouter.
-- Основной AI coding assistant проекта — **Codex**.
-- Подготовлены отдельные сдачные папки ДЗ 1–6 и проектной работы в `submissions/`.
-- Сформирована матрица приемки `submissions/acceptance-matrix.md`.
-- Playwright e2e, скриншоты, видео и логи проверок разложены по `submissions/*/evidence/`.
-- Разрыв по ДЗ 6 закрыт через Vercel production deploy: `https://focustrack-ai.vercel.app`; GitHub Actions run `27682163117` успешно собрал и задеплоил frontend после push в `main`.
+- Подключены CI quality gate, Playwright e2e, скриншоты и видео основного сценария.
+- Продукт задеплоен в production: `https://focustrack-ai.vercel.app`.
 
 ---
 
-## Этап 1: AI tooling
-
-**Цель:** выбрать основной AI coding assistant для разработки FocusTrack AI.
-
-**Результат:**
-
-- требования к инструменту разработки;
-- сравнение Codex, Cursor, GitHub Copilot, Cline и cloud-инструментов;
-- обоснование выбора Codex;
-- пример практической работы агента с кодом.
-
-**Статус:** завершено и отправлено.
-
-**Материалы:** [docs/research/001-ai-tooling/](./docs/research/001-ai-tooling/)
-
-## Этап 2: prompting workflow
-
-**Цель:** описать устойчивый процесс работы с Codex в проекте FocusTrack AI.
-
-**Результат:**
-
-- правила для Codex в контексте FocusTrack AI;
-- 7 промпт-шаблонов RTCF для компонентов, рефакторинга, тестов, исправления ошибок, декомпозиции, Edge Functions и проверки публичной документации;
-- методология сложных запросов;
-- A/B-проверка качества ответа до и после правил.
-
-**Материалы:**
-
-- `AGENTS.md`
-- `docs/prompts/hw_ai_rules.md`
-- `docs/prompts/rules.md`
-- `docs/prompts/prompt_templates.md`
-- `docs/prompts/prompt_methodology.md`
-- `docs/prompts/testing.md`
-
-**Статус:** отправлено на проверку 17 июня 2026.
-
-## Этап 3: Product specification
+## Этап 1: Product specification
 
 **Цель:** подготовить продуктовую и техническую основу MVP.
 
-**План:**
+**Результат:**
 
 - описание продукта, целевой аудитории и ключевых сценариев;
 - user stories с приоритетами и acceptance criteria;
@@ -66,7 +26,7 @@
 - ADR по стеку и архитектурным решениям;
 - первые UI-концепции.
 
-**Ожидаемые материалы:**
+**Материалы:**
 
 - `docs/product/project_description.md`
 - `docs/product/user_stories.md`
@@ -74,13 +34,13 @@
 - `docs/architecture/adr/001-tech-stack.md`
 - `docs/product/ui_concepts/`
 
-**Статус:** подготовлено и проверено; сдачная папка `submissions/hw3/`.
+**Статус:** завершено.
 
-## Этап 4: Frontend MVP
+## Этап 2: Frontend MVP
 
 **Цель:** собрать рабочий интерфейс FocusTrack AI.
 
-**План:**
+**Результат:**
 
 - React + TypeScript + Vite приложение;
 - экраны целей, задач и прогресса;
@@ -88,18 +48,18 @@
 - UI для AI-уточнения цели и Weekly AI Review;
 - базовая проверка качества интерфейса.
 
-**Ожидаемые материалы:**
+**Материалы:**
 
 - `src/`
 - `docs/frontend/development_report.md`
 
-**Статус:** MVP реализован в корне Vite-приложения и проверен Playwright; сдачная папка `submissions/hw4/`.
+**Статус:** MVP реализован в корне Vite-приложения и проверен Playwright.
 
-## Этап 5: Backend and AI functions
+## Этап 3: Backend and AI functions
 
 **Цель:** подключить хранилище данных, авторизацию и серверные AI-вызовы.
 
-**План:**
+**Результат:**
 
 - Supabase schema и миграции;
 - Auth и RLS;
@@ -107,48 +67,49 @@
 - безопасная работа с OpenRouter через серверный слой;
 - backend-документация и проверка ошибок.
 
-**Ожидаемые материалы:**
+**Материалы:**
 
 - `supabase/migrations/`
 - `supabase/functions/`
 - `docs/backend/backend_architecture.md`
-- `docs/backend/backend_report.md`
+- `docs/backend/backend_documentation.md`
 - `docs/security/security_audit.md`
 
-**Статус:** миграции и Edge Functions подготовлены, cloud database синхронизирована, smoke `health=200` и protected AI endpoint `401`; сдачная папка `submissions/hw5/`.
+**Статус:** миграции и Edge Functions реализованы, cloud database синхронизирована, smoke `health=200` и protected AI endpoint `401`.
 
-## Этап 6: Knowledge/RAG experiments
+## Этап 4: Knowledge/RAG
 
-**Цель:** проверить, нужен ли продукту слой ответов по данным и документам.
+**Цель:** дать пользователю ответы по его личным заметкам и прогрессу.
 
-**План:**
+**Результат:**
 
-- определить сценарии, где пользователю полезны ответы по накопленным данным;
-- подготовить минимальный эксперимент с документами или историей прогресса;
-- оценить качество, стоимость и риски;
-- решить, входит ли RAG в MVP или остаётся будущим улучшением.
+- сценарии, где пользователю полезны ответы по накопленным данным;
+- минимальный эксперимент с заметками и историей прогресса;
+- оценка качества, стоимости и рисков;
+- решение о месте RAG в продукте.
 
-**Ожидаемые материалы:**
+**Материалы:**
 
 - `docs/research/002-knowledge-rag/`
 
-**Статус:** controlled RAG experiment, CI/security/integration evidence и Vercel production deploy подготовлены в `submissions/hw6/`.
+**Статус:** controlled RAG experiment подготовлен и оценён.
 
-## Финал: MVP and presentation
+## Этап 5: Production
 
-**Цель:** довести FocusTrack AI до демонстрируемого MVP.
+**Цель:** довести FocusTrack AI до публичного релиза.
 
-**План:**
+**Результат:**
 
 - финальная сборка продукта;
 - демо-сценарий: цель → уточнение → план → выполнение → weekly review;
-- проверка README, roadmap, документации и репозитория;
-- краткая презентация продукта, архитектуры и результатов.
+- CI/CD, OAuth, аналитика и аудит безопасности;
+- Vercel production deploy.
 
-**Ожидаемые материалы:**
+**Материалы:**
 
+- `docs/integrations/integration_documentation.md`
+- `docs/production-deployment.md`
 - `docs/progress/development_log.md`
 - `docs/progress/release_notes.md`
-- `presentation/`
 
-**Статус:** подготовлены материалы, architecture document, Playwright evidence, production URL `https://focustrack-ai.vercel.app` и папка `submissions/final-project/`.
+**Статус:** продукт собран и задеплоен в production: `https://focustrack-ai.vercel.app`.

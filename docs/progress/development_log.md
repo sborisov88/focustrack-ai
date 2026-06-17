@@ -2,14 +2,12 @@
 
 ## 2026-06-17
 
-- Подтверждено состояние курса: ДЗ 1 и ДЗ 2 отправлены, текущий этап — ДЗ 3.
 - Создан React/Vite frontend на shadcn/ui.
 - Добавлены Supabase migration, RLS policies и grants.
 - Добавлены Edge Functions для OpenRouter и health-check.
 - Supabase Cloud linked, migrations synced.
 - OpenRouter secrets сохранены в Supabase secrets.
 - Добавлены Playwright e2e, screenshots и video output.
-- Подготовлены папки сдачи ДЗ 3–6 и финального проекта.
 - Финальный локальный gate прошёл: `lint`, `typecheck`, `test`, `build`, `test:e2e`.
 - `pnpm audit --audit-level high` не нашёл известных уязвимостей.
 - `supabase db push --workdir . --yes` подтвердил, что remote database up to date.
@@ -21,4 +19,4 @@
 
 ## Следующий шаг
 
-После локальной проверки можно отправлять ссылки на GitHub в чаты ДЗ 3–6 и отдельно подготовить устную защиту проекта.
+После локальной проверки можно публиковать изменения в GitHub и продолжать production hardening (авторизация, AI rate limits).

@@ -1,4 +1,4 @@
-# ДЗ 6 — security audit
+# Security audit
 
 ## Проверенная поверхность
 
@@ -31,7 +31,7 @@ Frontend не строит SQL вручную. CRUD идёт через Supabase
 
 ### Broken Access Control
 
-Основная защита — RLS policies по `auth.uid()`.
+Основной механизм контроля доступа — RLS policies по `auth.uid()`.
 
 ### Sensitive Data Exposure
 
@@ -43,7 +43,7 @@ Frontend не строит SQL вручную. CRUD идёт через Supabase
 
 ## npm audit
 
-Перед сдачей нужно запускать:
+Перед каждым релизом нужно запускать:
 
 ```bash
 pnpm audit
