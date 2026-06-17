@@ -34,8 +34,8 @@ https://github.com/sborisov88/focustrack-ai
 
 Теги опубликованы в GitHub и фиксируют восстановленные checkpoints одного сквозного репозитория:
 
-| Этап | Tag | Commit |
-| ---- | --- | ------ |
+| Этап | Tag | Checkpoint |
+| ---- | --- | ---------- |
 | Фаза 0 | [`phase-0-init`](https://github.com/sborisov88/focustrack-ai/tree/phase-0-init) | `c5fb127` |
 | ДЗ 1 | [`hw1-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw1-submitted) | `f983db2` |
 | ДЗ 2 | [`hw2-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw2-submitted) | `150bdae` |
@@ -43,4 +43,4 @@ https://github.com/sborisov88/focustrack-ai
 | ДЗ 4 | [`hw4-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw4-submitted) | `bf35de9` |
 | ДЗ 5 | [`hw5-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw5-submitted) | `bf35de9` |
 | ДЗ 6 | [`hw6-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw6-submitted) | `bf35de9` |
-| Проект | [`final-project-submitted`](https://github.com/sborisov88/focustrack-ai/tree/final-project-submitted) | `bbdd475` |
+| Проект | [`final-project-submitted`](https://github.com/sborisov88/focustrack-ai/tree/final-project-submitted) | актуальный финальный пакет для преподавателя |
