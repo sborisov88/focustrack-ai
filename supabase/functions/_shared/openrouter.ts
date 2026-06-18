@@ -27,6 +27,58 @@ export class AuthError extends Error {
   status = 401
 }
 
+// Ошибка валидации входных данных запроса (некорректное/слишком большое тело).
+export class ValidationError extends Error {
+  status = 400
+}
+
+// Лимит на суммарный размер тела запроса, уходящего в LLM. Защищает от
+// раздувания стоимости токенов и DoS большими payload'ами. Настраивается
+// секретом MAX_PAYLOAD_CHARS.
+const MAX_PAYLOAD_CHARS = Number(Deno.env.get("MAX_PAYLOAD_CHARS") ?? "50000")
+
+// Сериализует тело и проверяет лимит размера. Возвращает строку, чтобы
+// обработчики не сериализовали тело повторно для user-сообщения.
+export function assertPayloadSize(body: unknown): string {
+  const serialized = JSON.stringify(body ?? {})
+
+  if (serialized.length > MAX_PAYLOAD_CHARS) {
+    throw new ValidationError(
+      `Слишком большой запрос: ${serialized.length} символов при лимите ${MAX_PAYLOAD_CHARS}.`,
+    )
+  }
+
+  return serialized
+}
+
+export function requireNonEmptyString(value: unknown, field: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new ValidationError(
+      `Поле "${field}" обязательно и должно быть непустой строкой.`,
+    )
+  }
+
+  return value
+}
+
+export function requireArray(
+  value: unknown,
+  field: string,
+  maxItems = 200,
+): unknown[] {
+  if (!Array.isArray(value)) {
+    throw new ValidationError(`Поле "${field}" должно быть массивом.`)
+  }
+
+  if (value.length > maxItems) {
+    throw new ValidationError(
+      `Поле "${field}" не должно содержать больше ${maxItems} элементов.`,
+    )
+  }
+
+  return value
+}
+
 function decodeBase64Url(value: string) {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/")
   const padded = base64.padEnd(
@@ -71,7 +123,9 @@ export function requireAuthenticatedUser(request: Request): string {
 }
 
 export function getErrorStatus(error: unknown) {
-  return error instanceof AuthError ? error.status : 500
+  if (error instanceof AuthError) return error.status
+  if (error instanceof ValidationError) return error.status
+  return 500
 }
 
 // CORS: явный allowlist вместо wildcard "*". Список источников настраивается
@@ -128,9 +182,15 @@ export async function callOpenRouter(messages: ChatMessage[]) {
   }
 
   const startedAt = Date.now()
-  const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
+  // Таймаут на внешний вызов: без него Edge Function висит до жёсткого лимита
+  // платформы, если апстрим завис. Настраивается секретом OPENROUTER_TIMEOUT_MS.
+  const timeoutMs = Number(Deno.env.get("OPENROUTER_TIMEOUT_MS") ?? "30000")
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  let response: Response
+  try {
+    response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -143,10 +203,33 @@ export async function callOpenRouter(messages: ChatMessage[]) {
         messages,
         temperature: 0.2,
       }),
-    },
-  )
+      signal: controller.signal,
+    })
+  } catch (error) {
+    const aborted = error instanceof DOMException && error.name === "AbortError"
+    logEvent("error", "openrouter", aborted ? "Таймаут OpenRouter" : "Сетевая ошибка OpenRouter", {
+      model,
+      latencyMs: Date.now() - startedAt,
+    })
+    throw new Error(
+      aborted
+        ? `Превышено время ожидания ответа OpenRouter (${timeoutMs} мс).`
+        : "Не удалось связаться с OpenRouter.",
+    )
+  } finally {
+    clearTimeout(timeout)
+  }
 
-  const payload = (await response.json()) as ChatResponse
+  // Безопасный разбор: читаем тело как текст и парсим в try/catch. Иначе
+  // не-JSON ответ апстрима (HTML 502/503, текст rate-limit) бросил бы
+  // SyntaxError ДО проверки response.ok и маскировал бы реальную причину.
+  const rawBody = await response.text()
+  let payload: ChatResponse = {}
+  try {
+    payload = rawBody ? (JSON.parse(rawBody) as ChatResponse) : {}
+  } catch {
+    payload = {}
+  }
 
   if (!response.ok) {
     logEvent("error", "openrouter", "OpenRouter вернул ошибку", {

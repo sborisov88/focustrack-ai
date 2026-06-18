@@ -1,12 +1,15 @@
 import "@supabase/functions-js/edge-runtime.d.ts"
 
 import {
+  assertPayloadSize,
   callOpenRouter,
   getErrorStatus,
   handleOptions,
   jsonResponse,
   readJson,
+  requireArray,
   requireAuthenticatedUser,
+  requireNonEmptyString,
 } from "../_shared/openrouter.ts"
 import { createLogger } from "../_shared/logger.ts"
 
@@ -28,6 +31,9 @@ export default {
     try {
       requireAuthenticatedUser(request)
       const body = await readJson<RagRequest>(request)
+      requireNonEmptyString(body.question, "question")
+      requireArray(body.documents, "documents")
+      const serialized = assertPayloadSize(body)
       log.info("RAG-запрос по документам", {
         documentCount: body.documents?.length ?? 0,
       })
@@ -39,7 +45,7 @@ export default {
         },
         {
           role: "user",
-          content: JSON.stringify(body),
+          content: serialized,
         },
       ])
 

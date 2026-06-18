@@ -1,12 +1,15 @@
 import "@supabase/functions-js/edge-runtime.d.ts"
 
 import {
+  assertPayloadSize,
   callOpenRouter,
   getErrorStatus,
   handleOptions,
   jsonResponse,
   readJson,
+  requireArray,
   requireAuthenticatedUser,
+  requireNonEmptyString,
 } from "../_shared/openrouter.ts"
 import { createLogger } from "../_shared/logger.ts"
 
@@ -27,6 +30,10 @@ export default {
     try {
       requireAuthenticatedUser(request)
       const body = await readJson<WeeklyReviewRequest>(request)
+      requireNonEmptyString(body.weekStart, "weekStart")
+      requireArray(body.completedTasks, "completedTasks")
+      requireArray(body.blockedTasks, "blockedTasks")
+      const serialized = assertPayloadSize(body)
       log.info("Запрос на недельный обзор", {
         completed: body.completedTasks?.length ?? 0,
         blocked: body.blockedTasks?.length ?? 0,
@@ -39,7 +46,7 @@ export default {
         },
         {
           role: "user",
-          content: JSON.stringify(body),
+          content: serialized,
         },
       ])
 
