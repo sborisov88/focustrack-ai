@@ -90,10 +90,17 @@ test("desktop dashboard flow renders and updates local state", async ({
   await task.click()
   await expect(task).toBeChecked()
 
+  const reviewResponse = page.waitForResponse(
+    "**/functions/v1/ai-weekly-review",
+  )
   await page.getByTestId("ai-review-button").click()
+  await reviewResponse
   await page.getByTestId("nav-review").click()
+  // Жёсткая проверка: панель показывает именно сгенерированный обзор. Без этого
+  // (старый regex с веткой "Демо-режим") тест проходил бы, даже если мутация
+  // AI-review не выполнилась.
   await expect(page.getByTestId("ai-review-panel")).toContainText(
-    /Тестовый weekly review|Демо-режим/,
+    "Тестовый weekly review",
   )
   await page.screenshot({
     fullPage: true,
@@ -247,9 +254,28 @@ test("desktop demo goal can be deleted", async ({ page }, testInfo) => {
     .filter({ hasText: "Удаляемая цель" })
     .getByTestId("delete-goal-button")
     .click()
+  // Удаление требует подтверждения в диалоге (защита от случайного клика по корзине).
+  await expect(page.getByTestId("delete-goal-dialog")).toBeVisible()
+  await page.getByTestId("confirm-delete-goal-button").click()
   await expect(
     page.getByTestId("goal-item").filter({ hasText: "Удаляемая цель" }),
   ).toHaveCount(0)
+})
+
+test("desktop demo can be closed back to the signed-out state", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
+
+  await page.goto("/")
+  await openDemoWorkspace(page)
+
+  // Кнопка «Скрыть демо» возвращает к пустому signed-out экрану без перезагрузки.
+  await page.getByTestId("hide-demo-button").click()
+  await expect(page.getByTestId("mode-badge")).toContainText("Вход не выполнен")
+  await expect(page.getByTestId("signed-out-empty-state")).toBeVisible()
+  await expect(page.getByTestId("demo-banner")).toHaveCount(0)
+  await expect(page.getByTestId("goal-item")).toHaveCount(0)
 })
 
 test("mobile dashboard keeps the primary content usable", async ({
