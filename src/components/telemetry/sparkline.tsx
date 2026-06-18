@@ -1,9 +1,12 @@
+import { motion } from "motion/react"
+
 /**
  * Tiny inline-SVG trend sparkline for a telemetry tile.
  *
  * Renders a normalized polyline + soft area fill over a fixed set of sample
  * points (a synthetic "approach to current value" trend, derived purely from
- * the goal's progress so it is deterministic and SSR-safe). Decorative.
+ * the goal's progress so it is deterministic and SSR-safe). Motion draws the
+ * line in (pathLength) and fades the fill, offset by `delay` for the wave.
  *
  * Shared primitive: used by both the /concepts Mission showcase and the
  * production dashboard. Fully prop-driven (color passed in), no token deps.
@@ -14,13 +17,15 @@ type SparklineProps = {
   points: number[]
   /** CSS color expression for stroke/fill, e.g. "var(--chart-1)". */
   color: string
+  /** Animation start delay in seconds (for per-tile stagger). */
+  delay?: number
 }
 
 const WIDTH = 120
 const HEIGHT = 30
 const PAD = 2
 
-export function Sparkline({ points, color }: SparklineProps) {
+export function Sparkline({ points, color, delay = 0 }: SparklineProps) {
   if (points.length < 2) return null
   const min = Math.min(...points)
   const max = Math.max(...points)
@@ -44,8 +49,14 @@ export function Sparkline({ points, color }: SparklineProps) {
       preserveAspectRatio="none"
       className="h-7 w-full"
     >
-      <path d={area} fill={color} fillOpacity={0.14} />
-      <path
+      <motion.path
+        d={area}
+        fill={color}
+        initial={{ fillOpacity: 0 }}
+        animate={{ fillOpacity: 0.14 }}
+        transition={{ delay: delay + 0.2, duration: 0.5 }}
+      />
+      <motion.path
         d={line}
         fill="none"
         stroke={color}
@@ -53,8 +64,19 @@ export function Sparkline({ points, color }: SparklineProps) {
         strokeLinecap="round"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ delay, duration: 0.7, ease: "easeOut" }}
       />
-      <circle cx={last.x} cy={last.y} r={1.8} fill={color} />
+      <motion.circle
+        cx={last.x}
+        cy={last.y}
+        r={1.8}
+        fill={color}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: delay + 0.55, duration: 0.3 }}
+      />
     </svg>
   )
 }

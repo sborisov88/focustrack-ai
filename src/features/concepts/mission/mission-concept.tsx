@@ -1,4 +1,3 @@
-import { useState } from "react"
 import {
   Footprints,
   GraduationCap,
@@ -25,7 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useMountEffect } from "@/hooks/use-mount-effect"
 import { cn } from "@/lib/utils"
 
 import {
@@ -144,10 +142,10 @@ function TaskStatusBadge({ status }: { status: TaskStatus }) {
 
 function TelemetryTile({
   goal,
-  armed,
+  delay = 0,
 }: {
   goal: Goal
-  armed: boolean
+  delay?: number
 }) {
   const meta = getGoalMeta(goal.id)
   const color = chartVar(meta)
@@ -199,7 +197,7 @@ function TelemetryTile({
         <TelemetryArc
           value={goal.progressPercent}
           color={color}
-          armed={armed}
+          delay={delay}
         />
         <dl className="flex min-w-0 flex-1 flex-col gap-1.5 text-xs">
           <div className="flex items-center justify-between gap-2">
@@ -234,7 +232,11 @@ function TelemetryTile({
             до {formatTargetDate(goal.targetDate)}
           </span>
         </div>
-        <Sparkline points={trendSeries(goal.progressPercent)} color={color} />
+        <Sparkline
+          points={trendSeries(goal.progressPercent)}
+          color={color}
+          delay={delay + 0.15}
+        />
       </div>
 
       {nextTask ? (
@@ -267,12 +269,6 @@ function goalLabel(goalId: string): { title: string; color: string } {
 }
 
 export function MissionConcept() {
-  const [armed, setArmed] = useState(false)
-  useMountEffect(() => {
-    const raf = globalThis.requestAnimationFrame(() => setArmed(true))
-    return () => globalThis.cancelAnimationFrame(raf)
-  })
-
   const totalTasks = tasks.length
   const doneTasks = tasks.filter((task) => task.status === "done").length
   const doingTasks = tasks.filter((task) => task.status === "doing").length
@@ -360,11 +356,11 @@ export function MissionConcept() {
           Телеметрия целей
         </h2>
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {goals.map((goal) => (
+          {goals.map((goal, index) => (
             <li key={goal.id} className="flex">
               <TelemetryTile
                 goal={goal}
-                armed={armed}
+                delay={index * 0.1}
               />
             </li>
           ))}

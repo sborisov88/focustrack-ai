@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { motion } from "motion/react"
 import {
   BarChart3Icon,
   BookOpenIcon,
@@ -59,6 +60,7 @@ import type {
 import { demoWorkspace } from "@/lib/demo-data"
 import { getEffortLabel, getGoalTasks, getStatusLabel } from "@/lib/progress"
 import { cn } from "@/lib/utils"
+import { withViewTransition } from "@/lib/view-transition"
 import { Panel } from "@/components/telemetry/panel"
 import { Sparkline } from "@/components/telemetry/sparkline"
 import { StatBlock } from "@/components/telemetry/stat-block"
@@ -226,11 +228,12 @@ function useAppRoute() {
   const navigate = (nextRoute: AppRoute) => {
     const nextPath = getRoutePath(nextRoute)
 
-    if (globalThis.location.pathname !== nextPath) {
-      globalThis.history.pushState(null, "", nextPath)
-    }
-
-    setRoute(nextRoute)
+    withViewTransition(() => {
+      if (globalThis.location.pathname !== nextPath) {
+        globalThis.history.pushState(null, "", nextPath)
+      }
+      setRoute(nextRoute)
+    })
   }
 
   return { route, navigate }
@@ -996,14 +999,15 @@ function GoalList({
             key={goal.id}
             data-testid="goal-item"
             data-active={active}
-            className="relative flex flex-col overflow-hidden border border-border bg-card transition-colors data-[active=true]:border-primary"
+            className="group tile-enter relative flex flex-col overflow-hidden border border-border bg-card transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_0_30px_-10px_var(--concept-glow)] data-[active=true]:border-primary"
             style={{
               backgroundImage: `radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, ${color} 9%, transparent), transparent 60%)`,
+              animationDelay: `${(index % 6) * 70}ms`,
             }}
           >
             <span
               aria-hidden
-              className="absolute inset-y-0 left-0 w-[3px]"
+              className="absolute inset-y-0 left-0 w-[3px] transition-[width] duration-200 group-hover:w-1.5"
               style={{ backgroundColor: color, boxShadow: `0 0 12px ${color}` }}
             />
             <button
@@ -1021,7 +1025,10 @@ function GoalList({
                     backgroundColor: `color-mix(in oklab, ${color} 12%, transparent)`,
                   }}
                 >
-                  <Icon aria-hidden className="size-3" />
+                  <Icon
+                    aria-hidden
+                    className="size-3 transition-transform duration-200 group-hover:scale-110"
+                  />
                   {visual.category}
                 </span>
                 <Badge variant={statusVariant(goal.status)}>
@@ -1032,11 +1039,16 @@ function GoalList({
                 {goal.title}
               </h3>
               <div className="flex items-center gap-3">
-                <TelemetryArc
-                  value={goal.progressPercent}
-                  color={color}
-                  armed
-                />
+                <span
+                  className="shrink-0"
+                  style={{ viewTransitionName: `gauge-${goal.id}` }}
+                >
+                  <TelemetryArc
+                    value={goal.progressPercent}
+                    color={color}
+                    delay={0.15 + index * 0.1}
+                  />
+                </span>
                 <dl className="flex min-w-0 flex-1 flex-col gap-1.5 text-xs">
                   <div className="flex items-center justify-between gap-2">
                     <dt className="text-muted-foreground">Готово</dt>
@@ -1061,7 +1073,11 @@ function GoalList({
                   </div>
                 </dl>
               </div>
-              <Sparkline points={trendSeries(goal.progressPercent)} color={color} />
+              <Sparkline
+                points={trendSeries(goal.progressPercent)}
+                color={color}
+                delay={0.25 + index * 0.1}
+              />
               {nextTask ? (
                 <p className="concept-mono text-muted-foreground truncate text-[11px]">
                   ▸ {nextTask.title}
@@ -1178,13 +1194,13 @@ function GoalDetail({
             <TabsTrigger value="questions">AI-вопросы</TabsTrigger>
             <TabsTrigger value="timeline">Шкала</TabsTrigger>
           </TabsList>
-          <TabsContent value="tasks" className="pt-4">
+          <TabsContent value="tasks" className="animate-in fade-in pt-4 duration-200">
             <div className="flex flex-col gap-3">
               {tasks.map((task) => (
                 <div
                   key={task.id}
                   data-testid="task-item"
-                  className="bg-card flex items-start gap-3 rounded-lg border p-3"
+                  className="bg-card flex items-start gap-3 rounded-lg border p-3 transition-colors duration-200 hover:border-primary/40 hover:bg-muted/30"
                 >
                   <Checkbox
                     data-testid="task-checkbox"
@@ -1219,7 +1235,7 @@ function GoalDetail({
               ))}
             </div>
           </TabsContent>
-          <TabsContent value="questions" className="pt-4">
+          <TabsContent value="questions" className="animate-in fade-in pt-4 duration-200">
             <Alert>
               <SparklesIcon />
               <AlertTitle>Контекст цели, уточнённый с AI</AlertTitle>
@@ -1241,7 +1257,7 @@ function GoalDetail({
               ))}
             </div>
           </TabsContent>
-          <TabsContent value="timeline" className="pt-4">
+          <TabsContent value="timeline" className="animate-in fade-in pt-4 duration-200">
             <div className="grid gap-3 md:grid-cols-4">
               {tasks.slice(0, 4).map((task) => (
                 <Card key={task.id}>
@@ -1331,6 +1347,43 @@ function AiReviewPanel({
   )
 }
 
+// Custom bar shape: each bar is a motion.rect that grows from the baseline,
+// staggered by its data index for a left-to-right "wave". recharts' own
+// animation is disabled (isAnimationActive={false}) so motion drives it.
+type MotionBarProps = {
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+  fill?: string
+  index?: number
+}
+
+function MotionBar({
+  x = 0,
+  y = 0,
+  width = 0,
+  height = 0,
+  fill,
+  index = 0,
+}: MotionBarProps) {
+  return (
+    <motion.rect
+      x={x}
+      width={width}
+      rx={3}
+      fill={fill}
+      initial={{ height: 0, y: y + height }}
+      animate={{ height, y }}
+      transition={{
+        delay: 0.1 + index * 0.09,
+        duration: 0.55,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+    />
+  )
+}
+
 function ProgressChart({ goals }: { goals: Goal[] }) {
   const data = goals.map((goal) => ({
     name: goal.title,
@@ -1355,7 +1408,12 @@ function ProgressChart({ goals }: { goals: Goal[] }) {
             />
             <YAxis hide domain={[0, 100]} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="progress" fill="var(--color-progress)" radius={4} />
+            <Bar
+              dataKey="progress"
+              fill="var(--color-progress)"
+              isAnimationActive={false}
+              shape={<MotionBar />}
+            />
           </BarChart>
         </ChartContainer>
       </CardContent>
@@ -1365,7 +1423,7 @@ function ProgressChart({ goals }: { goals: Goal[] }) {
 
 function SessionsTable({ workspace }: { workspace: Workspace }) {
   return (
-    <Card>
+    <Card className="reveal-on-scroll">
       <CardHeader>
         <CardTitle>AI-сессии и проверки</CardTitle>
         <CardDescription>
@@ -1746,7 +1804,9 @@ export function FocusTrackDashboard() {
           queryKey: currentWorkspaceQueryKey,
         })
       } else {
-        queryClient.setQueryData(currentWorkspaceQueryKey, result.workspace)
+        withViewTransition(() => {
+          queryClient.setQueryData(currentWorkspaceQueryKey, result.workspace)
+        })
       }
 
       setSelectedGoalId((current) => (current === result.goalId ? "" : current))
@@ -1808,6 +1868,16 @@ export function FocusTrackDashboard() {
       name: "sidebar_navigation_clicked",
       params: { route: nextRoute },
     })
+  }
+
+  // On the planner the detail panel swaps when a goal is picked — morph it.
+  // On the dashboard selection only toggles a highlight, so keep that instant.
+  const handleSelectGoal = (goalId: string) => {
+    if (route === "planner") {
+      withViewTransition(() => setSelectedGoalId(goalId))
+    } else {
+      setSelectedGoalId(goalId)
+    }
   }
 
   return (
@@ -2009,7 +2079,7 @@ export function FocusTrackDashboard() {
                       goals={workspace.goals}
                       tasks={workspace.tasks}
                       selectedGoalId={selectedGoal?.id ?? ""}
-                      onSelectGoal={setSelectedGoalId}
+                      onSelectGoal={handleSelectGoal}
                       onDeleteGoal={(goalId) =>
                         deleteGoalMutation.mutate(goalId)
                       }
@@ -2070,7 +2140,7 @@ export function FocusTrackDashboard() {
                       goals={workspace.goals}
                       tasks={workspace.tasks}
                       selectedGoalId={selectedGoal?.id ?? ""}
-                      onSelectGoal={setSelectedGoalId}
+                      onSelectGoal={handleSelectGoal}
                       onDeleteGoal={(goalId) =>
                         deleteGoalMutation.mutate(goalId)
                       }
