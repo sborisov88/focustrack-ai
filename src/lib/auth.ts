@@ -4,6 +4,10 @@ import { getSupabaseClient, hasSupabaseConfig } from "@/lib/supabase"
 
 export type SupportedOAuthProvider = Extract<Provider, "google">
 
+export type PasswordSignUpResult = {
+  requiresEmailConfirmation: boolean
+}
+
 type SupabaseAuthErrorPayload = {
   code?: number
   error_code?: string
@@ -53,6 +57,22 @@ function getAuthErrorPayload(error: unknown): SupabaseAuthErrorPayload | null {
   return null
 }
 
+function getPlainAuthErrorMessage(error: unknown): string | null {
+  const payload = getAuthErrorPayload(error)
+
+  if (payload?.msg) {
+    return payload.msg
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    const fromMessage = parseSupabaseAuthErrorPayload(error.message)
+
+    return fromMessage?.msg ?? error.message
+  }
+
+  return null
+}
+
 export function getOAuthErrorMessage(error: unknown): string {
   const payload = getAuthErrorPayload(error)
 
@@ -63,21 +83,47 @@ export function getOAuthErrorMessage(error: unknown): string {
     return "Google OAuth не включён в Supabase Dashboard. Войдите по email или настройте провайдера — см. DEMO_ACCESS.md."
   }
 
-  if (payload?.msg) {
-    return payload.msg
-  }
+  const message = getPlainAuthErrorMessage(error)
 
-  if (error instanceof Error && error.message.trim()) {
-    const fromMessage = parseSupabaseAuthErrorPayload(error.message)
-
-    if (fromMessage?.msg) {
-      return getOAuthErrorMessage(fromMessage)
-    }
-
-    return error.message
+  if (message) {
+    return message
   }
 
   return "Не удалось запустить OAuth-вход. Попробуйте позже или войдите по email."
+}
+
+export function getPasswordAuthErrorMessage(error: unknown): string {
+  const message = getPlainAuthErrorMessage(error)
+
+  if (!message) {
+    return "Не удалось выполнить операцию с email и паролем. Попробуйте ещё раз."
+  }
+
+  const normalized = message.toLowerCase()
+
+  if (normalized.includes("invalid login credentials")) {
+    return "Аккаунт не найден или пароль неверный. Проверьте пароль или нажмите «Создать аккаунт»."
+  }
+
+  if (normalized.includes("email not confirmed")) {
+    return "Email ещё не подтверждён. Откройте письмо от Supabase, подтвердите адрес и войдите снова."
+  }
+
+  if (
+    normalized.includes("user already registered") ||
+    normalized.includes("already registered")
+  ) {
+    return "Аккаунт уже существует. Переключитесь на вход по email."
+  }
+
+  if (
+    normalized.includes("password should be at least") ||
+    normalized.includes("weak password")
+  ) {
+    return "Пароль должен быть не короче 6 символов."
+  }
+
+  return message
 }
 
 export async function signInWithOAuth(provider: SupportedOAuthProvider) {
@@ -113,14 +159,17 @@ export async function signInWithPassword(email: string, password: string) {
   }
 }
 
-export async function signUpWithPassword(email: string, password: string) {
+export async function signUpWithPassword(
+  email: string,
+  password: string,
+): Promise<PasswordSignUpResult> {
   const supabase = getSupabaseClient()
 
   if (!supabase || !hasSupabaseConfig()) {
     throw new Error("Supabase не настроен для текущего окружения.")
   }
 
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -130,6 +179,10 @@ export async function signUpWithPassword(email: string, password: string) {
 
   if (error) {
     throw error
+  }
+
+  return {
+    requiresEmailConfirmation: !data.session,
   }
 }
 

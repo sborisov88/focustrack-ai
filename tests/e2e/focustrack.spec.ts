@@ -199,6 +199,9 @@ test("email/password auth dialog renders sign in and sign up modes", async ({
   await expect(page.getByTestId("login-dialog")).toBeVisible()
   await expect(page.getByTestId("login-email-input")).toBeVisible()
   await expect(page.getByTestId("login-password-input")).toBeVisible()
+  await expect(page.getByTestId("login-dialog")).toContainText(
+    "focustrack-demo",
+  )
 
   const submit = page.getByTestId("login-submit")
   await expect(submit).toBeDisabled()
@@ -209,6 +212,14 @@ test("email/password auth dialog renders sign in and sign up modes", async ({
 
   await page.getByTestId("auth-mode-signup").click()
   await expect(page.getByTestId("login-dialog")).toContainText("Регистрация")
+  await page.getByTestId("login-password-input").fill("abc")
+  await expect(page.getByTestId("password-validation-message")).toContainText(
+    "Минимум 6 символов. Сейчас: 3.",
+  )
+  await expect(submit).toBeDisabled()
+  await page.getByTestId("login-password-input").fill("abcdef")
+  await expect(page.getByTestId("password-validation-message")).toBeHidden()
+  await expect(submit).toBeEnabled()
   await expect(page.getByTestId("login-submit")).toContainText(
     "Зарегистрироваться",
   )

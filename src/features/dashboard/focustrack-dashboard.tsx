@@ -40,6 +40,7 @@ import {
 } from "@/lib/focustrack-api"
 import {
   getOAuthErrorMessage,
+  getPasswordAuthErrorMessage,
   signInWithOAuth,
   signInWithPassword,
   signOut,
@@ -88,6 +89,7 @@ import {
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
@@ -686,9 +688,15 @@ function LoginDialog() {
   const [password, setPassword] = useState("")
   const [isPending, setIsPending] = useState(false)
   const queryClient = useQueryClient()
-  const canSubmit =
-    email.trim().length > 3 && password.length >= 6 && !isPending
+  const hasEmail = email.trim().length > 3
+  const hasValidPassword = password.length >= 6
+  const canSubmit = hasEmail && hasValidPassword && !isPending
   const isSignUp = mode === "sign-up"
+  const submitDisabledReason = !hasEmail
+    ? "Введите email."
+    : !hasValidPassword
+      ? `Пароль должен быть не короче 6 символов. Сейчас: ${password.length}.`
+      : undefined
 
   const handleSubmit = async () => {
     if (!canSubmit) return
@@ -697,22 +705,35 @@ function LoginDialog() {
 
     try {
       if (isSignUp) {
-        await signUpWithPassword(email.trim(), password)
+        const signUpResult = await signUpWithPassword(email.trim(), password)
         trackEvent({ name: "password_sign_up", params: { method: "password" } })
+        await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+        setPassword("")
+
+        if (signUpResult.requiresEmailConfirmation) {
+          setMode("sign-in")
+          toast.success("Проверьте почту", {
+            description:
+              "Подтвердите email по письму от Supabase, затем войдите с этим паролем.",
+          })
+          return
+        }
+
+        setOpen(false)
+        toast.success("Регистрация выполнена")
       } else {
         await signInWithPassword(email.trim(), password)
         trackEvent({ name: "password_sign_in", params: { method: "password" } })
+        await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
+        setPassword("")
+        setOpen(false)
+        toast.success("Вход выполнен")
       }
-
-      await queryClient.invalidateQueries({ queryKey: workspaceQueryKey })
-      setPassword("")
-      setOpen(false)
-      toast.success(isSignUp ? "Регистрация отправлена" : "Вход выполнен")
     } catch (error) {
       toast.error(
         isSignUp ? "Не удалось зарегистрироваться" : "Не удалось войти",
         {
-          description: error instanceof Error ? error.message : String(error),
+          description: getPasswordAuthErrorMessage(error),
         },
       )
     } finally {
@@ -733,7 +754,7 @@ function LoginDialog() {
           Войти
         </Button>
       </DialogTrigger>
-      <DialogContent data-testid="login-dialog">
+      <DialogContent className="sm:max-w-md" data-testid="login-dialog">
         <DialogHeader>
           <DialogTitle>
             {isSignUp ? "Регистрация" : "Вход по email"}
@@ -750,11 +771,12 @@ function LoginDialog() {
             void handleSubmit()
           }}
         >
-          <FieldGroup>
-            <Field>
+          <FieldGroup className="gap-4">
+            <Field className="gap-1.5">
               <FieldLabel htmlFor="login-email">Email</FieldLabel>
               <Input
                 id="login-email"
+                className="bg-background h-10 rounded-md px-3 text-sm"
                 data-testid="login-email-input"
                 type="email"
                 autoComplete="email"
@@ -763,34 +785,60 @@ function LoginDialog() {
                 placeholder="you@example.com"
               />
             </Field>
-            <Field>
+            <Field className="gap-1.5">
               <FieldLabel htmlFor="login-password">Пароль</FieldLabel>
               <Input
                 id="login-password"
+                className="bg-background h-10 rounded-md px-3 text-sm"
                 data-testid="login-password-input"
                 type="password"
                 autoComplete={isSignUp ? "new-password" : "current-password"}
+                aria-invalid={
+                  password.length > 0 && !hasValidPassword ? true : undefined
+                }
+                aria-describedby={
+                  password.length > 0 && !hasValidPassword
+                    ? "login-password-description login-password-error"
+                    : "login-password-description"
+                }
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="Минимум 6 символов"
               />
-              <FieldDescription>
-                Демо-доступ: demo@focustrack.ai
+              <FieldDescription
+                id="login-password-description"
+                className="text-xs leading-relaxed"
+              >
+                Минимум 6 символов.{" "}
+                <span className="block break-words">
+                  Демо: demo@focustrack.ai / focustrack-demo
+                </span>
               </FieldDescription>
+              {password.length > 0 && !hasValidPassword ? (
+                <FieldError
+                  id="login-password-error"
+                  data-testid="password-validation-message"
+                >
+                  Минимум 6 символов. Сейчас: {password.length}.
+                </FieldError>
+              ) : null}
             </Field>
           </FieldGroup>
           <DialogFooter className="mt-4 flex-col-reverse gap-2 sm:flex-row sm:justify-between">
             <Button
               type="button"
               variant="ghost"
+              size="sm"
               onClick={() => setMode(isSignUp ? "sign-in" : "sign-up")}
               data-testid={isSignUp ? "auth-mode-signin" : "auth-mode-signup"}
             >
-              {isSignUp ? "У меня уже есть аккаунт" : "Создать аккаунт"}
+              {isSignUp ? "Уже есть аккаунт" : "Создать аккаунт"}
             </Button>
             <Button
               type="submit"
+              size="sm"
               disabled={!canSubmit}
+              title={!canSubmit ? submitDisabledReason : undefined}
               data-testid="login-submit"
             >
               {isPending ? (
