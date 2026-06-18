@@ -79,6 +79,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -996,22 +997,57 @@ function GoalList({
                   </span>
                 </div>
               </button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={isDeletingGoal}
-                    onClick={() => onDeleteGoal(goal.id)}
-                    aria-label={`Удалить цель ${goal.title}`}
-                    data-testid="delete-goal-button"
-                  >
-                    <Trash2Icon />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Удалить цель</TooltipContent>
-              </Tooltip>
+              <Dialog>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={isDeletingGoal}
+                        aria-label={`Удалить цель ${goal.title}`}
+                        data-testid="delete-goal-button"
+                      >
+                        <Trash2Icon />
+                      </Button>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Удалить цель</TooltipContent>
+                </Tooltip>
+                <DialogContent data-testid="delete-goal-dialog">
+                  <DialogHeader>
+                    <DialogTitle>Удалить цель?</DialogTitle>
+                    <DialogDescription>
+                      Цель «{goal.title}» и все связанные задачи будут удалены
+                      без возможности восстановления.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        data-testid="cancel-delete-goal-button"
+                      >
+                        Отмена
+                      </Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={isDeletingGoal}
+                        onClick={() => onDeleteGoal(goal.id)}
+                        data-testid="confirm-delete-goal-button"
+                      >
+                        <Trash2Icon data-icon="inline-start" />
+                        Удалить
+                      </Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         ))}
