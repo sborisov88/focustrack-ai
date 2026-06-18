@@ -1,8 +1,20 @@
-import { Component, type ErrorInfo, type ReactNode } from "react"
+import { Component, Suspense, lazy, type ErrorInfo, type ReactNode } from "react"
 
 import { FocusTrackDashboard } from "@/features/dashboard/focustrack-dashboard"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
+
+// Additive ДЗ 3 UI-concept showcase, code-split so it never enters the main
+// dashboard bundle. Reachable only at /concepts; the production app is untouched.
+const ConceptsShowcase = lazy(() =>
+  import("@/features/concepts/concepts-showcase").then((module) => ({
+    default: module.ConceptsShowcase,
+  })),
+)
+
+function isConceptsRoute() {
+  return globalThis.location?.pathname?.startsWith("/concepts") ?? false
+}
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -63,7 +75,19 @@ export default function App() {
   return (
     <TooltipProvider>
       <AppErrorBoundary>
-        <FocusTrackDashboard />
+        {isConceptsRoute() ? (
+          <Suspense
+            fallback={
+              <div className="bg-background text-muted-foreground flex min-h-svh items-center justify-center p-4 text-sm">
+                Загрузка концепций…
+              </div>
+            }
+          >
+            <ConceptsShowcase />
+          </Suspense>
+        ) : (
+          <FocusTrackDashboard />
+        )}
       </AppErrorBoundary>
       <Toaster />
     </TooltipProvider>

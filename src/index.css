@@ -6,8 +6,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: "Geist Variable", sans-serif;
+  --font-heading: "Oswald", "Geist Variable", sans-serif;
+  --font-sans: "IBM Plex Mono", ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -45,39 +45,52 @@
   --radius-xl: calc(var(--radius) * 1.4);
 }
 
+/*
+ * Global theme = the "Mission Control" concept palette (dark polychrome
+ * instrument panel). Mirrors .concept-mission in src/features/concepts/concepts.css
+ * but ALSO supplies dark --sidebar-* (absent from the concept) and global
+ * --concept-* vars + fonts so the ported telemetry components render correctly
+ * everywhere, not just under the /concepts scope.
+ */
 :root {
-  --background: oklch(0.99 0.004 95);
-  --foreground: oklch(0.18 0.012 245);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.012 245);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.012 245);
-  --primary: oklch(0.42 0.08 188);
-  --primary-foreground: oklch(0.98 0.006 180);
-  --secondary: oklch(0.94 0.012 245);
-  --secondary-foreground: oklch(0.22 0.015 245);
-  --muted: oklch(0.95 0.008 245);
-  --muted-foreground: oklch(0.47 0.018 245);
-  --accent: oklch(0.9 0.055 82);
-  --accent-foreground: oklch(0.25 0.02 70);
-  --destructive: oklch(0.56 0.16 28);
-  --border: oklch(0.9 0.008 245);
-  --input: oklch(0.9 0.008 245);
-  --ring: oklch(0.58 0.08 188);
-  --chart-1: oklch(0.62 0.1 188);
-  --chart-2: oklch(0.72 0.11 82);
-  --chart-3: oklch(0.62 0.14 32);
-  --chart-4: oklch(0.5 0.05 245);
-  --chart-5: oklch(0.68 0.07 145);
-  --radius: 0.5rem;
-  --sidebar: oklch(0.98 0.004 245);
-  --sidebar-foreground: oklch(0.22 0.015 245);
-  --sidebar-primary: oklch(0.42 0.08 188);
-  --sidebar-primary-foreground: oklch(0.98 0.006 180);
-  --sidebar-accent: oklch(0.94 0.012 245);
-  --sidebar-accent-foreground: oklch(0.22 0.015 245);
-  --sidebar-border: oklch(0.9 0.008 245);
-  --sidebar-ring: oklch(0.58 0.08 188);
+  --background: oklch(0.2 0.025 230);
+  --foreground: oklch(0.9 0.015 220);
+  --card: oklch(0.24 0.028 228);
+  --card-foreground: oklch(0.9 0.015 220);
+  --popover: oklch(0.26 0.03 228);
+  --popover-foreground: oklch(0.9 0.015 220);
+  --primary: oklch(0.78 0.13 182);
+  --primary-foreground: oklch(0.18 0.03 220);
+  --secondary: oklch(0.3 0.03 228);
+  --secondary-foreground: oklch(0.9 0.015 220);
+  --muted: oklch(0.28 0.025 228);
+  --muted-foreground: oklch(0.68 0.02 222);
+  --accent: oklch(0.82 0.13 82);
+  --accent-foreground: oklch(0.2 0.04 80);
+  --destructive: oklch(0.64 0.19 28);
+  --border: oklch(0.36 0.03 228);
+  --input: oklch(0.36 0.03 228);
+  --ring: oklch(0.78 0.13 182);
+  --chart-1: oklch(0.78 0.13 182);
+  --chart-2: oklch(0.82 0.13 82);
+  --chart-3: oklch(0.7 0.17 40);
+  --chart-4: oklch(0.68 0.12 255);
+  --chart-5: oklch(0.78 0.15 150);
+  --radius: 0.25rem;
+  --sidebar: oklch(0.18 0.025 230);
+  --sidebar-foreground: oklch(0.9 0.015 220);
+  --sidebar-primary: oklch(0.78 0.13 182);
+  --sidebar-primary-foreground: oklch(0.18 0.03 220);
+  --sidebar-accent: oklch(0.3 0.03 228);
+  --sidebar-accent-foreground: oklch(0.9 0.015 220);
+  --sidebar-border: oklch(0.34 0.03 228);
+  --sidebar-ring: oklch(0.78 0.13 182);
+  --concept-grid: oklch(0.32 0.03 228 / 0.6);
+  --concept-glow: oklch(0.78 0.13 182 / 0.35);
+  --concept-font-display: "Oswald", "Geist Variable", sans-serif;
+  --concept-font-body: "IBM Plex Mono", ui-monospace, monospace;
+  --concept-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -92,4 +105,22 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/*
+ * Telemetry typography helpers — global so ported Mission Control components
+ * (telemetry tiles, fleet banner, log tables) work outside the /concepts scope.
+ * Duplicated intentionally with concepts.css (identical rules; harmless).
+ */
+.concept-display {
+  font-family: var(--concept-font-display, var(--concept-font-body));
+}
+
+.concept-mono {
+  font-family: var(--concept-font-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.concept-tnum {
+  font-variant-numeric: tabular-nums;
 }

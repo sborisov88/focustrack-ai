@@ -1,0 +1,150 @@
+/**
+ * Token scopes for the three ДЗ 3 UI concepts.
+ *
+ * Each `.concept-*` class re-declares the same shadcn CSS custom properties as
+ * `:root` in src/index.css, so every shadcn primitive (Card, Button, Badge,
+ * Progress, Tabs, …) re-skins automatically inside the scope — no component
+ * edits required. `@theme inline` inlines color tokens as `var(--token)`, so
+ * overriding the bare names below re-flows the bg-, text- and border- utilities.
+ *
+ * Fonts are the exception: `@theme inline` inlines `--font-sans` as a literal,
+ * so the `font-sans` utility is frozen to Geist. Concepts therefore set
+ * `font-family` directly on the scope root (cascades to children) and expose
+ * `--concept-font-display/-body/-mono` for the helper classes at the bottom.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Concept 1 — «Компас» (Compass / Minimal Focus): light, calm, one-bearing.
+ * ------------------------------------------------------------------------- */
+.concept-compass {
+  --background: oklch(0.985 0.006 95);
+  --foreground: oklch(0.27 0.022 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.27 0.022 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.27 0.022 250);
+  --primary: oklch(0.47 0.085 178);
+  --primary-foreground: oklch(0.99 0.005 180);
+  --secondary: oklch(0.94 0.012 95);
+  --secondary-foreground: oklch(0.3 0.02 250);
+  --muted: oklch(0.95 0.012 92);
+  --muted-foreground: oklch(0.5 0.018 250);
+  --accent: oklch(0.7 0.1 76);
+  --accent-foreground: oklch(0.27 0.03 70);
+  --destructive: oklch(0.56 0.16 28);
+  --border: oklch(0.9 0.012 90);
+  --input: oklch(0.9 0.012 90);
+  --ring: oklch(0.55 0.08 178);
+  --chart-1: oklch(0.52 0.1 178);
+  --chart-2: oklch(0.7 0.11 76);
+  --chart-3: oklch(0.6 0.15 40);
+  --chart-4: oklch(0.52 0.07 255);
+  --chart-5: oklch(0.62 0.1 150);
+  --radius: 1rem;
+
+  --concept-font-display: "Manrope", "Geist Variable", sans-serif;
+  --concept-font-body: "Geist Variable", system-ui, sans-serif;
+  --concept-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --concept-grid: oklch(0.9 0.012 90);
+
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--concept-font-body);
+}
+
+/* ---------------------------------------------------------------------------
+ * Concept 2 — «Mission Control» (Dashboard Heavy): dark polychrome telemetry.
+ * ------------------------------------------------------------------------- */
+.concept-mission {
+  --background: oklch(0.2 0.025 230);
+  --foreground: oklch(0.9 0.015 220);
+  --card: oklch(0.24 0.028 228);
+  --card-foreground: oklch(0.9 0.015 220);
+  --popover: oklch(0.26 0.03 228);
+  --popover-foreground: oklch(0.9 0.015 220);
+  --primary: oklch(0.78 0.13 182);
+  --primary-foreground: oklch(0.18 0.03 220);
+  --secondary: oklch(0.3 0.03 228);
+  --secondary-foreground: oklch(0.9 0.015 220);
+  --muted: oklch(0.28 0.025 228);
+  --muted-foreground: oklch(0.68 0.02 222);
+  --accent: oklch(0.82 0.13 82);
+  --accent-foreground: oklch(0.2 0.04 80);
+  --destructive: oklch(0.64 0.19 28);
+  --border: oklch(0.36 0.03 228);
+  --input: oklch(0.36 0.03 228);
+  --ring: oklch(0.78 0.13 182);
+  --chart-1: oklch(0.78 0.13 182);
+  --chart-2: oklch(0.82 0.13 82);
+  --chart-3: oklch(0.7 0.17 40);
+  --chart-4: oklch(0.68 0.12 255);
+  --chart-5: oklch(0.78 0.15 150);
+  --radius: 0.25rem;
+
+  --concept-font-display: "Oswald", "Geist Variable", sans-serif;
+  --concept-font-body: "IBM Plex Mono", ui-monospace, monospace;
+  --concept-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --concept-grid: oklch(0.32 0.03 228 / 0.6);
+  --concept-glow: oklch(0.78 0.13 182 / 0.35);
+
+  color-scheme: dark;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--concept-font-body);
+}
+
+/* ---------------------------------------------------------------------------
+ * Concept 3 — «Полевой журнал» (Field Journal / Mobile Coach): warm narrative.
+ * ------------------------------------------------------------------------- */
+.concept-journal {
+  --background: oklch(0.95 0.018 85);
+  --foreground: oklch(0.27 0.012 60);
+  --card: oklch(0.975 0.012 85);
+  --card-foreground: oklch(0.27 0.012 60);
+  --popover: oklch(0.975 0.012 85);
+  --popover-foreground: oklch(0.27 0.012 60);
+  --primary: oklch(0.45 0.075 180);
+  --primary-foreground: oklch(0.98 0.012 85);
+  --secondary: oklch(0.91 0.02 80);
+  --secondary-foreground: oklch(0.3 0.015 60);
+  --muted: oklch(0.92 0.02 82);
+  --muted-foreground: oklch(0.48 0.02 60);
+  --accent: oklch(0.58 0.15 42);
+  --accent-foreground: oklch(0.98 0.012 70);
+  --destructive: oklch(0.55 0.17 30);
+  --border: oklch(0.88 0.02 82);
+  --input: oklch(0.88 0.02 82);
+  --ring: oklch(0.58 0.15 42);
+  --chart-1: oklch(0.5 0.085 180);
+  --chart-2: oklch(0.62 0.14 45);
+  --chart-3: oklch(0.72 0.11 75);
+  --chart-4: oklch(0.55 0.07 250);
+  --chart-5: oklch(0.58 0.1 145);
+  --radius: 0.75rem;
+
+  --concept-font-display: "Playfair Display", Georgia, serif;
+  --concept-font-body: "Golos Text", "Geist Variable", system-ui, sans-serif;
+  --concept-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --concept-ink: oklch(0.45 0.075 180);
+  --concept-contour: oklch(0.45 0.075 180 / 0.12);
+
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--concept-font-body);
+}
+
+/* ---------------------------------------------------------------------------
+ * Shared helpers usable inside any concept scope.
+ * ------------------------------------------------------------------------- */
+.concept-display {
+  font-family: var(--concept-font-display, var(--concept-font-body));
+}
+
+.concept-mono {
+  font-family: var(--concept-font-mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.concept-tnum {
+  font-variant-numeric: tabular-nums;
+}

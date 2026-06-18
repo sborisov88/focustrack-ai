@@ -9,15 +9,14 @@ import {
   ClipboardListIcon,
   CompassIcon,
   DatabaseIcon,
-  GaugeIcon,
   LayoutDashboardIcon,
   LogInIcon,
   LogOutIcon,
   Loader2Icon,
   PlusIcon,
+  RadarIcon,
   RefreshCcwIcon,
   SparklesIcon,
-  TargetIcon,
   Trash2Icon,
   TriangleAlertIcon,
   UserPlusIcon,
@@ -59,6 +58,17 @@ import type {
 } from "@/lib/domain"
 import { demoWorkspace } from "@/lib/demo-data"
 import { getEffortLabel, getGoalTasks, getStatusLabel } from "@/lib/progress"
+import { cn } from "@/lib/utils"
+import { Panel } from "@/components/telemetry/panel"
+import { Sparkline } from "@/components/telemetry/sparkline"
+import { StatBlock } from "@/components/telemetry/stat-block"
+import { TelemetryArc } from "@/components/telemetry/telemetry-arc"
+import {
+  chartVar,
+  deadlineLabel,
+  goalVisual,
+  trendSeries,
+} from "./goal-visual"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -95,7 +105,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -947,112 +956,174 @@ function AuthControls({
 
 function GoalList({
   goals,
+  tasks,
   selectedGoalId,
   onSelectGoal,
   onDeleteGoal,
   isDeletingGoal,
+  columns = 2,
 }: {
   goals: Goal[]
+  tasks: FocusTask[]
   selectedGoalId: string
   onSelectGoal: (goalId: string) => void
   onDeleteGoal: (goalId: string) => void
   isDeletingGoal: boolean
+  columns?: 1 | 2
 }) {
   return (
-    <Card data-testid="goal-list">
-      <CardHeader>
-        <CardTitle>Цели</CardTitle>
-        <CardDescription>
-          Фокус на ближайшие шаги по вашим целям.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {goals.map((goal) => (
+    <section
+      data-testid="goal-list"
+      className={cn(
+        "grid gap-3",
+        columns === 2 && "sm:grid-cols-2",
+      )}
+    >
+      {goals.map((goal, index) => {
+        const visual = goalVisual(goal, index)
+        const color = chartVar(visual.chart)
+        const Icon = visual.Icon
+        const goalTasks = getGoalTasks(goal.id, tasks)
+        const doneTasks = goalTasks.filter((task) => task.status === "done").length
+        const doingTasks = goalTasks.filter((task) => task.status === "doing").length
+        const nextTask =
+          goalTasks.find((task) => task.status === "doing") ??
+          goalTasks.find((task) => task.status === "todo") ??
+          goalTasks[0]
+        const active = goal.id === selectedGoalId
+        return (
           <div
             key={goal.id}
             data-testid="goal-item"
-            data-active={goal.id === selectedGoalId}
-            className="bg-card data-[active=true]:border-primary flex flex-col gap-2 rounded-lg border p-3 transition-colors"
+            data-active={active}
+            className="relative flex flex-col overflow-hidden border border-border bg-card transition-colors data-[active=true]:border-primary"
+            style={{
+              backgroundImage: `radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, ${color} 9%, transparent), transparent 60%)`,
+            }}
           >
-            <div className="flex items-start gap-2">
-              <button
-                type="button"
-                onClick={() => onSelectGoal(goal.id)}
-                className="hover:bg-accent flex min-w-0 flex-1 flex-col gap-2 rounded-md p-1 text-left transition-colors"
-                aria-pressed={goal.id === selectedGoalId}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <span className="font-medium">{goal.title}</span>
-                  <Badge variant={statusVariant(goal.status)}>
-                    {getStatusLabel(goal.status)}
-                  </Badge>
-                </div>
-                <p className="text-muted-foreground line-clamp-2 text-sm">
-                  {goal.description}
+            <span
+              aria-hidden
+              className="absolute inset-y-0 left-0 w-[3px]"
+              style={{ backgroundColor: color, boxShadow: `0 0 12px ${color}` }}
+            />
+            <button
+              type="button"
+              onClick={() => onSelectGoal(goal.id)}
+              aria-pressed={active}
+              className="flex flex-1 flex-col gap-3 p-4 pl-5 text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span
+                  className="concept-display inline-flex items-center gap-1.5 border px-2 py-0.5 text-[10px] tracking-[0.16em] uppercase"
+                  style={{
+                    color,
+                    borderColor: color,
+                    backgroundColor: `color-mix(in oklab, ${color} 12%, transparent)`,
+                  }}
+                >
+                  <Icon aria-hidden className="size-3" />
+                  {visual.category}
+                </span>
+                <Badge variant={statusVariant(goal.status)}>
+                  {getStatusLabel(goal.status)}
+                </Badge>
+              </div>
+              <h3 className="concept-display pr-8 text-base leading-tight font-semibold tracking-wide uppercase">
+                {goal.title}
+              </h3>
+              <div className="flex items-center gap-3">
+                <TelemetryArc
+                  value={goal.progressPercent}
+                  color={color}
+                  armed
+                />
+                <dl className="flex min-w-0 flex-1 flex-col gap-1.5 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-muted-foreground">Готово</dt>
+                    <dd
+                      className="concept-tnum font-medium"
+                      style={{ color: "var(--chart-5)" }}
+                    >
+                      {doneTasks}/{goalTasks.length}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-muted-foreground">В работе</dt>
+                    <dd className="concept-tnum text-primary font-medium">
+                      {doingTasks}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-muted-foreground">Срок</dt>
+                    <dd className="concept-tnum text-foreground">
+                      {deadlineLabel(goal.targetDate)}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+              <Sparkline points={trendSeries(goal.progressPercent)} color={color} />
+              {nextTask ? (
+                <p className="concept-mono text-muted-foreground truncate text-[11px]">
+                  ▸ {nextTask.title}
                 </p>
-                <div className="flex items-center gap-3">
-                  <Progress value={goal.progressPercent} />
-                  <span className="text-muted-foreground text-sm tabular-nums">
-                    {goal.progressPercent}%
-                  </span>
-                </div>
-              </button>
-              <Dialog>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        disabled={isDeletingGoal}
-                        aria-label={`Удалить цель ${goal.title}`}
-                        data-testid="delete-goal-button"
-                      >
-                        <Trash2Icon />
-                      </Button>
-                    </DialogTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>Удалить цель</TooltipContent>
-                </Tooltip>
-                <DialogContent data-testid="delete-goal-dialog">
-                  <DialogHeader>
-                    <DialogTitle>Удалить цель?</DialogTitle>
-                    <DialogDescription>
-                      Цель «{goal.title}» и все связанные задачи будут удалены
-                      без возможности восстановления.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        data-testid="cancel-delete-goal-button"
-                      >
-                        Отмена
-                      </Button>
-                    </DialogClose>
-                    <DialogClose asChild>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        disabled={isDeletingGoal}
-                        onClick={() => onDeleteGoal(goal.id)}
-                        data-testid="confirm-delete-goal-button"
-                      >
-                        <Trash2Icon data-icon="inline-start" />
-                        Удалить
-                      </Button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
+              ) : null}
+            </button>
+            <Dialog>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={isDeletingGoal}
+                      aria-label={`Удалить цель ${goal.title}`}
+                      data-testid="delete-goal-button"
+                      className="absolute top-2 right-2"
+                    >
+                      <Trash2Icon />
+                    </Button>
+                  </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Удалить цель</TooltipContent>
+              </Tooltip>
+              <DialogContent data-testid="delete-goal-dialog">
+                <DialogHeader>
+                  <DialogTitle>Удалить цель?</DialogTitle>
+                  <DialogDescription>
+                    Цель «{goal.title}» и все связанные задачи будут удалены без
+                    возможности восстановления.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      data-testid="cancel-delete-goal-button"
+                    >
+                      Отмена
+                    </Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={isDeletingGoal}
+                      onClick={() => onDeleteGoal(goal.id)}
+                      data-testid="confirm-delete-goal-button"
+                    >
+                      <Trash2Icon data-icon="inline-start" />
+                      Удалить
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
-        ))}
-      </CardContent>
-    </Card>
+        )
+      })}
+    </section>
   )
 }
 
@@ -1218,25 +1289,30 @@ function AiReviewPanel({
           <AlertTitle>Итог недели</AlertTitle>
           <AlertDescription>{workspace.weeklyReview.summary}</AlertDescription>
         </Alert>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
+          <span className="concept-display text-muted-foreground text-xs tracking-[0.16em] uppercase">
+            Рекомендации
+          </span>
           {workspace.weeklyReview.recommendations.map((item) => (
             <div key={item} className="flex gap-2 text-sm">
-              <CheckCircle2Icon className="text-primary mt-0.5" />
+              <CheckCircle2Icon className="text-primary mt-0.5 size-4 shrink-0" />
               <span>{item}</span>
             </div>
           ))}
         </div>
         <Separator />
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Риски</span>
+        <div className="flex flex-col gap-1.5">
+          <span className="concept-display text-destructive text-xs tracking-[0.16em] uppercase">
+            Риски
+          </span>
           {workspace.weeklyReview.risks.map((risk) => (
-            <Badge
+            <div
               key={risk}
-              variant="outline"
-              className="h-auto max-w-full text-left leading-relaxed whitespace-normal"
+              className="text-muted-foreground flex gap-2 text-sm leading-relaxed"
             >
-              {risk}
-            </Badge>
+              <TriangleAlertIcon className="text-destructive mt-0.5 size-4 shrink-0" />
+              <span>{risk}</span>
+            </div>
           ))}
         </div>
         {latestSession && (
@@ -1301,17 +1377,29 @@ function SessionsTable({ workspace }: { workspace: Workspace }) {
           <Table className="min-w-[640px]">
             <TableHeader>
               <TableRow>
-                <TableHead>Тип</TableHead>
-                <TableHead>Модель</TableHead>
-                <TableHead>Статус</TableHead>
-                <TableHead>Краткий результат</TableHead>
+                <TableHead className="concept-display text-xs tracking-[0.14em] uppercase">
+                  Тип
+                </TableHead>
+                <TableHead className="concept-display text-xs tracking-[0.14em] uppercase">
+                  Модель
+                </TableHead>
+                <TableHead className="concept-display text-xs tracking-[0.14em] uppercase">
+                  Статус
+                </TableHead>
+                <TableHead className="concept-display text-xs tracking-[0.14em] uppercase">
+                  Краткий результат
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {workspace.aiSessions.map((session) => (
                 <TableRow key={session.id}>
-                  <TableCell>{getAiSessionTypeLabel(session.type)}</TableCell>
-                  <TableCell>{session.model}</TableCell>
+                  <TableCell className="concept-display tracking-wide uppercase">
+                    {getAiSessionTypeLabel(session.type)}
+                  </TableCell>
+                  <TableCell className="concept-mono text-xs">
+                    {session.model}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant={statusVariant(
@@ -1677,6 +1765,16 @@ export function FocusTrackDashboard() {
   const blockedCount = workspace.tasks.filter(
     (task) => task.status === "blocked",
   ).length
+  const doingCount = workspace.tasks.filter(
+    (task) => task.status === "doing",
+  ).length
+  const totalTasks = workspace.tasks.length
+  const overallProgress = workspace.goals.length
+    ? Math.round(
+        workspace.goals.reduce((sum, goal) => sum + goal.progressPercent, 0) /
+          workspace.goals.length,
+      )
+    : 0
 
   const handleToggleTask = (taskId: string, done: boolean) => {
     updateWorkspace(queryClient, currentWorkspaceQueryKey, (current) =>
@@ -1777,21 +1875,37 @@ export function FocusTrackDashboard() {
       </Sidebar>
       <SidebarInset>
         <div className="flex min-h-svh flex-col">
-          <header className="bg-background/95 sticky top-0 border-b backdrop-blur">
+          <header
+            className="bg-background/95 sticky top-0 z-30 border-b border-border backdrop-blur"
+            style={{
+              backgroundImage:
+                "radial-gradient(120% 160% at 100% -20%, var(--concept-glow), transparent 55%)",
+            }}
+          >
             <div className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-3">
                 <SidebarTrigger />
-                <div>
+                <span
+                  aria-hidden
+                  className="text-primary hidden size-9 shrink-0 items-center justify-center border border-primary/40 bg-primary/10 sm:flex"
+                  style={{ boxShadow: "0 0 16px var(--concept-glow)" }}
+                >
+                  <RadarIcon className="size-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="concept-mono flex items-center gap-2 text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
+                    <span
+                      aria-hidden
+                      className="inline-block size-1.5 animate-pulse rounded-full bg-primary"
+                    />
+                    В эфире · {getModeLabel(workspace.mode)} · {workspace.goals.length} активные цели
+                  </p>
                   <h1
-                    className="text-xl font-semibold tracking-normal"
+                    className="concept-display text-xl font-semibold tracking-[0.04em] uppercase"
                     data-testid="workspace-title"
                   >
                     Рабочее пространство FocusTrack AI
                   </h1>
-                  <p className="text-muted-foreground text-sm">
-                    Цели, задачи, AI-планирование и weekly review в одном
-                    сценарии.
-                  </p>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1842,6 +1956,13 @@ export function FocusTrackDashboard() {
                 )}
               </div>
             </div>
+            <div className="flex flex-wrap items-center gap-y-2 border-t border-border/60 px-4 py-2.5">
+              <StatBlock label="Общий курс" value={overallProgress} unit="%" accent />
+              <StatBlock label="Всего задач" value={totalTasks} />
+              <StatBlock label="Готово" value={doneCount} />
+              <StatBlock label="В работе" value={doingCount} />
+              <StatBlock label="Блокеры" value={blockedCount} />
+            </div>
           </header>
           <ScrollArea className="flex-1">
             {!authState.ready ? (
@@ -1881,52 +2002,30 @@ export function FocusTrackDashboard() {
                 )}
                 {route === "dashboard" && (
                   <main
-                    className="grid gap-4 p-4 xl:grid-cols-[320px_minmax(0,1fr)]"
+                    className="flex flex-col gap-4 p-4"
                     data-testid="route-dashboard"
                   >
-                    <section className="flex flex-col gap-4">
-                      <GoalList
-                        goals={workspace.goals}
-                        selectedGoalId={selectedGoal?.id ?? ""}
-                        onSelectGoal={setSelectedGoalId}
-                        onDeleteGoal={(goalId) =>
-                          deleteGoalMutation.mutate(goalId)
-                        }
-                        isDeletingGoal={deleteGoalMutation.isPending}
-                      />
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Метрики</CardTitle>
-                          <CardDescription>
-                            Краткая сводка по целям.
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-3">
-                          <MetricCard
-                            icon={TargetIcon}
-                            label="Цели"
-                            value={workspace.goals.length}
-                          />
-                          <MetricCard
-                            icon={CheckCircle2Icon}
-                            label="Готово"
-                            value={doneCount}
-                          />
-                          <MetricCard
-                            icon={GaugeIcon}
-                            label="Блокеры"
-                            value={blockedCount}
-                          />
-                          <MetricCard
-                            icon={BookOpenIcon}
-                            label="Документы"
-                            value={workspace.knowledgeDocuments.length}
-                          />
-                        </CardContent>
-                      </Card>
-                    </section>
-                    <section className="grid min-w-0 gap-4 lg:grid-cols-2">
-                      <ProgressChart goals={workspace.goals} />
+                    <GoalList
+                      goals={workspace.goals}
+                      tasks={workspace.tasks}
+                      selectedGoalId={selectedGoal?.id ?? ""}
+                      onSelectGoal={setSelectedGoalId}
+                      onDeleteGoal={(goalId) =>
+                        deleteGoalMutation.mutate(goalId)
+                      }
+                      isDeletingGoal={deleteGoalMutation.isPending}
+                    />
+                    <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+                      <Panel
+                        title="Прогресс по целям"
+                        icon={BarChart3Icon}
+                        meta="срез по всем целям"
+                        className="min-w-0"
+                      >
+                        <div className="p-4">
+                          <ProgressChart goals={workspace.goals} />
+                        </div>
+                      </Panel>
                       <Card data-testid="categories-card">
                         <CardHeader>
                           <CardTitle>Категории целей</CardTitle>
@@ -1934,26 +2033,32 @@ export function FocusTrackDashboard() {
                             Баланс направлений и источники для AI-ответов.
                           </CardDescription>
                         </CardHeader>
-                        <CardContent className="flex flex-col gap-3">
-                          {[
-                            ["Здоровье", "Полумарафон"],
-                            ["Карьера", "IELTS 7.0"],
-                            ["Финансы", "Подушка 6 мес"],
-                            ["Проект", "Лендинг"],
-                          ].map(([label, value]) => (
-                            <div
-                              key={label}
-                              className="flex items-center justify-between gap-3"
-                            >
-                              <span className="text-sm font-medium">
-                                {label}
-                              </span>
-                              <Badge variant="outline">{value}</Badge>
-                            </div>
-                          ))}
+                        <CardContent className="flex flex-col gap-2.5">
+                          {workspace.goals.map((goal, index) => {
+                            const visual = goalVisual(goal, index)
+                            return (
+                              <div
+                                key={goal.id}
+                                className="flex items-center justify-between gap-3"
+                              >
+                                <span
+                                  className="concept-display shrink-0 text-xs tracking-[0.14em] uppercase"
+                                  style={{ color: chartVar(visual.chart) }}
+                                >
+                                  {visual.category}
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className="min-w-0 truncate"
+                                >
+                                  {goal.title}
+                                </Badge>
+                              </div>
+                            )
+                          })}
                         </CardContent>
                       </Card>
-                    </section>
+                    </div>
                   </main>
                 )}
                 {route === "planner" && (
@@ -1963,12 +2068,14 @@ export function FocusTrackDashboard() {
                   >
                     <GoalList
                       goals={workspace.goals}
+                      tasks={workspace.tasks}
                       selectedGoalId={selectedGoal?.id ?? ""}
                       onSelectGoal={setSelectedGoalId}
                       onDeleteGoal={(goalId) =>
                         deleteGoalMutation.mutate(goalId)
                       }
                       isDeletingGoal={deleteGoalMutation.isPending}
+                      columns={1}
                     />
                     {selectedGoal ? (
                       <GoalDetail
@@ -2050,25 +2157,5 @@ export function FocusTrackDashboard() {
         </div>
       </SidebarInset>
     </SidebarProvider>
-  )
-}
-
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType
-  label: string
-  value: number
-}) {
-  return (
-    <div className="flex flex-col gap-2 rounded-lg border p-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-muted-foreground text-sm">{label}</span>
-        <Icon />
-      </div>
-      <span className="text-2xl font-semibold tabular-nums">{value}</span>
-    </div>
   )
 }
