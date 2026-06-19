@@ -385,11 +385,23 @@ export async function createGoalOnServer(
 }
 
 export async function deleteGoalOnServer(goalId: string): Promise<void> {
-  const { supabase } = await requireSupabaseContext()
-  const { error } = await supabase.from("goals").delete().eq("id", goalId)
+  const { supabase, userId } = await requireSupabaseContext()
+  // .eq("user_id") дублирует защиту RLS (defense-in-depth), а .select() даёт
+  // число затронутых строк — чтобы не показывать ложный успех при удалении 0
+  // строк (чужая/несуществующая цель).
+  const { data, error } = await supabase
+    .from("goals")
+    .delete()
+    .eq("id", goalId)
+    .eq("user_id", userId)
+    .select("id")
 
   if (error) {
     throw error
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error("Цель не найдена или уже удалена.")
   }
 }
 
@@ -398,6 +410,9 @@ export function toggleTask(
   taskId: string,
   done: boolean,
 ): Workspace {
+  // Осознанно бинарная модель: чекбокс переключает только todo<->done.
+  // Промежуточный статус "doing" задаётся отдельным контролом и в MVP
+  // намеренно не восстанавливается снятием галочки (см. UX-решение в плане).
   const nextStatus: TaskStatus = done ? "done" : "todo"
   const tasks = workspace.tasks.map((task) =>
     task.id === taskId ? { ...task, status: nextStatus } : task,
@@ -628,11 +643,14 @@ export async function requestWeeklyReview(
 
   if (supabase && hasSupabaseConfig()) {
     const context = await getSupabaseContext()
+    // weekStart НИКОГДА не отправляем пустым: серверная валидация требует
+    // непустую строку, а до первого сохранённого обзора он равен "".
+    const weekStart = workspace.weeklyReview.weekStart || currentWeekStart()
     const { data, error } = await supabase.functions.invoke(
       "ai-weekly-review",
       {
         body: {
-          weekStart: workspace.weeklyReview.weekStart,
+          weekStart,
           completedTasks,
           blockedTasks,
           goalProgress: goal?.progressPercent ?? 0,
@@ -642,7 +660,6 @@ export async function requestWeeklyReview(
 
     if (!error && data?.review) {
       if (context) {
-        const weekStart = workspace.weeklyReview.weekStart || currentWeekStart()
         const { error: reviewError } = await context.supabase
           .from("weekly_reviews")
           .upsert(

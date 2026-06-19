@@ -190,6 +190,65 @@ describe("deleteGoal", () => {
     expect(next.aiSessions).toEqual([])
     expect(baseWorkspace.goals).toHaveLength(1)
   })
+
+  it("удаляет только целевую цель, не трогая данные других целей", () => {
+    const workspaceWithTwoGoals: Workspace = {
+      ...baseWorkspace,
+      goals: [
+        goal,
+        {
+          id: "g2",
+          title: "Сдать IELTS на 7.0",
+          description: "",
+          status: "active",
+          targetDate: "2026-10-01",
+          progressPercent: 0,
+          clarifiedContext: {},
+        },
+      ],
+      tasks: [
+        ...baseWorkspace.tasks,
+        {
+          id: "t3",
+          goalId: "g2",
+          title: "Speaking practice",
+          notes: "",
+          effort: "M",
+          dueDate: "",
+          status: "todo",
+          sortOrder: 1,
+        },
+      ],
+      aiSessions: [
+        {
+          id: "s1",
+          goalId: "g1",
+          type: "plan",
+          model: "demo",
+          status: "completed",
+          summary: "План g1",
+          createdAt: "2026-06-17T00:00:00.000Z",
+        },
+        {
+          id: "s2",
+          goalId: "g2",
+          type: "plan",
+          model: "demo",
+          status: "completed",
+          summary: "План g2",
+          createdAt: "2026-06-17T00:00:00.000Z",
+        },
+      ],
+    }
+
+    const next = deleteGoal(workspaceWithTwoGoals, "g1")
+
+    // Цель g2 и всё связанное с ней должны пережить удаление g1 —
+    // это отличает фильтрацию по goalId от полной очистки.
+    expect(next.goals.map((item) => item.id)).toEqual(["g2"])
+    expect(next.tasks.map((task) => task.id)).toEqual(["t3"])
+    expect(next.aiSessions.map((session) => session.id)).toEqual(["s2"])
+  })
 })
 
 describe("toggleTask", () => {

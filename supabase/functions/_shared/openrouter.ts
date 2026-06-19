@@ -167,7 +167,8 @@ export async function readJson<T>(request: Request): Promise<T> {
   try {
     return (await request.json()) as T
   } catch {
-    throw new Error("Некорректный JSON в запросе.")
+    // Битое тело запроса — это ошибка клиента (400), а не сервера (500).
+    throw new ValidationError("Некорректный JSON в запросе.")
   }
 }
 

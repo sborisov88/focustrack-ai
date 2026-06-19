@@ -131,6 +131,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import {
   Table,
@@ -237,6 +238,41 @@ function useAppRoute() {
   }
 
   return { route, navigate }
+}
+
+function DashboardSidebarNav({
+  route,
+  onNavigate,
+}: {
+  route: AppRoute
+  onNavigate: (route: AppRoute) => void
+}) {
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  return (
+    <SidebarMenu>
+      {navItems.map(({ id, label, icon: Icon }) => (
+        <SidebarMenuItem key={label}>
+          <SidebarMenuButton
+            type="button"
+            data-testid={`nav-${id}`}
+            isActive={id === route}
+            onClick={() => {
+              onNavigate(id)
+              // На мобильном выбор пункта должен закрывать выехавшую шторку,
+              // иначе она остаётся поверх контента нового маршрута.
+              if (isMobile) {
+                setOpenMobile(false)
+              }
+            }}
+          >
+            <Icon />
+            <span>{label}</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  )
 }
 
 function statusVariant(status: Goal["status"] | FocusTask["status"]) {
@@ -1900,21 +1936,7 @@ export function FocusTrackDashboard() {
           <SidebarGroup>
             <SidebarGroupLabel>Навигация</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
-                {navItems.map(({ id, label, icon: Icon }) => (
-                  <SidebarMenuItem key={label}>
-                    <SidebarMenuButton
-                      type="button"
-                      data-testid={`nav-${id}`}
-                      isActive={id === route}
-                      onClick={() => handleNavigate(id)}
-                    >
-                      <Icon />
-                      <span>{label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
+              <DashboardSidebarNav route={route} onNavigate={handleNavigate} />
             </SidebarGroupContent>
           </SidebarGroup>
           <SidebarGroup>
@@ -2037,7 +2059,7 @@ export function FocusTrackDashboard() {
           <ScrollArea className="flex-1">
             {!authState.ready ? (
               <WorkspaceLoadingState />
-            ) : workspaceQuery.isError ? (
+            ) : workspaceQuery.isLoadingError ? (
               <WorkspaceErrorState
                 onRetry={() => {
                   void workspaceQuery.refetch()
@@ -2059,17 +2081,49 @@ export function FocusTrackDashboard() {
                     </Alert>
                   </div>
                 )}
-                {workspaceQuery.isFetching && workspace.mode === "supabase" && (
-                  <div className="px-4 pt-4">
-                    <Alert data-testid="workspace-loading-banner">
-                      <Loader2Icon className="animate-spin" />
-                      <AlertTitle>Синхронизируем данные</AlertTitle>
-                      <AlertDescription>
-                        Обновляем цели, задачи и AI-сессии из Supabase.
-                      </AlertDescription>
-                    </Alert>
-                  </div>
-                )}
+                {workspaceQuery.isRefetchError &&
+                  workspace.mode === "supabase" && (
+                    <div className="px-4 pt-4">
+                      <Alert
+                        variant="destructive"
+                        data-testid="workspace-refetch-error-banner"
+                      >
+                        <TriangleAlertIcon />
+                        <AlertTitle>Не удалось обновить данные</AlertTitle>
+                        <AlertDescription className="mt-2 flex flex-col gap-3">
+                          <span>
+                            Показаны последние загруженные цели и задачи —
+                            фоновое обновление из Supabase не удалось.
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-fit"
+                            onClick={() => {
+                              void workspaceQuery.refetch()
+                            }}
+                            data-testid="workspace-refetch-retry-button"
+                          >
+                            <RefreshCcwIcon data-icon="inline-start" />
+                            Обновить
+                          </Button>
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  )}
+                {workspaceQuery.isFetching &&
+                  !workspaceQuery.isError &&
+                  workspace.mode === "supabase" && (
+                    <div className="px-4 pt-4">
+                      <Alert data-testid="workspace-loading-banner">
+                        <Loader2Icon className="animate-spin" />
+                        <AlertTitle>Синхронизируем данные</AlertTitle>
+                        <AlertDescription>
+                          Обновляем цели, задачи и AI-сессии из Supabase.
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  )}
                 {route === "dashboard" && (
                   <main
                     className="flex flex-col gap-4 p-4"
