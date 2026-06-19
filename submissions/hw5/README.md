@@ -31,7 +31,7 @@
 - `ai-clarify`, `ai-plan` и `rag-answer` доступны из UI;
 - `rag-answer` отвечает по личным заметкам пользователя (журнал тренировок, бюджет, план подготовки к IELTS).
 
-## Доработки этой итерации (audit-remediation 2026-06-17)
+## Доработки этой итерации (closure-docs 2026-06-19)
 
 - В `docs/backend/backend_documentation.md` добавлены примеры `curl` для каждого endpoint: `ai-clarify`, `ai-plan`, `ai-weekly-review`, `rag-answer`, `health` (с контрактами запрос/ответ).
 - CORS: wildcard `*` заменён на allowlist из секрета `ALLOWED_ORIGINS` (по умолчанию `https://focustrack-ai.vercel.app,http://localhost:5173`); `corsHeaders(request)` отражает только разрешённый `Origin` и добавляет `Vary: Origin`. Сигнатура хелпера ответа — `jsonResponse(request, body, status = 200)`.
@@ -51,14 +51,14 @@ supabase functions deploy health --workdir .
 
 Примеры `curl` для каждого endpoint (с контрактами запрос/ответ) приведены в `docs/backend/backend_documentation.md`.
 
-Фактический прогон 17 июня 2026 (ветка `audit-remediation-2026-06-17`, все шаги EXIT 0):
+Фактический прогон 19 июня 2026 (ветка `closure-docs-2026-06-19`, все шаги EXIT 0):
 
 ```text
 typecheck -> EXIT 0
 lint -> EXIT 0
-unit -> 12 passed (progress.test.ts + focustrack-api.test.ts)
+unit -> 28 passed (progress.test.ts + focustrack-api.test.ts + auth.test.ts)
 build -> EXIT 0
-e2e -> 6 passed / 8 skipped
+e2e -> 8 passed / 10 skipped
 supabase db push --workdir . --yes -> применена 20260617033231_restrict_anon_table_grants.sql
 GET /functions/v1/health -> 200
 POST /functions/v1/ai-weekly-review без JWT -> 401

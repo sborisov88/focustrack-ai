@@ -55,12 +55,12 @@ https://focustrack-ai.vercel.app
 6. показать Supabase migration/RLS/functions;
 7. показать Playwright evidence и скриншоты в `README.md`.
 
-Фактический smoke 17 июня 2026 (ветка `audit-remediation-2026-06-17`, все шаги EXIT 0):
+Фактический smoke 19 июня 2026 (ветка `closure-docs-2026-06-19`, все шаги EXIT 0):
 
 ```text
 typecheck/lint/unit/build/e2e -> pass
-unit -> 16 passed в 2 файлах (src/lib/progress.test.ts + src/lib/focustrack-api.test.ts)
-Playwright e2e -> 7 passed / 9 skipped: desktop dashboard flow, AI-clarify+AI-plan, RAG,
+unit -> 28 passed в 3 файлах (src/lib/progress.test.ts + src/lib/focustrack-api.test.ts + src/lib/auth.test.ts)
+Playwright e2e -> 8 passed / 10 skipped: desktop dashboard flow, AI-clarify+AI-plan, RAG,
                   route navigation, auth sign-in/sign-up modes, delete goal, mobile usability
                   (skip — кросс-проектные дубли desktop/mobile и live-Supabase сценарий,
                   требующий env E2E_DEMO_EMAIL/E2E_DEMO_PASSWORD)

@@ -6,11 +6,11 @@
 - Supabase backend, RLS, Edge Functions и OpenRouter настроены;
 - AI применяется в продукте через server-side Edge Functions, а UI вызывает `ai-clarify`, `ai-plan`, `ai-weekly-review` и `rag-answer`;
 - подготовлены README, архитектура, промпты, roadmap, презентационный план и evidence;
-- Playwright e2e: 6 passed / 8 skipped — desktop dashboard flow, AI-уточнение/AI-план, RAG-вопрос, sidebar-навигация, login dialog, mobile usability;
+- Playwright e2e: 8 passed / 10 skipped — desktop dashboard flow, AI-уточнение/AI-план, RAG-вопрос, sidebar-навигация, login dialog, mobile usability;
 - skip покрывают кросс-проектные дубли desktop/mobile и live-Supabase сценарий, который требует env `E2E_DEMO_EMAIL`/`E2E_DEMO_PASSWORD` (persistence создания цели и статуса задачи после reload);
-- unit-тесты: 12 passed в 2 файлах (`src/lib/progress.test.ts` + `src/lib/focustrack-api.test.ts`).
+- unit-тесты: 28 passed в 3 файлах (`src/lib/progress.test.ts` + `src/lib/focustrack-api.test.ts` + `src/lib/auth.test.ts`).
 
-## Изменения итерации (аудит, ветка `audit-remediation-2026-06-17`)
+## Изменения итерации (аудит, ветка `closure-docs-2026-06-19`)
 
 - убраны 2 неинтерактивные «мёртвые» кнопки UI: декоративный селектор `data-testid="knowledge-source-select"` удалён из карточки «Категории целей» (рабочий селектор источника RAG — `rag-source-select`, `src/features/dashboard/focustrack-dashboard.tsx`); индикаторы Supabase/OpenRouter в sidebar теперь обычные статусные строки (`<span>`), а не кликабельные кнопки;
 - расширено unit-покрытие: новый `src/lib/focustrack-api.test.ts` — валидация короткого RAG-вопроса (throws «Введите вопрос по заметкам.») и пустого списка документов (throws «Нет документов для RAG-ответа.»), демо-фоллбэки `requestGoalClarification`/`requestGoalPlan`/`requestRagAnswer` без сессии, пересчёт прогресса в `toggleTask` и edge на несуществующую задачу;
@@ -49,8 +49,8 @@
 - `logs/unit-test.log`
 - `logs/build.log`
 - `logs/audit.log`
-- `logs/unit-test.log` — unit-тесты (`src/lib/progress.test.ts` + `src/lib/focustrack-api.test.ts`), 12 passed.
-- `logs/e2e.log` — Playwright: 6 passed / 8 skipped, включая AI-clarify/AI-plan и RAG.
+- `logs/unit-test.log` — unit-тесты (`src/lib/progress.test.ts` + `src/lib/focustrack-api.test.ts` + `src/lib/auth.test.ts`), 28 passed.
+- `logs/e2e.log` — Playwright: 8 passed / 10 skipped, включая AI-clarify/AI-plan и RAG.
 - `logs/live-supabase-e2e.log` — live login, создание цели и task toggle через Supabase с проверкой после reload (требует env `E2E_DEMO_EMAIL`/`E2E_DEMO_PASSWORD`).
 - `logs/start-check.log` — `FOCUSTRACK_CHECK_ONLY=1 ./start.sh`, one-command cloud-only smoke: production frontend 200 и Supabase health 200.
 - `logs/supabase-smoke.log`

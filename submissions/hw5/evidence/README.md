@@ -35,13 +35,13 @@
 
 ## Логи
 
-Прогон 17 июня 2026 (ветка `audit-remediation-2026-06-17`), все шаги EXIT 0:
+Прогон 19 июня 2026 (ветка `closure-docs-2026-06-19`), все шаги EXIT 0:
 
 - `logs/typecheck.log` — typecheck, EXIT 0.
 - `logs/lint.log` — lint, EXIT 0.
-- `logs/unit-test.log` — unit-тесты: 12 passed (`progress.test.ts` + `focustrack-api.test.ts`).
+- `logs/unit-test.log` — unit-тесты: 28 passed (`progress.test.ts` + `focustrack-api.test.ts` + `auth.test.ts`).
 - `logs/build.log` — production build, EXIT 0.
-- `logs/e2e.log` — e2e: 6 passed / 8 skipped (desktop dashboard, AI-clarify/AI-plan, RAG, sidebar-навигация, login dialog, mobile usability; skip — кросс-проектные дубли и live-Supabase сценарий).
+- `logs/e2e.log` — e2e: 8 passed / 10 skipped (desktop dashboard, AI-clarify/AI-plan, RAG, sidebar-навигация, login dialog, mobile usability; skip — кросс-проектные дубли и live-Supabase сценарий).
 - `logs/supabase-smoke.log` — functions, secrets names, migrations, health 200, protected endpoint 401.
 - `logs/live-supabase-e2e.log` — live Supabase login, создание цели и сохранение task status после reload.
 

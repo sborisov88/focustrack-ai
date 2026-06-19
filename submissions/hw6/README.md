@@ -43,14 +43,14 @@ pnpm run test:e2e
 pnpm audit
 ```
 
-Фактическая проверка 17 июня 2026 (ветка `audit-remediation-2026-06-17`, EXIT 0):
+Фактическая проверка 19 июня 2026 (ветка `closure-docs-2026-06-19`, EXIT 0):
 
 ```text
 pnpm run lint -> pass
 pnpm run typecheck -> pass
-pnpm run test -> 12 passed (2 файла: progress.test.ts + focustrack-api.test.ts)
+pnpm run test -> 28 passed (3 файла: progress.test.ts + focustrack-api.test.ts + auth.test.ts)
 pnpm run build -> pass
-pnpm run test:e2e -> 6 passed / 8 skipped
+pnpm run test:e2e -> 8 passed / 10 skipped
 pnpm audit --audit-level high -> No known vulnerabilities found
 Vercel production deploy -> READY, https://focustrack-ai.vercel.app
 GitHub Actions CI + Vercel deploy -> success
@@ -59,9 +59,9 @@ GET /functions/v1/health -> 200
 POST /functions/v1/ai-weekly-review без JWT -> 401
 ```
 
-e2e: 6 реально проходящих сценариев (desktop dashboard flow, AI clarify+plan, RAG, sidebar-навигация, login-диалог, mobile usability); 8 skipped — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, который требует env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`.
+e2e: 6 реально проходящих сценариев (desktop dashboard flow, AI clarify+plan, RAG, sidebar-навигация, login-диалог, mobile usability); 10 skipped — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, который требует env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`.
 
-## Повторная проверка 17 июня 2026
+## Повторная проверка 19 июня 2026
 
 Статус ДЗ 6 после повторной сверки, исправления deploy-разрыва и доработок по замечаниям аудита: **закрыто**.
 
@@ -83,7 +83,7 @@ e2e: 6 реально проходящих сценариев (desktop dashboard
 - **CORS.** Wildcard `*` заменён на явный allowlist (`_shared/openrouter.ts`: `ALLOWED_ORIGINS` из env, по умолчанию prod + localhost; `corsHeaders(request)` отражает только разрешённый Origin + `Vary: Origin`); аналогично в `health/index.ts`.
 - **Удалены неинтерактивные кнопки.** Декоративный Select из карточки «Категории целей» убран (рабочий — `rag-source-select`); sidebar-индикаторы Supabase/OpenRouter стали статусными строками.
 - **Cursor-правила.** Подключены в нативном формате `.cursor/rules/focustrack.mdc` (`alwaysApply`, зеркало корневого `AGENTS.md`).
-- **Unit-тесты.** Добавлен `src/lib/focustrack-api.test.ts` (валидация RAG-вопроса, пустой список документов, демо-фоллбэки без сессии, пересчёт прогресса `toggleTask`); итого 12 passed в 2 файлах.
+- **Unit-тесты.** Добавлен `src/lib/focustrack-api.test.ts` (валидация RAG-вопроса, пустой список документов, демо-фоллбэки без сессии, пересчёт прогресса `toggleTask`); итого 28 passed в 3 файлах.
 
 Подробности: `submissions/reverification-audit-2026-06-17.md`.
 
@@ -108,8 +108,8 @@ CORS allowlist, security audit и RAG experiment. Использование AI 
 (CI/CD, аудит безопасности, анализ логов).
 Production: https://focustrack-ai.vercel.app
 
-Проверка (ветка audit-remediation-2026-06-17, EXIT 0): typecheck, lint, build, unit 12 passed,
-e2e 6 passed / 8 skipped, pnpm audit без уязвимостей.
+Проверка (ветка closure-docs-2026-06-19, EXIT 0): typecheck, lint, build, unit 28 passed,
+e2e 8 passed / 10 skipped, pnpm audit без уязвимостей.
 
 Основные файлы:
 - .github/workflows/ci.yml
