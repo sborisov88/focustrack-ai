@@ -1,5 +1,5 @@
 /**
- * Token scopes for the three ДЗ 3 UI concepts.
+ * Token scopes for the three UI concepts.
  *
  * Each `.concept-*` class re-declares the same shadcn CSS custom properties as
  * `:root` in src/index.css, so every shadcn primitive (Card, Button, Badge,

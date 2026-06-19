@@ -1,10 +1,10 @@
 /**
- * Shared, read-only data adapter for the ДЗ 3 UI-concept showcase.
+ * Shared, read-only data adapter for the UI-concept showcase.
  *
  * Every concept (Compass / Mission Control / Field Journal) renders the SAME
  * real demo content (persona "Алекс Демо", the 4 life goals, tasks, AI sessions,
  * weekly review, knowledge notes) so the three differ ONLY in visual style and
- * layout — exactly what ДЗ 3 (урок 13) requires.
+ * layout — the whole point of the concept showcase.
  *
  * Concepts MUST import their content from here and never reach into the
  * dashboard feature. Helpers below give typed selectors + RU display labels

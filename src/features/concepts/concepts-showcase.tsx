@@ -9,7 +9,7 @@ import { MissionConcept } from "./mission/mission-concept"
 import { JournalConcept } from "./journal/journal-concept"
 
 /**
- * ДЗ 3 UI-concept showcase, mounted additively at /concepts (see src/App.tsx).
+ * UI-concept showcase, mounted additively at /concepts (see src/App.tsx).
  * Lives entirely outside the production dashboard router and its e2e testids,
  * so nothing here can affect the live Дашборд/План/Заметки/Обзоры flow.
  */
@@ -21,7 +21,7 @@ type ConceptEntry = {
   path: string
   /** Built-app concept name. */
   name: string
-  /** Maps to the original ДЗ 3 prose concept name. */
+  /** Maps to the original prose concept name. */
   alias: string
   /** scope class from concepts.css */
   scope: string
@@ -104,7 +104,7 @@ export function ConceptsShowcase() {
             <span aria-hidden className="text-base">◆</span>
             FocusTrack&nbsp;AI
             <span className="hidden text-xs font-normal text-slate-400 sm:inline">
-              · UI-концепции ДЗ 3
+              · UI-концепции
             </span>
           </a>
 

@@ -94,6 +94,16 @@ pnpm run build
 pnpm run test:e2e
 ```
 
+## Скриншоты
+
+Снимки актуального интерфейса (Mission Control), сгенерированные Playwright-прогоном демо-сценария:
+
+![FocusTrack AI — дашборд, десктоп](./docs/screenshots/dashboard-desktop-initial.png)
+
+![FocusTrack AI — после создания цели и AI Review](./docs/screenshots/dashboard-desktop-after-flow.png)
+
+![FocusTrack AI — мобильный вид](./docs/screenshots/dashboard-mobile.png)
+
 ## Документация
 
 | Раздел                                                                                             | Содержание                                        |

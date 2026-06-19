@@ -4,7 +4,7 @@ import { FocusTrackDashboard } from "@/features/dashboard/focustrack-dashboard"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
-// Additive ДЗ 3 UI-concept showcase, code-split so it never enters the main
+// Additive UI-concept showcase, code-split so it never enters the main
 // dashboard bundle. Reachable only at /concepts; the production app is untouched.
 const ConceptsShowcase = lazy(() =>
   import("@/features/concepts/concepts-showcase").then((module) => ({
