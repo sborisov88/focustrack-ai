@@ -10,6 +10,7 @@ import {
   ClipboardListIcon,
   CompassIcon,
   DatabaseIcon,
+  FileQuestionIcon,
   LayoutDashboardIcon,
   LogInIcon,
   LogOutIcon,
@@ -58,19 +59,19 @@ import type {
   Workspace,
 } from "@/lib/domain"
 import { demoWorkspace } from "@/lib/demo-data"
-import { getEffortLabel, getGoalTasks, getStatusLabel } from "@/lib/progress"
+import {
+  calculateCurrentStreakDays,
+  getEffortLabel,
+  getGoalTasks,
+  getStatusLabel,
+} from "@/lib/progress"
 import { cn } from "@/lib/utils"
 import { withViewTransition } from "@/lib/view-transition"
 import { Panel } from "@/components/telemetry/panel"
 import { Sparkline } from "@/components/telemetry/sparkline"
 import { StatBlock } from "@/components/telemetry/stat-block"
 import { TelemetryArc } from "@/components/telemetry/telemetry-arc"
-import {
-  chartVar,
-  deadlineLabel,
-  goalVisual,
-  trendSeries,
-} from "./goal-visual"
+import { chartVar, deadlineLabel, goalVisual, trendSeries } from "./goal-visual"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -181,10 +182,11 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-type AppRoute = "dashboard" | "planner" | "knowledge" | "review"
+type KnownAppRoute = "dashboard" | "planner" | "knowledge" | "review"
+type AppRoute = KnownAppRoute | "not-found"
 
 const navItems: Array<{
-  id: AppRoute
+  id: KnownAppRoute
   label: string
   path: string
   icon: React.ComponentType
@@ -201,13 +203,14 @@ const navItems: Array<{
 ]
 
 function getRouteFromPath(pathname: string): AppRoute {
+  if (pathname === "/" || pathname.startsWith("/dashboard")) return "dashboard"
   if (pathname.startsWith("/planner")) return "planner"
   if (pathname.startsWith("/knowledge")) return "knowledge"
   if (pathname.startsWith("/review")) return "review"
-  return "dashboard"
+  return "not-found"
 }
 
-function getRoutePath(route: AppRoute) {
+function getRoutePath(route: KnownAppRoute) {
   return navItems.find((item) => item.id === route)?.path ?? "/dashboard"
 }
 
@@ -226,7 +229,7 @@ function useAppRoute() {
     return () => globalThis.removeEventListener("popstate", handlePopState)
   })
 
-  const navigate = (nextRoute: AppRoute) => {
+  const navigate = (nextRoute: KnownAppRoute) => {
     const nextPath = getRoutePath(nextRoute)
 
     withViewTransition(() => {
@@ -245,7 +248,7 @@ function DashboardSidebarNav({
   onNavigate,
 }: {
   route: AppRoute
-  onNavigate: (route: AppRoute) => void
+  onNavigate: (route: KnownAppRoute) => void
 }) {
   const { isMobile, setOpenMobile } = useSidebar()
 
@@ -1013,18 +1016,19 @@ function GoalList({
   return (
     <section
       data-testid="goal-list"
-      className={cn(
-        "grid gap-3",
-        columns === 2 && "sm:grid-cols-2",
-      )}
+      className={cn("grid gap-3", columns === 2 && "sm:grid-cols-2")}
     >
       {goals.map((goal, index) => {
         const visual = goalVisual(goal, index)
         const color = chartVar(visual.chart)
         const Icon = visual.Icon
         const goalTasks = getGoalTasks(goal.id, tasks)
-        const doneTasks = goalTasks.filter((task) => task.status === "done").length
-        const doingTasks = goalTasks.filter((task) => task.status === "doing").length
+        const doneTasks = goalTasks.filter(
+          (task) => task.status === "done",
+        ).length
+        const doingTasks = goalTasks.filter(
+          (task) => task.status === "doing",
+        ).length
         const nextTask =
           goalTasks.find((task) => task.status === "doing") ??
           goalTasks.find((task) => task.status === "todo") ??
@@ -1035,7 +1039,7 @@ function GoalList({
             key={goal.id}
             data-testid="goal-item"
             data-active={active}
-            className="group tile-enter relative flex flex-col overflow-hidden border border-border bg-card transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_0_30px_-10px_var(--concept-glow)] data-[active=true]:border-primary"
+            className="group tile-enter border-border bg-card data-[active=true]:border-primary relative flex flex-col overflow-hidden border transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_0_30px_-10px_var(--concept-glow)]"
             style={{
               backgroundImage: `radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, ${color} 9%, transparent), transparent 60%)`,
               animationDelay: `${(index % 6) * 70}ms`,
@@ -1050,7 +1054,7 @@ function GoalList({
               type="button"
               onClick={() => onSelectGoal(goal.id)}
               aria-pressed={active}
-              className="flex flex-1 flex-col gap-3 p-4 pl-5 text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              className="focus-visible:ring-ring flex flex-1 flex-col gap-3 p-4 pl-5 text-left focus-visible:ring-2 focus-visible:outline-none"
             >
               <div className="flex items-start justify-between gap-2">
                 <span
@@ -1230,13 +1234,16 @@ function GoalDetail({
             <TabsTrigger value="questions">AI-вопросы</TabsTrigger>
             <TabsTrigger value="timeline">Шкала</TabsTrigger>
           </TabsList>
-          <TabsContent value="tasks" className="animate-in fade-in pt-4 duration-200">
+          <TabsContent
+            value="tasks"
+            className="animate-in fade-in pt-4 duration-200"
+          >
             <div className="flex flex-col gap-3">
               {tasks.map((task) => (
                 <div
                   key={task.id}
                   data-testid="task-item"
-                  className="bg-card flex items-start gap-3 rounded-lg border p-3 transition-colors duration-200 hover:border-primary/40 hover:bg-muted/30"
+                  className="bg-card hover:border-primary/40 hover:bg-muted/30 flex items-start gap-3 rounded-lg border p-3 transition-colors duration-200"
                 >
                   <Checkbox
                     data-testid="task-checkbox"
@@ -1271,7 +1278,10 @@ function GoalDetail({
               ))}
             </div>
           </TabsContent>
-          <TabsContent value="questions" className="animate-in fade-in pt-4 duration-200">
+          <TabsContent
+            value="questions"
+            className="animate-in fade-in pt-4 duration-200"
+          >
             <Alert>
               <SparklesIcon />
               <AlertTitle>Контекст цели, уточнённый с AI</AlertTitle>
@@ -1293,7 +1303,10 @@ function GoalDetail({
               ))}
             </div>
           </TabsContent>
-          <TabsContent value="timeline" className="animate-in fade-in pt-4 duration-200">
+          <TabsContent
+            value="timeline"
+            className="animate-in fade-in pt-4 duration-200"
+          >
             <div className="grid gap-3 md:grid-cols-4">
               {tasks.slice(0, 4).map((task) => (
                 <Card key={task.id}>
@@ -1680,6 +1693,36 @@ function WorkspaceErrorState({ onRetry }: { onRetry: () => void }) {
   )
 }
 
+function RouteNotFoundState({ onGoDashboard }: { onGoDashboard: () => void }) {
+  return (
+    <main className="flex min-h-[60svh] items-center justify-center p-4">
+      <Card className="w-full max-w-xl" data-testid="route-not-found">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileQuestionIcon />
+            Страница не найдена
+          </CardTitle>
+          <CardDescription>
+            Такого раздела в FocusTrack AI нет. Вернитесь в рабочее
+            пространство, чтобы продолжить с целями и задачами.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onGoDashboard}
+            data-testid="not-found-dashboard-button"
+          >
+            <LayoutDashboardIcon data-icon="inline-start" />
+            Открыть дашборд
+          </Button>
+        </CardContent>
+      </Card>
+    </main>
+  )
+}
+
 function AnonymousWorkspaceEmptyState({
   onShowDemo,
 }: {
@@ -1865,6 +1908,7 @@ export function FocusTrackDashboard() {
     (task) => task.status === "doing",
   ).length
   const totalTasks = workspace.tasks.length
+  const currentStreakDays = calculateCurrentStreakDays(workspace.tasks)
   const overallProgress = workspace.goals.length
     ? Math.round(
         workspace.goals.reduce((sum, goal) => sum + goal.progressPercent, 0) /
@@ -1898,7 +1942,7 @@ export function FocusTrackDashboard() {
     trackEvent({ name: "demo_mode_closed", params: {} })
   }
 
-  const handleNavigate = (nextRoute: AppRoute) => {
+  const handleNavigate = (nextRoute: KnownAppRoute) => {
     navigate(nextRoute)
     trackEvent({
       name: "sidebar_navigation_clicked",
@@ -1968,7 +2012,8 @@ export function FocusTrackDashboard() {
       <SidebarInset>
         <div className="flex min-h-svh flex-col">
           <header
-            className="bg-background/95 sticky top-0 z-30 border-b border-border backdrop-blur"
+            className="bg-background/95 border-border sticky top-0 z-30 border-b backdrop-blur"
+            data-testid="app-header"
             style={{
               backgroundImage:
                 "radial-gradient(120% 160% at 100% -20%, var(--concept-glow), transparent 55%)",
@@ -1979,18 +2024,19 @@ export function FocusTrackDashboard() {
                 <SidebarTrigger />
                 <span
                   aria-hidden
-                  className="text-primary hidden size-9 shrink-0 items-center justify-center border border-primary/40 bg-primary/10 sm:flex"
+                  className="text-primary border-primary/40 bg-primary/10 hidden size-9 shrink-0 items-center justify-center border sm:flex"
                   style={{ boxShadow: "0 0 16px var(--concept-glow)" }}
                 >
                   <RadarIcon className="size-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="concept-mono flex items-center gap-2 text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
+                  <p className="concept-mono text-muted-foreground flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase">
                     <span
                       aria-hidden
-                      className="inline-block size-1.5 animate-pulse rounded-full bg-primary"
+                      className="bg-primary inline-block size-1.5 animate-pulse rounded-full"
                     />
-                    В эфире · {getModeLabel(workspace.mode)} · {workspace.goals.length} активные цели
+                    В эфире · {getModeLabel(workspace.mode)} ·{" "}
+                    {workspace.goals.length} активные цели
                   </p>
                   <h1
                     className="concept-display text-xl font-semibold tracking-[0.04em] uppercase"
@@ -2048,8 +2094,14 @@ export function FocusTrackDashboard() {
                 )}
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-y-2 border-t border-border/60 px-4 py-2.5">
-              <StatBlock label="Общий курс" value={overallProgress} unit="%" accent />
+            <div className="border-border/60 flex flex-wrap items-center gap-y-2 border-t px-4 py-2.5">
+              <StatBlock
+                label="Общий курс"
+                value={overallProgress}
+                unit="%"
+                accent
+              />
+              <StatBlock label="Серия" value={currentStreakDays} unit="дн." />
               <StatBlock label="Всего задач" value={totalTasks} />
               <StatBlock label="Готово" value={doneCount} />
               <StatBlock label="В работе" value={doingCount} />
@@ -2059,6 +2111,12 @@ export function FocusTrackDashboard() {
           <ScrollArea className="flex-1">
             {!authState.ready ? (
               <WorkspaceLoadingState />
+            ) : route === "not-found" ? (
+              <RouteNotFoundState
+                onGoDashboard={() => {
+                  navigate("dashboard")
+                }}
+              />
             ) : workspaceQuery.isLoadingError ? (
               <WorkspaceErrorState
                 onRetry={() => {

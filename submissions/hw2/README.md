@@ -4,14 +4,14 @@
 
 ## Что сдавать
 
-| Требование | Файл |
-| --- | --- |
-| Проектные правила агента | `AGENTS.md` |
-| Описание проекта и стека | `docs/prompts/hw_ai_rules.md` |
-| Набор правил | `docs/prompts/rules.md` |
-| Шаблоны промптов | `docs/prompts/prompt_templates.md` |
-| Методология промптинга | `docs/prompts/prompt_methodology.md` |
-| Примеры применения и сравнение | `docs/prompts/testing.md` |
+| Требование                     | Файл                                 |
+| ------------------------------ | ------------------------------------ |
+| Проектные правила агента       | `AGENTS.md`                          |
+| Описание проекта и стека       | `docs/prompts/ai_rules.md`           |
+| Набор правил                   | `docs/prompts/rules.md`              |
+| Шаблоны промптов               | `docs/prompts/prompt_templates.md`   |
+| Методология промптинга         | `docs/prompts/prompt_methodology.md` |
+| Примеры применения и сравнение | `docs/prompts/testing.md`            |
 
 ## Самопроверка
 
@@ -26,7 +26,7 @@
 
 ```bash
 test -f AGENTS.md
-test -f docs/prompts/hw_ai_rules.md
+test -f docs/prompts/ai_rules.md
 test -f docs/prompts/rules.md
 test -f docs/prompts/prompt_templates.md
 test -f docs/prompts/prompt_methodology.md
@@ -40,7 +40,7 @@ test -f docs/prompts/testing.md
 
 Артефакты находятся в репозитории:
 - AGENTS.md
-- docs/prompts/hw_ai_rules.md
+- docs/prompts/ai_rules.md
 - docs/prompts/rules.md
 - docs/prompts/prompt_templates.md
 - docs/prompts/prompt_methodology.md

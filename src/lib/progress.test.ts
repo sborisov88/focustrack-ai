@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 
-import { calculateProgress, getGoalTasks } from "@/lib/progress"
+import {
+  calculateCurrentStreakDays,
+  calculateProgress,
+  getGoalTasks,
+} from "@/lib/progress"
 import type { FocusTask } from "@/lib/domain"
 
 const tasks: FocusTask[] = [
@@ -40,5 +44,49 @@ describe("progress helpers", () => {
 
   it("returns zero for an empty task list", () => {
     expect(calculateProgress([])).toBe(0)
+  })
+
+  it("calculates the current completed-day streak from task due dates", () => {
+    expect(
+      calculateCurrentStreakDays([
+        {
+          ...tasks[0],
+          id: "done-1",
+          dueDate: "2026-06-17",
+          status: "done",
+        },
+        {
+          ...tasks[0],
+          id: "done-2",
+          dueDate: "2026-06-18",
+          status: "done",
+        },
+        {
+          ...tasks[0],
+          id: "done-3",
+          dueDate: "2026-06-20",
+          status: "done",
+        },
+        {
+          ...tasks[0],
+          id: "ignored-todo",
+          dueDate: "2026-06-19",
+          status: "todo",
+        },
+      ]),
+    ).toBe(1)
+  })
+
+  it("ignores malformed due dates in streak calculation", () => {
+    expect(
+      calculateCurrentStreakDays([
+        {
+          ...tasks[0],
+          id: "malformed",
+          dueDate: "tomorrow",
+          status: "done",
+        },
+      ]),
+    ).toBe(0)
   })
 })

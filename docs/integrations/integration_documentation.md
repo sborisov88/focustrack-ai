@@ -127,20 +127,20 @@ https://wbxyyvvuqrhqtuywfeto.supabase.co/auth/v1/callback
 
 **Authentication** → **URL Configuration**:
 
-| Поле | Значение |
-|------|----------|
-| Site URL | `https://focustrack-ai.vercel.app` |
+| Поле          | Значение                                                    |
+| ------------- | ----------------------------------------------------------- |
+| Site URL      | `https://focustrack-ai.vercel.app`                          |
 | Redirect URLs | `https://focustrack-ai.vercel.app`, `http://127.0.0.1:5173` |
 
 Frontend после OAuth возвращает пользователя на `globalThis.location.origin` (`src/lib/auth.ts`), поэтому origin приложения должен быть в allow-list Supabase.
 
 #### Проверка и типичные ошибки
 
-| Симптом | Причина | Действие |
-|---------|---------|----------|
-| `provider is not enabled` | Google выключен или без credentials в Supabase | Включить провайдер, вставить Client ID/Secret |
-| `Invalid redirect URL` | Origin приложения не в Redirect URLs | Добавить URL в Supabase URL Configuration |
-| Ошибка Google `redirect_uri_mismatch` | Неверный callback в Google Cloud | Добавить Supabase callback URI (см. выше) |
+| Симптом                               | Причина                                        | Действие                                      |
+| ------------------------------------- | ---------------------------------------------- | --------------------------------------------- |
+| `provider is not enabled`             | Google выключен или без credentials в Supabase | Включить провайдер, вставить Client ID/Secret |
+| `Invalid redirect URL`                | Origin приложения не в Redirect URLs           | Добавить URL в Supabase URL Configuration     |
+| Ошибка Google `redirect_uri_mismatch` | Неверный callback в Google Cloud               | Добавить Supabase callback URI (см. выше)     |
 
 UI маппит ошибку `provider is not enabled` на понятный toast через `getOAuthErrorMessage()` в `src/lib/auth.ts` (см. также `DEMO_ACCESS.md`).
 
@@ -170,14 +170,14 @@ VITE_YANDEX_METRIKA_ID=
 
 `trackEvent({ name, params })` отправляет `reachGoal`-события (`window.ym(counterId, "reachGoal", name, params)`); в dev-режиме дополнительно логирует событие в консоль.
 
-В UI (`src/features/dashboard/focustrack-dashboard.tsx`) вызывается не менее 3 `reachGoal`-событий — фактически больше:
+В UI (`src/features/dashboard/focustrack-dashboard.tsx`) вызывается не менее 3 `reachGoal`-событий — фактически больше. Актуальные точки на 20 июня 2026:
 
-- `goal_created` (`:244`) — создана цель;
-- `task_toggled` (`:1252`) — переключён статус задачи;
-- `weekly_review_completed` (`:1202`) — завершён еженедельный обзор;
-- `ai_clarify_completed` (`:263`), `ai_plan_completed` (`:315`), `rag_answer_completed` (`:1078`) — завершены AI-сценарии;
-- `oauth_started` (`:499`), `password_sign_in` (`:576`), `sign_out` (`:671`) — события аутентификации;
-- `sidebar_navigation_clicked` (`:1261`) — навигация по разделам.
+- `goal_created` (`:395`) — создана цель;
+- `task_toggled` (`:1923`) — переключён статус задачи;
+- `weekly_review_completed` (`:1824`) — завершён еженедельный обзор;
+- `ai_clarify_completed` (`:414`), `ai_plan_completed` (`:467`), `rag_answer_completed` (`:1558`) — завершены AI-сценарии;
+- `oauth_started` (`:659`), `password_sign_in` (`:783`), `sign_out` (`:935`) — события аутентификации;
+- `sidebar_navigation_clicked` (`:1947`) — навигация по разделам.
 
 ## Monitoring
 
@@ -190,6 +190,7 @@ supabase/functions/health/index.ts
 Она возвращает:
 
 - статус сервиса;
+- результат live-проверки PostgREST/БД (`checks.database.reachable`, HTTP status и latency);
 - факт наличия OpenRouter secret;
 - модель;
 - timestamp проверки.
@@ -212,7 +213,13 @@ API:
 Уровни: `info | warn | error`. Каждая запись — отдельная строка JSON вида:
 
 ```json
-{ "level": "info", "ts": "<ISO-8601>", "fn": "<function>", "message": "<text>", "...поля": "..." }
+{
+  "level": "info",
+  "ts": "<ISO-8601>",
+  "fn": "<function>",
+  "message": "<text>",
+  "...поля": "..."
+}
 ```
 
 `level: "error"` пишется через `console.error`, `warn` — через `console.warn`, остальное — `console.log`, чтобы запись корректно раскладывалась по потокам в логах Supabase.

@@ -12,6 +12,8 @@
 | User Story Mapping  | `docs/product/user_stories.md`               |
 | Техническое задание | `docs/product/technical_specification.md`    |
 | ADR по стеку        | `docs/architecture/adr/001-tech-stack.md`    |
+| AI-process evidence по UI | `submissions/hw3/evidence/ai-ui-generation.md` |
+| AI-review ТЗ        | `submissions/hw3/evidence/technical-spec-ai-review.md` |
 
 ## Самопроверка
 
@@ -21,7 +23,8 @@
 - есть минимум 5 user stories;
 - acceptance criteria записаны в формате Given/When/Then;
 - описаны edge cases и UX-решения;
-- ТЗ готово для AI-инженера.
+- ТЗ готово для AI-инженера;
+- AI-процесс генерации UI-концепций и AI-ревью ТЗ зафиксированы отдельными evidence-файлами.
 
 ## Текст для отправки
 
@@ -35,6 +38,8 @@
 - docs/product/user_stories.md
 - docs/product/technical_specification.md
 - docs/architecture/adr/001-tech-stack.md
+- submissions/hw3/evidence/ai-ui-generation.md
+- submissions/hw3/evidence/technical-spec-ai-review.md
 
 Проект ведется как единая линия ДЗ 1-6 и проектной работы.
 ```

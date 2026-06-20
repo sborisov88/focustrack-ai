@@ -4,16 +4,17 @@
 
 ## Что сдавать
 
-| Требование              | Файл или команда                                                                  |
-| ----------------------- | --------------------------------------------------------------------------------- |
-| Репозиторий с кодом     | корень репозитория                                                                |
-| README                  | `README.md`                                                                       |
-| package.json            | `package.json`                                                                    |
-| Отчет о разработке      | `docs/frontend/development_report.md`                                             |
-| Правила проекта для AI  | `.cursor/rules/focustrack.mdc` (нативный формат Cursor, зеркало корневого `AGENTS.md`) |
-| Unit-тесты              | `src/lib/progress.test.ts`, `src/lib/focustrack-api.test.ts`, `src/lib/auth.test.ts`                      |
-| E2E-тесты               | `tests/e2e/focustrack.spec.ts`                                                    |
-| Скриншоты/видео         | `output/playwright/` после запуска e2e                                            |
+| Требование                    | Файл или команда                                                                       |
+| ----------------------------- | -------------------------------------------------------------------------------------- |
+| Репозиторий с кодом           | корень репозитория                                                                     |
+| README                        | `README.md`                                                                            |
+| package.json                  | `package.json`                                                                         |
+| Отчет о разработке            | `docs/frontend/development_report.md`                                                  |
+| Правила проекта для AI        | `.cursor/rules/focustrack.mdc` (нативный формат Cursor, зеркало корневого `AGENTS.md`) |
+| Unit-тесты                    | `src/lib/progress.test.ts`, `src/lib/focustrack-api.test.ts`, `src/lib/auth.test.ts`   |
+| E2E-тесты                     | `tests/e2e/focustrack.spec.ts`                                                         |
+| Скриншоты/видео               | `output/playwright/` после запуска e2e                                                 |
+| Multimodal debugging evidence | `submissions/hw4/evidence/multimodal-debugging.md`                                     |
 
 ## Локальный запуск
 
@@ -48,18 +49,18 @@ pnpm run test:e2e
 
 ## Самопроверка ДЗ 4
 
-| Требование занятия                          | Статус | Где смотреть                                                                                  |
-| ------------------------------------------- | ------ | --------------------------------------------------------------------------------------------- |
-| Frontend запускается и собирается           | done   | `pnpm dev`, `pnpm run build` (build EXIT=0)                                                    |
-| Реализованы минимум 3 функции из ТЗ         | done   | цели, задачи, прогресс, Weekly AI Review, RAG (`src/features/dashboard/focustrack-dashboard.tsx`) |
-| Правила проекта подключены для AI-агента    | done   | `.cursor/rules/focustrack.mdc` (`alwaysApply`, зеркало `AGENTS.md`)                            |
-| Unit-тесты, включая обработку ошибок        | done   | 28 unit-тестов в 3 файлах: `src/lib/progress.test.ts`, `src/lib/focustrack-api.test.ts`, `src/lib/auth.test.ts`        |
-| E2E-тесты (Playwright)                       | done   | `tests/e2e/focustrack.spec.ts` — 8 passed / 10 skipped                                          |
-| Отчет о разработке с примерами промптов     | done   | `docs/frontend/development_report.md` (примеры промптов + пример мультимодальной отладки)      |
-| Скриншоты/видео                              | done   | `submissions/hw4/evidence/media/` (после запуска e2e — `output/playwright/`)                   |
-| Google OAuth e2e автоматизирован            | нет    | entry point реальный, вход через Google проверяется вручную                                    |
+| Требование занятия                       | Статус | Где смотреть                                                                                                    |
+| ---------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------- |
+| Frontend запускается и собирается        | done   | `pnpm dev`, `pnpm run build` (build EXIT=0)                                                                     |
+| Реализованы минимум 3 функции из ТЗ      | done   | цели, задачи, прогресс, Weekly AI Review, RAG (`src/features/dashboard/focustrack-dashboard.tsx`)               |
+| Правила проекта подключены для AI-агента | done   | `.cursor/rules/focustrack.mdc` (`alwaysApply`, зеркало `AGENTS.md`)                                             |
+| Unit-тесты, включая обработку ошибок     | done   | 30 unit-тестов в 3 файлах: `src/lib/progress.test.ts`, `src/lib/focustrack-api.test.ts`, `src/lib/auth.test.ts` |
+| E2E-тесты (Playwright)                   | done   | `tests/e2e/focustrack.spec.ts` — 9 passed / 11 skipped                                                          |
+| Отчет о разработке с примерами промптов  | done   | `docs/frontend/development_report.md` + `submissions/hw4/evidence/multimodal-debugging.md`                      |
+| Скриншоты/видео                          | done   | `submissions/hw4/evidence/media/` (после запуска e2e — `output/playwright/`)                                    |
+| Google OAuth e2e автоматизирован         | нет    | entry point реальный, вход через Google проверяется вручную                                                     |
 
-Подтверждено сборкой и тестами 2026-06-19 (ветка `closure-docs-2026-06-19`): typecheck, lint, unit (28 passed), build, e2e (8 passed / 10 skipped) — все с EXIT 0.
+Подтверждено сборкой и тестами 20 июня 2026: typecheck, lint, unit (30 passed), build, e2e (9 passed / 11 skipped) — все с EXIT 0.
 
 ## Текст для отправки
 
@@ -68,9 +69,10 @@ pnpm run test:e2e
 
 Frontend реализован на React + TypeScript + Vite + shadcn/ui.
 Правила проекта для AI-агента подключены в нативном формате Cursor: .cursor/rules/focustrack.mdc (зеркало AGENTS.md).
-Unit-тесты: 28 passed в 3 файлах (src/lib/progress.test.ts, src/lib/focustrack-api.test.ts и src/lib/auth.test.ts, включая обработку ошибок RAG-вопроса, пустых документов, демо-фоллбэки и toggleTask).
-E2E (Playwright): 8 passed / 10 skipped (skip — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, требующий env E2E_DEMO_EMAIL/E2E_DEMO_PASSWORD).
+Unit-тесты: 30 passed в 3 файлах (src/lib/progress.test.ts, src/lib/focustrack-api.test.ts и src/lib/auth.test.ts, включая streak, обработку ошибок RAG-вопроса, пустых документов, демо-фоллбэки и toggleTask).
+E2E (Playwright): 9 passed / 11 skipped (добавлен строгий 404-сценарий; skip — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, требующий env E2E_DEMO_EMAIL/E2E_DEMO_PASSWORD).
 Основной отчет с примерами промптов и примером мультимодальной отладки: docs/frontend/development_report.md.
+Контрольный multimodal debugging evidence: submissions/hw4/evidence/multimodal-debugging.md.
 Команды проверки: pnpm run lint, pnpm run typecheck, pnpm run test, pnpm run build, pnpm run test:e2e.
 Playwright сохраняет скриншоты и видео в output/playwright/.
 ```

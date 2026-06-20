@@ -170,7 +170,9 @@ frontend_url=https://focustrack-ai.vercel.app
 frontend_status=200
 frontend_has_title=true
 health_status=200
+health_database_reachable=true
 protected_ai_without_jwt_status=401
+protected_ai_publishable_jwt_status=401
 ```
 
 Лог:

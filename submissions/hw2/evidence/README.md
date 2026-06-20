@@ -11,7 +11,7 @@
 ## Проверенные файлы
 
 - `AGENTS.md`
-- `docs/prompts/hw_ai_rules.md`
+- `docs/prompts/ai_rules.md`
 - `docs/prompts/rules.md`
 - `docs/prompts/prompt_templates.md`
 - `docs/prompts/prompt_methodology.md`

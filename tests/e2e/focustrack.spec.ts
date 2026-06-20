@@ -60,6 +60,7 @@ test("desktop dashboard flow renders and updates local state", async ({
   await expect(page.getByTestId("sidebar-tagline")).toBeVisible()
   await openDemoWorkspace(page)
   await expect(page.getByTestId("route-dashboard")).toBeVisible()
+  await expect(page.getByTestId("app-header")).toContainText("Серия")
   await page.screenshot({
     fullPage: true,
     path: screenshotPath("dashboard-desktop-initial.png"),
@@ -193,6 +194,21 @@ test("desktop navigation opens four primary routes", async ({
     "/dashboard",
     "route-dashboard",
   )
+})
+
+test("unknown route renders a strict not-found state", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop", "desktop-only flow")
+
+  await page.goto("/missing-section")
+  await expect(page.getByTestId("workspace-title")).toBeVisible()
+  await expect(page.getByTestId("route-not-found")).toBeVisible()
+  await expect(page.getByTestId("signed-out-empty-state")).toHaveCount(0)
+
+  await page.getByTestId("not-found-dashboard-button").click()
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(page.getByTestId("signed-out-empty-state")).toBeVisible()
 })
 
 test("email/password auth dialog renders sign in and sign up modes", async ({

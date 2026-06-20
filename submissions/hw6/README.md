@@ -48,18 +48,19 @@ pnpm audit
 ```text
 pnpm run lint -> pass
 pnpm run typecheck -> pass
-pnpm run test -> 28 passed (3 файла: progress.test.ts + focustrack-api.test.ts + auth.test.ts)
+pnpm run test -> 30 passed (3 файла: progress.test.ts + focustrack-api.test.ts + auth.test.ts)
 pnpm run build -> pass
-pnpm run test:e2e -> 8 passed / 10 skipped
+pnpm run test:e2e -> 9 passed / 11 skipped
 pnpm audit --audit-level high -> No known vulnerabilities found
 Vercel production deploy -> READY, https://focustrack-ai.vercel.app
 GitHub Actions CI + Vercel deploy -> success
 Production frontend smoke -> 200
-GET /functions/v1/health -> 200
+GET /functions/v1/health -> 200, checks.database.reachable -> true
 POST /functions/v1/ai-weekly-review без JWT -> 401
+POST /functions/v1/ai-weekly-review с publishable/anon Bearer -> 401
 ```
 
-e2e: 6 реально проходящих сценариев (desktop dashboard flow, AI clarify+plan, RAG, sidebar-навигация, login-диалог, mobile usability); 10 skipped — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, который требует env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`.
+e2e: 9 реально проходящих сценариев (desktop dashboard flow, AI clarify+plan, RAG, sidebar-навигация, строгий 404, login-диалог, delete goal, закрытие demo-mode, mobile usability); 11 skipped — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, который требует env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`.
 
 ## Повторная проверка 19 июня 2026
 
@@ -83,7 +84,7 @@ e2e: 6 реально проходящих сценариев (desktop dashboard
 - **CORS.** Wildcard `*` заменён на явный allowlist (`_shared/openrouter.ts`: `ALLOWED_ORIGINS` из env, по умолчанию prod + localhost; `corsHeaders(request)` отражает только разрешённый Origin + `Vary: Origin`); аналогично в `health/index.ts`.
 - **Удалены неинтерактивные кнопки.** Декоративный Select из карточки «Категории целей» убран (рабочий — `rag-source-select`); sidebar-индикаторы Supabase/OpenRouter стали статусными строками.
 - **Cursor-правила.** Подключены в нативном формате `.cursor/rules/focustrack.mdc` (`alwaysApply`, зеркало корневого `AGENTS.md`).
-- **Unit-тесты.** Добавлен `src/lib/focustrack-api.test.ts` (валидация RAG-вопроса, пустой список документов, демо-фоллбэки без сессии, пересчёт прогресса `toggleTask`); итого 28 passed в 3 файлах.
+- **Unit-тесты.** Добавлен `src/lib/focustrack-api.test.ts` (валидация RAG-вопроса, пустой список документов, демо-фоллбэки без сессии, пересчёт прогресса `toggleTask`), а `src/lib/progress.test.ts` покрывает streak; итого 30 passed в 3 файлах.
 
 Подробности: `submissions/reverification-audit-2026-06-17.md`.
 
@@ -108,8 +109,8 @@ CORS allowlist, security audit и RAG experiment. Использование AI 
 (CI/CD, аудит безопасности, анализ логов).
 Production: https://focustrack-ai.vercel.app
 
-Проверка (ветка closure-docs-2026-06-19, EXIT 0): typecheck, lint, build, unit 28 passed,
-e2e 8 passed / 10 skipped, pnpm audit без уязвимостей.
+Проверка (20 июня 2026, EXIT 0): typecheck, lint, build, unit 30 passed,
+e2e 9 passed / 11 skipped, pnpm audit без уязвимостей.
 
 Основные файлы:
 - .github/workflows/ci.yml

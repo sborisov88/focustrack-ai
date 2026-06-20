@@ -2,7 +2,7 @@
 
 ## Проект
 
-**FocusTrack AI** — fullstack-продукт для отслеживания целей обучения и профессионального роста с AI-планировщиком.
+**FocusTrack AI** — fullstack-продукт для отслеживания личных и рабочих целей с AI-планировщиком.
 
 Пользователь формулирует цель, отвечает на уточняющие AI-вопросы, получает план на ближайшие недели, отмечает выполнение задач и раз в неделю получает AI-обзор прогресса по фактическим данным.
 
@@ -12,13 +12,13 @@ FocusTrack AI развивается как единый продуктовый 
 
 ## Стек
 
-| Слой | Выбор |
-|------|-------|
-| Frontend | React, TypeScript, Vite, Tailwind, Recharts |
-| Backend / DB / Auth | Supabase Cloud, PostgreSQL, Auth, RLS |
-| AI layer | Supabase Edge Functions, OpenRouter |
-| Development workflow | Codex, git, GitHub |
-| Documentation | Markdown, ADR, README, ROADMAP |
+| Слой                 | Выбор                                       |
+| -------------------- | ------------------------------------------- |
+| Frontend             | React, TypeScript, Vite, Tailwind, Recharts |
+| Backend / DB / Auth  | Supabase Cloud, PostgreSQL, Auth, RLS       |
+| AI layer             | Supabase Edge Functions, OpenRouter         |
+| Development workflow | Codex, git, GitHub                          |
+| Documentation        | Markdown, ADR, README, ROADMAP              |
 
 ## Ключевые требования к разработке
 

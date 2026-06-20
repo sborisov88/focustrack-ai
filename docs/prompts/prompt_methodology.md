@@ -1,4 +1,4 @@
-# Методология сложного запроса (Шаг 4 — Chain-of-Thought)
+# Методология сложного запроса
 
 ## Сложная задача
 
@@ -17,18 +17,18 @@
 
 ## Как выполнялась цепочка (фактический прогон)
 
-| Параметр | Значение |
-| --- | --- |
-| Агент | Codex CLI (`@openai/codex` 0.139.0), модель `gpt-5.5` |
-| Команда | `codex exec --skip-git-repo-check --ephemeral -s read-only` |
-| Дата прогона | 2026-06-17 |
-| Тип | 5 последовательных шагов; дословный вывод каждого шага подаётся на вход следующего |
-| Контекст шага | Краткий контекст продукта + промпт шага + выводы предыдущих шагов |
-| Обработка вывода | Финальный ответ Codex по каждому шагу приведён дословно, без редактирования |
+| Параметр         | Значение                                                                           |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| Агент            | Codex CLI (`@openai/codex` 0.139.0), модель `gpt-5.5`                              |
+| Команда          | `codex exec --skip-git-repo-check --ephemeral -s read-only`                        |
+| Дата прогона     | 2026-06-17                                                                         |
+| Тип              | 5 последовательных шагов; дословный вывод каждого шага подаётся на вход следующего |
+| Контекст шага    | Краткий контекст продукта + промпт шага + выводы предыдущих шагов                  |
+| Обработка вывода | Финальный ответ Codex по каждому шагу приведён дословно, без редактирования        |
 
 Chain-of-Thought здесь — не скрытое внутреннее рассуждение модели, а явная пошаговая декомпозиция: каждый шаг получает отдельный промпт, входной контекст и проверяемый результат. Ниже для каждого шага зафиксированы три блока: **Промпт → Сырой ответ агента → Результат шага**.
 
-## Шаг 1. Уточнить домен
+## Этап 1. Уточнить домен
 
 **Промпт (подан агенту дословно):**
 
@@ -48,7 +48,7 @@ Format:
 
 **Сырой ответ агента (дословно, без редактирования):**
 
-````text
+```text
 | entity | purpose | key fields | relations | open questions |
 |---|---|---|---|---|
 | `users` / `profiles` | Пользовательский контекст поверх Supabase Auth | `id`, `email`, `timezone`, `locale`, `weekly_review_day`, `created_at` | `profiles.id` = `auth.users.id`; 1 пользователь → много целей, ИИ-сессий, обзоров | Нужен ли отдельный профиль в MVP или достаточно `auth.users` + настройки позже? |
@@ -62,11 +62,11 @@ Format:
 | `weekly_reviews` | Недельный ИИ-обзор прогресса и рекомендации | `id`, `user_id`, `goal_id`, `ai_session_id`, `week_start`, `week_end`, `progress_summary`, `risks`, `recommendations`, `next_focus`, `created_at` | Пользователь 1:N обзоры; цель 1:N обзоры; связан с ИИ-сессией `review` | Обзор должен быть по каждой цели отдельно или общий по всем активным целям пользователя? |
 | `dashboard_snapshots` | Кэш агрегатов для дашборда прогресса | `id`, `user_id`, `goal_id`, `completion_percent`, `streak_days`, `last_activity_at`, `risk_level`, `updated_at` | Производная сущность от целей, задач и прогресса | Нужен ли физический кэш в MVP или считать дашборд запросами/представлением? |
 | `ai_prompt_templates` | Управляемые серверные шаблоны промптов для Edge Functions | `id`, `type`, `version`, `system_prompt`, `schema`, `is_active`, `created_at` | Используется ИИ-сессиями; не принадлежит пользователю | Хранить шаблоны в БД для версионности или в коде Edge Functions для простоты MVP? |
-````
+```
 
 **Результат шага:** Codex выделил доменные сущности MVP — `users`/`profiles`, `goals`, `ai_sessions`, отметки выполнения, `weekly_review`, плюс служебную `ai_prompt_templates` — связи через `user_id` и набор open questions. Базовый состав совпадает с принятой схемой (`supabase/migrations/20260617024511_init_focustrack_schema.sql`).
 
-## Шаг 2. Спроектировать таблицы
+## Этап 2. Спроектировать таблицы
 
 **Промпт (подан агенту дословно):**
 
@@ -438,7 +438,7 @@ commit;
 
 **Результат шага:** Codex предложил расширённый SQL-черновик с таблицами во множественном числе (`goals`, `ai_sessions`, `weekly_reviews`), но смоделировал задачи как `plans`/`plan_items`, отметки выполнения — как `progress_entries`, плюс дополнительные `goal_clarifications`, `goal_metrics`, `dashboard_snapshots`, `ai_prompt_templates`. В принятой миграции состав консолидирован под MVP: задачи — таблица `tasks`, отметки — `task_completions`, AI-лог — `ai_sessions` с JSONB `input`/`output`; добавлены enum-статусы и индексы. Часть предложенного Codex (`plan_items`, `goal_metrics`, `dashboard_snapshots`, `ai_prompt_templates`) упрощена/отложена как post-MVP. Расхождение между прогоном и принятой схемой оставлено намеренно — это и есть свидетельство реального, а не реконструированного выполнения.
 
-## Шаг 3. Добавить RLS
+## Этап 3. Добавить RLS
 
 **Промпт (подан агенту дословно):**
 
@@ -579,7 +579,7 @@ commit;
 
 **Результат шага:** Codex сформировал RLS-слой: `enable row level security` на всех таблицах (11) и 10 политик на `auth.uid()` (15 обращений), включая намеренный запрет доступа роли `authenticated` к серверным таблицам (например, к шаблонам промптов). В принятой миграции реализован эквивалент по объёму MVP: RLS включён на всех таблицах, политики владения `auth.uid() = user_id`; для `tasks` и `task_completions` владение дополнительно проверяется через принадлежность родительской цели/задачи (`exists (...)`).
 
-## Шаг 4. Проверить сценарии frontend и AI
+## Этап 4. Проверить сценарии frontend и AI
 
 **Промпт (подан агенту дословно):**
 
@@ -599,7 +599,7 @@ Format:
 
 **Сырой ответ агента (дословно, без редактирования):**
 
-````text
+```text
 | scenario | required tables | missing fields | risk | recommendation |
 |---|---|---|---|---|
 | Создать цель | `auth.users`, `profiles`, `goals`, опционально `goal_metrics` | Блокирующих нет. Желательно добавить авто-создание `profiles` при регистрации; `target_date` закрывает SMART time-bound, но отдельного `smart_time_bound` нет. | Цель можно создать, но профиль пользователя может отсутствовать, если его не создать триггером или приложением. | Оставить `goals` как основную точку создания цели. Добавить trigger/RPC для bootstrap `profiles` или гарантированный upsert на первом входе. |
@@ -608,11 +608,11 @@ Format:
 | Отметить задачу | `plan_items`, `progress_entries`, `dashboard_snapshots` | Нет `completed_at`, `status_changed_at`, `actual_effort_minutes`; в `progress_entries` нет явного типа события вроде `task_completed`. | Если использовать RLS из шага 3 (`plan_items_owner_all`), пользователь сможет не только отмечать, но и создавать/удалять элементы AI-плана. Это может ломать доверие к AI-плану. | Для строгого MVP дать клиенту только `select/update` по `plan_items`, а создание/удаление оставить Edge Function. Добавить `completed_at` и, при необходимости, серверный insert в `progress_entries` при переходе задачи в `done`. |
 | Построить dashboard | `goals`, `plan_items`, `progress_entries`, `goal_metrics`, `dashboard_snapshots` | Нет пользовательского общего snapshot без `goal_id`; нет `calculated_at`, `period_start`, `period_end`, версии алгоритма расчёта. | Физический кэш может устаревать. Клиент видит snapshot, но схема не задаёт, кто и когда его пересчитывает. | Для раннего MVP проще считать дашборд запросом/RPC или view с `security_invoker`. Если оставить `dashboard_snapshots`, добавить серверный refresh-процесс и поля свежести расчёта. |
 | Получить weekly review | `profiles`, `goals`, `progress_entries`, `plan_items`, `goal_metrics`, `ai_sessions`, `weekly_reviews`, `ai_prompt_templates` | Нет DB-инварианта, что `weekly_reviews.ai_session_id` указывает на `type = 'review'`; нет отдельной таблицы расписания/запусков review; timezone периода хранится только косвенно через `profiles.timezone`. | Сценарий поддержан для goal-level и user-level review, но корректность периода и типа AI-сессии держится на Edge Function. | Генерировать review серверно по `profiles.timezone` и `weekly_review_day`. Проверять `ai_sessions.type = 'review'`, сохранять входные данные в `ai_sessions.input_snapshot`, результат — в `weekly_reviews`. |
-````
+```
 
 **Результат шага:** Codex прогнал сценарии MVP (создать цель, AI clarify, сохранить plan, отметить задачу, дашборд, weekly review) в таблице scenario / required tables / missing fields / risk / recommendation и зафиксировал ключевой вывод: AI-данные (`ai_sessions.input/output`, `weekly_reviews`) записывает сервер через Edge Function, а weekly review строится по `ai_sessions.type = "review"`. Это согласуется с архитектурным правилом проекта «OpenRouter только на серверной стороне».
 
-## Шаг 5. Финализировать ADR
+## Этап 5. Финализировать ADR
 
 **Промпт (подан агенту дословно):**
 
@@ -632,7 +632,7 @@ Markdown ADR: Context, Decision, Consequences, Alternatives, Verification.
 
 **Сырой ответ агента (дословно, без редактирования):**
 
-````text
+```text
 # ADR-005: Схема данных FocusTrack AI
 
 ## Context
@@ -766,7 +766,7 @@ AI-операции фиксируются через `ai_sessions`. Поля `i
 - `weekly_reviews` не позволяет смешивать `scope = 'goal'` без `goal_id` и `scope = 'user'` с `goal_id`.
 - OpenRouter-ключи отсутствуют в клиенте и используются только в Edge Functions.
 - Если используются view для дашборда, они создаются с `security_invoker = true` или не открываются клиентским ролям.
-````
+```
 
 **Результат шага:** Codex собрал итоговый ADR-005 «Схема данных FocusTrack AI» с разделами Context / Decision / Consequences / Alternatives / Verification: Supabase + PostgreSQL + RLS + Edge Functions, доступ к данным только через RLS, view с `security_invoker = true`. Решение согласуется с принятым стеком проекта, зафиксированным в `docs/architecture/adr/001-tech-stack.md`.
 

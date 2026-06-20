@@ -6,6 +6,8 @@
 - UI-концепции связаны с фактическим рабочим экраном дашборда (цели, задачи, прогресс, категории целей, AI Review);
 - acceptance criteria оформлены в формате Given/When/Then;
 - ТЗ проверено через реализацию MVP и e2e smoke на сквозных жизненных целях (полумарафон, IELTS, финансовая подушка, лендинг пет-проекта).
+- AI-процесс генерации UI-концепций зафиксирован в `ai-ui-generation.md`;
+- AI-ревью технического задания зафиксировано в `technical-spec-ai-review.md`.
 
 ## Проверенные файлы
 
@@ -14,6 +16,13 @@
 - `docs/product/user_stories.md`
 - `docs/product/technical_specification.md`
 - `docs/architecture/adr/001-tech-stack.md`
+- `submissions/hw3/evidence/ai-ui-generation.md`
+- `submissions/hw3/evidence/technical-spec-ai-review.md`
+
+## AI-process evidence
+
+- `ai-ui-generation.md` — промпт, зафиксированный вывод агента, human review и решение по трем UI-концепциям;
+- `technical-spec-ai-review.md` — промпт ревью ТЗ, найденные риски, вердикт готовности для AI-инженера и acceptance checks.
 
 ## Логи
 

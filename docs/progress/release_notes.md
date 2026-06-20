@@ -6,7 +6,7 @@
 
 - shadcn dashboard for goals, tasks, weekly review and RAG docs;
 - Supabase schema with RLS;
-- Edge Functions for AI clarify, plan, weekly review, RAG and health;
+- Edge Functions for AI clarify, plan, weekly review, RAG and health with database reachability check;
 - OpenRouter server-side integration;
 - Google OAuth entry point through Supabase Auth;
 - analytics event helper;
@@ -18,5 +18,5 @@
 ### Known limitations
 
 - full authenticated data loading is prepared by schema/API but demo UI still uses local workspace fallback;
-- health endpoint is public for smoke checks; AI/RAG calls require a user JWT;
+- health endpoint is public for smoke checks and uses restricted CORS; AI/RAG calls require a user JWT;
 - Yandex ID, alerts and deployment secrets must be configured in provider dashboards.

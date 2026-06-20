@@ -4,7 +4,7 @@
 [WebServer] - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
 [WebServer] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
 
-Running 18 tests using 2 workers
+Running 20 tests using 2 workers
 
   -   1 [chromium-mobile] › tests/e2e/focustrack.spec.ts:40:1 › desktop dashboard flow renders and updates local state
   -   3 [chromium-mobile] › tests/e2e/focustrack.spec.ts:111:1 › desktop goal creation supports AI clarify and AI plan flow
@@ -25,6 +25,8 @@ Running 18 tests using 2 workers
   -  17 [chromium-desktop] › tests/e2e/focustrack.spec.ts:281:1 › mobile dashboard keeps the primary content usable
   -  18 [chromium-desktop] › tests/e2e/focustrack.spec.ts:297:1 › live Supabase flow persists created goals and task status
 
-  10 skipped
-  8 passed (14.3s)
+  ✓  strict 404 route renders not-found state and returns to dashboard
+
+  11 skipped
+  9 passed (15.1s)
 EXIT=0

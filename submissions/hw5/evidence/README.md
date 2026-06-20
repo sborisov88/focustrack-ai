@@ -15,6 +15,7 @@
 - live Supabase e2e подтверждает сохранение созданной цели и статуса задачи после reload (сценарий выполняется при заданных env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`, иначе пропускается);
 - OpenRouter используется только серверно через Supabase secrets;
 - AI применялся в backend-разработке как инженерная практика (генерация и ревью кода функций, миграций и документации под контролем разработчика).
+- контрольный AI-process evidence backend-разработки сохранен в `backend-ai-process.md`.
 
 ## Проверенные файлы
 
@@ -32,6 +33,11 @@
 - `docs/backend/backend_architecture.md`
 - `docs/backend/backend_documentation.md`
 - `docs/backend/backend_report.md`
+- `submissions/hw5/evidence/backend-ai-process.md`
+
+## AI-process evidence
+
+- `backend-ai-process.md` — промпты backend design/implementation review, зафиксированный вывод агента, human review, принятые решения и привязка к тестам/логам.
 
 ## Логи
 
@@ -39,9 +45,9 @@
 
 - `logs/typecheck.log` — typecheck, EXIT 0.
 - `logs/lint.log` — lint, EXIT 0.
-- `logs/unit-test.log` — unit-тесты: 28 passed (`progress.test.ts` + `focustrack-api.test.ts` + `auth.test.ts`).
+- `logs/unit-test.log` — unit-тесты: 30 passed (`progress.test.ts` + `focustrack-api.test.ts` + `auth.test.ts`).
 - `logs/build.log` — production build, EXIT 0.
-- `logs/e2e.log` — e2e: 8 passed / 10 skipped (desktop dashboard, AI-clarify/AI-plan, RAG, sidebar-навигация, login dialog, mobile usability; skip — кросс-проектные дубли и live-Supabase сценарий).
+- `logs/e2e.log` — e2e: 9 passed / 11 skipped (desktop dashboard, AI-clarify/AI-plan, RAG, sidebar-навигация, strict 404, login dialog, delete goal, mobile usability; skip — кросс-проектные дубли и live-Supabase сценарий).
 - `logs/supabase-smoke.log` — functions, secrets names, migrations, health 200, protected endpoint 401.
 - `logs/live-supabase-e2e.log` — live Supabase login, создание цели и сохранение task status после reload.
 

@@ -13,7 +13,7 @@
 - `supabase db push --workdir . --yes` подтвердил, что remote database up to date.
 - Добавлена и применена миграция `20260617033231_restrict_anon_table_grants.sql`: у `anon` нет прямых прав на продуктовые таблицы, `authenticated` ограничен CRUD.
 - AI/RAG Edge Functions (`ai-clarify`, `ai-plan`, `ai-weekly-review`, `rag-answer`) переопубликованы с `verify_jwt=true`; `health` оставлен публичным.
-- Supabase smoke: `GET /functions/v1/health -> 200`, `POST /functions/v1/ai-weekly-review` без JWT -> `401`.
+- Supabase smoke: `GET /functions/v1/health -> 200` с проверкой `checks.database.reachable`, `POST /functions/v1/ai-weekly-review` без JWT -> `401`.
 - Повторный gate 17 июня 2026 прошёл: `lint`, `typecheck`, `test`, `build`, `pnpm audit --audit-level high`, `test:e2e`.
 - Свежие Playwright screenshots/video сохранены в `output/playwright/`.
 

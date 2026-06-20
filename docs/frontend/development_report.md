@@ -158,7 +158,7 @@ Unit (28 тестов в трёх файлах):
 - `src/lib/focustrack-api.test.ts` — обработка ошибок и edge-кейсы: валидация короткого RAG-вопроса (`throws "Введите вопрос по заметкам."`), пустой список документов (`throws "Нет документов для RAG-ответа."`), демо-фоллбэки `requestGoalClarification` / `requestGoalPlan` / `requestRagAnswer` без сессии, пересчёт прогресса в `toggleTask` и edge на несуществующую задачу.
 - `src/lib/auth.test.ts` — сообщения об ошибках OAuth и парольной аутентификации, ветки sign-up (подтверждение email).
 
-E2E (8 passed / 10 skipped):
+E2E (9 passed / 11 skipped):
 
 - проходят: desktop dashboard flow, AI clarify + plan, RAG, sidebar-навигация, login-диалог, mobile usability;
 - пропущены: кросс-проектные дубли desktop/mobile и live-Supabase сценарий, требующий env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`.

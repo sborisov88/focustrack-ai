@@ -25,6 +25,17 @@ HTTP smoke:
 - GET /functions/v1/health: 200
 - POST /functions/v1/ai-weekly-review without JWT: 401
 
+Live health/CORS/auth recheck after health redeploy, 2026-06-20 Europe/Moscow:
+- deploy command: `supabase functions deploy health --project-ref wbxyyvvuqrhqtuywfeto --no-verify-jwt --use-api --workdir . --dns-resolver native`
+- deploy result: `Deployed Functions on project wbxyyvvuqrhqtuywfeto: health`
+- Origin `https://focustrack-ai.vercel.app`: status 200, `Access-Control-Allow-Origin: https://focustrack-ai.vercel.app`, `Vary: Accept-Encoding, Origin`, `checks.database.reachable: true`, `checks.database.status: 200`
+- Origin `https://evil.example`: status 200, `Access-Control-Allow-Origin: https://focustrack-ai.vercel.app`, `Vary: Accept-Encoding, Origin`, `checks.database.reachable: true`, `checks.database.status: 200`
+- OPTIONS with Origin `https://evil.example`: status 204, `Access-Control-Allow-Origin: https://focustrack-ai.vercel.app`, `Vary: Accept-Encoding, Origin`
+- POST `ai-weekly-review` without JWT: status 401, error `Missing authorization header`
+- POST `ai-weekly-review` with publishable/anon Bearer token: status 401, error `Некорректный JWT.`
+- wildcard count across recheck: 0
+- verdict: wildcard `Access-Control-Allow-Origin: *` is no longer returned by live `health`; public health endpoint remains intentionally open with restricted CORS.
+
 OpenRouter model:
 - google/gemini-2.5-flash-lite
 - configured through Supabase secrets and server-side Edge Functions

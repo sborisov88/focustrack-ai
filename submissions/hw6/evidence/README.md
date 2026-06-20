@@ -2,7 +2,7 @@
 
 ## Проверенные критерии
 
-- CI/CD gate описан и локально воспроизведён (typecheck, lint, unit 28 passed, build, e2e 8 passed / 10 skipped — EXIT 0, ветка `closure-docs-2026-06-19`);
+- CI/CD gate описан и локально воспроизведён (typecheck, lint, unit 30 passed, build, e2e 9 passed / 11 skipped — EXIT 0);
 - есть минимум 2 интеграции: Google OAuth entry point (Supabase Auth), реальная инициализация Яндекс.Метрики (`initAnalytics`, активна при `VITE_YANDEX_METRIKA_ID > 0`, без ID — no-op), Supabase health, OpenRouter через Edge Functions;
 - audit проведён; использование AI в аудите задокументировано в `docs/security/security_audit.md`;
 - health-check работает;
@@ -35,7 +35,7 @@
 - `logs/e2e.log`
 - `logs/supabase-smoke.log`
 
-Актуальный прогон на ветке `closure-docs-2026-06-19` (после доработок логирования, аналитики, CORS и unit-тестов): unit `28 passed` в 3 файлах (`progress.test.ts` + `focustrack-api.test.ts` + `auth.test.ts`), e2e `8 passed / 10 skipped` (8 проходящих: desktop dashboard flow, AI clarify+plan, RAG, sidebar-навигация, login-диалог, mobile usability; 10 skipped — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, требующий env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`).
+Актуальный прогон 20 июня 2026 (после доработок health, CORS, streak и 404): unit `30 passed` в 3 файлах (`progress.test.ts` + `focustrack-api.test.ts` + `auth.test.ts`), e2e `9 passed / 11 skipped` (9 проходящих: desktop dashboard flow, AI clarify+plan, RAG, sidebar-навигация, strict 404, login-диалог, delete goal, demo close, mobile usability; 11 skipped — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, требующий env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`).
 
 ## Медиа
 
