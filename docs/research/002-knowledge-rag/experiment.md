@@ -46,11 +46,11 @@
 ```text
 pnpm lint -> passed
 pnpm typecheck -> passed
-pnpm test -> 39 passed
+pnpm test -> 41 passed
 pnpm build -> passed
 pnpm test:e2e -> 9 passed / 11 skipped
-deno check rag-answer -> passed
-deno check embed-knowledge-document -> passed
+(cd supabase/functions/rag-answer && deno check --no-lock --node-modules-dir=auto index.ts) -> passed
+(cd supabase/functions/embed-knowledge-document && deno check --no-lock --node-modules-dir=auto index.ts) -> passed
 supabase migration up -> applied 20260625204340_add_vector_rag.sql
 ```
 

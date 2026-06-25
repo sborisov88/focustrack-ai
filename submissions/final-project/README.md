@@ -18,11 +18,11 @@ FocusTrack AI включает рабочий vector RAG:
 ```text
 pnpm lint -> passed
 pnpm typecheck -> passed
-pnpm test -> 39 passed
+pnpm test -> 41 passed
 pnpm build -> passed
 pnpm test:e2e -> 9 passed / 11 skipped
-deno check supabase/functions/rag-answer/index.ts -> passed
-deno check supabase/functions/embed-knowledge-document/index.ts -> passed
+(cd supabase/functions/rag-answer && deno check --no-lock --node-modules-dir=auto index.ts) -> passed
+(cd supabase/functions/embed-knowledge-document && deno check --no-lock --node-modules-dir=auto index.ts) -> passed
 supabase migration up -> local migration applied
 ```
 

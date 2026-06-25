@@ -203,8 +203,9 @@ protected_rag_without_jwt_status=401
 ```text
 output/verification/logs/vercel-production-smoke.log
 output/verification/logs/github-actions-final-production-smoke.log
-submissions/final-project/evidence/logs/starter-rag-production-smoke.log
-submissions/hw6/evidence/logs/starter-rag-production-smoke.log
+submissions/final-project/evidence/local-vector-rag-sql-rls-smoke-2026-06-25.json
+submissions/final-project/evidence/openrouter-embedding-preflight-2026-06-25.json
+submissions/final-project/evidence/production-vector-rag-smoke-2026-06-26.json
 ```
 
 ## Playwright evidence

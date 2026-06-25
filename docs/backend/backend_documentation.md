@@ -99,7 +99,7 @@ curl -X POST \
 
 ### `ai-plan`
 
-Контракт: `{goalTitle, targetDate?, answers?}` → `{type: "plan", model, plan}`.
+Контракт: `{goalTitle, targetDate?, answers?}` → `{type: "plan", model, plan, tasks}`.
 
 ```bash
 curl -X POST \
@@ -122,9 +122,22 @@ curl -X POST \
 {
   "type": "plan",
   "model": "google/gemini-2.5-flash-lite",
-  "plan": "..."
+  "plan": "...",
+  "tasks": [
+    {
+      "title": "Пробежка 8 км в лёгком темпе",
+      "notes": "Начать неделю с базовой нагрузки.",
+      "effort": "M",
+      "dueDate": "2026-06-22"
+    }
+  ]
 }
 ```
+
+Frontend нормализует `tasks`, сохраняет их в `public.tasks` с `goal_id`,
+`user_id`, `sort_order`, `effort`, `due_date`, а затем пишет AI-сессию в
+`public.ai_sessions`. В `ai_sessions.output` сохраняются исходный `plan`,
+массив `tasks`, `summary` и `taskCount`.
 
 ### `ai-weekly-review`
 
@@ -155,7 +168,7 @@ curl -X POST \
 
 ### `rag-answer`
 
-Контракт: `{question, selectedDocumentId?: string | null}` → `{type: "rag-answer", model, answer, citations, retrieval}`. `selectedDocumentId: null` означает поиск по всем готовым источникам пользователя; UUID ограничивает retrieval одним документом.
+Контракт: `{question, selectedDocumentId?: string | null}` → `{type: "rag-answer", model, answer, citations, retrieval}`. `selectedDocumentId: null` означает поиск по всем готовым источникам пользователя; UUID ограничивает retrieval одним документом. Блок `retrieval` (`{matchCount, threshold, embeddingModel, scope}`) описывает параметры поиска: сколько чанков найдено, порог сходства, модель эмбеддингов и охват (`all`/`document`).
 
 ```bash
 curl -X POST \
@@ -189,7 +202,8 @@ curl -X POST \
   "retrieval": {
     "matchCount": 1,
     "threshold": 0.55,
-    "embeddingModel": "baai/bge-m3"
+    "embeddingModel": "baai/bge-m3",
+    "scope": "all"
   }
 }
 ```

@@ -168,8 +168,8 @@ Google OAuth подключён через Supabase Auth (`src/lib/auth.ts`) к�
 
 Edge Functions:
 
-- `deno check supabase/functions/rag-answer/index.ts` — passed;
-- `deno check supabase/functions/embed-knowledge-document/index.ts` — passed.
+- `(cd supabase/functions/rag-answer && deno check --no-lock --node-modules-dir=auto index.ts)` — passed;
+- `(cd supabase/functions/embed-knowledge-document && deno check --no-lock --node-modules-dir=auto index.ts)` — passed.
 
 Команды:
 

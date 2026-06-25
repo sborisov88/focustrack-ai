@@ -90,15 +90,16 @@
 
 **Acceptance Criteria**
 
-- Given в запрос переданы заметки, When вызывается `rag-answer`, Then ответ строится только по переданному контексту.
-- Given данных недостаточно, When модель не может ответить, Then она явно сообщает о нехватке данных.
+- Given у пользователя есть готовые `knowledge_documents` и `knowledge_chunks`, When вызывается `rag-answer`, Then функция строит embedding вопроса и ищет фрагменты через `match_knowledge_chunks`.
+- Given пользователь выбрал конкретный источник, When в запросе передан `selectedDocumentId`, Then retrieval ограничивается этим документом.
+- Given данных недостаточно, When `match_knowledge_chunks` не возвращает релевантные фрагменты, Then модель не выдумывает ответ и явно сообщает о нехватке данных.
 
 ## Nice to have
 
 - экспорт weekly review в Markdown;
 - push-напоминания о следующем шаге;
 - совместный режим для близких целей;
-- полноценный RAG-индекс на pgvector.
+- отображение retrieval metadata в UI.
 
 ## Edge Cases
 
