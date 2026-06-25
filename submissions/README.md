@@ -25,7 +25,6 @@ https://github.com/sborisov88/focustrack-ai
 Входные точки проверки:
 
 - финальная проектная работа: `submissions/final-project/README.md`;
-- матрица приемки по всем ДЗ и проекту: `submissions/acceptance-matrix.md`;
 - evidence финального проекта: `submissions/final-project/evidence/`;
 - evidence по отдельным ДЗ: `submissions/hw1/evidence/` ... `submissions/hw6/evidence/`;
 - демо-доступ для проверки production: `DEMO_ACCESS.md`;

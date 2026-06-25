@@ -105,7 +105,6 @@ https://github.com/sborisov88/focustrack-ai
 
 - финальный проект: `submissions/final-project/`;
 - все сдачные материалы ДЗ 1-6: `submissions/`;
-- матрица приемки: `submissions/acceptance-matrix.md`;
 - evidence проекта: `submissions/final-project/evidence/`;
 - демо-доступ: `DEMO_ACCESS.md`;
 - production demo: `https://focustrack-ai.vercel.app`;
@@ -150,7 +149,6 @@ GitHub: https://github.com/sborisov88/focustrack-ai
 Production URL: https://focustrack-ai.vercel.app
 Демо-доступ: DEMO_ACCESS.md
 Материалы проектной работы: submissions/final-project/
-Матрица приемки всех ДЗ и проекта: submissions/acceptance-matrix.md
 Финальный checkpoint: tag final-project-submitted
 В проекте показываю применение курса: AI coding workflow, rules/prompts, UI/ТЗ, frontend, backend, CI/CD, security и controlled-RAG эксперимент без embedding index.
 ```

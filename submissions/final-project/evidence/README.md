@@ -29,13 +29,11 @@
 - `docs/backend/`
 - `docs/security/security_audit.md`
 - `submissions/final-project/presentation.md`
-- `submissions/acceptance-matrix.md`
 
 ## Артефакты для преподавателя
 
 - основной репозиторий: `https://github.com/sborisov88/focustrack-ai`;
 - финальная проектная работа: `submissions/final-project/README.md`;
-- матрица приемки: `submissions/acceptance-matrix.md`;
 - production demo: `https://focustrack-ai.vercel.app`;
 - демо-доступ: `DEMO_ACCESS.md`;
 - опубликованный финальный checkpoint: `final-project-submitted`;
