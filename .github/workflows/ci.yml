@@ -26,6 +26,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
@@ -37,6 +42,41 @@ jobs:
 
       - name: Unit tests
         run: pnpm run test
+
+      - name: Deno Edge Function checks
+        run: |
+          (cd supabase/functions/rag-answer && deno check --no-lock --node-modules-dir=auto index.ts)
+          (cd supabase/functions/embed-knowledge-document && deno check --no-lock --node-modules-dir=auto index.ts)
+
+      - name: SQL/RLS policy audit
+        run: |
+          mkdir -p output/verification/logs
+          log="output/verification/logs/sql-rls-policy-audit.log"
+          {
+            echo "SQL/RLS policy audit"
+            echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo
+            echo "Migrations:"
+            ls supabase/migrations/*.sql
+            echo
+            echo "RLS enablement:"
+            grep -RIn "enable row level security" supabase/migrations
+            echo
+            echo "Knowledge RAG policies and RPC:"
+            grep -RInE "knowledge_documents|knowledge_chunks|knowledge_answers|match_knowledge_chunks|auth.uid\\(\\)" supabase/migrations
+          } > "$log"
+          grep -Riq "enable row level security" supabase/migrations
+          grep -Riq "match_knowledge_chunks" supabase/migrations
+          grep -Riq "knowledge_chunks" supabase/migrations
+          grep -Riq "auth.uid()" supabase/migrations
+          cat "$log"
+
+      - name: Upload SQL/RLS policy audit
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: sql-rls-policy-audit
+          path: output/verification/logs/sql-rls-policy-audit.log
 
       - name: Build
         run: pnpm run build
@@ -136,4 +176,5 @@ jobs:
           supabase functions deploy ai-plan
           supabase functions deploy ai-weekly-review
           supabase functions deploy rag-answer
+          supabase functions deploy embed-knowledge-document
           supabase functions deploy health
