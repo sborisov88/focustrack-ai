@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { motion } from "motion/react"
@@ -1624,6 +1624,8 @@ function KnowledgePanel({
   )
   const [answer, setAnswer] = useState("")
   const [citations, setCitations] = useState<RagAnswerResult["citations"]>([])
+  // Sequence tag of the latest RAG request; a slower stale response is dropped.
+  const ragRequestIdRef = useRef(0)
   const [noteDialogOpen, setNoteDialogOpen] = useState(false)
   const [editingDocumentId, setEditingDocumentId] = useState<string | null>(
     null,
@@ -1652,8 +1654,9 @@ function KnowledgePanel({
     : selectedDocument
       ? [selectedDocument]
       : []
+  const hasMinQuestion = question.trim().length >= 5
   const canAsk =
-    question.trim().length >= 5 &&
+    hasMinQuestion &&
     (isAllSourcesMode ? hasReadyKnowledgeDocuments : isSelectedDocumentReady)
   const canSaveNote =
     noteTitle.trim().length >= 3 && noteContent.trim().length >= 20
@@ -1675,14 +1678,24 @@ function KnowledgePanel({
     setNoteTitle("")
     setNoteContent("")
   }
-  const selectKnowledgeScope = (documentId: string) => {
-    setSelectedDocumentId(documentId)
+  const resetRagAnswer = () => {
+    // Bumping the request id invalidates any in-flight RAG response so a late
+    // onSuccess cannot repopulate the panel after the user changed scope or
+    // edited/reindexed a source.
+    ragRequestIdRef.current += 1
     setAnswer("")
     setCitations([])
+  }
+  const selectKnowledgeScope = (documentId: string) => {
+    setSelectedDocumentId(documentId)
+    resetRagAnswer()
   }
   const createDocumentMutation = useMutation({
     mutationFn: createStarterKnowledgeDocument,
     onSuccess: async () => {
+      // Новый источник меняет набор знаний — в режиме «все источники» прежний
+      // ответ описывал старый набор и молча исключал бы добавленный источник.
+      resetRagAnswer()
       await queryClient.invalidateQueries({ queryKey })
       toast.success("Источник добавлен и проиндексирован")
       trackEvent({ name: "knowledge_source_created", params: {} })
@@ -1705,8 +1718,7 @@ function KnowledgePanel({
             content: noteContent,
           }),
     onSuccess: async () => {
-      setAnswer("")
-      setCitations([])
+      resetRagAnswer()
       closeNoteDialog()
       await queryClient.invalidateQueries({ queryKey })
       toast.success("Заметка сохранена и проиндексирована")
@@ -1721,6 +1733,7 @@ function KnowledgePanel({
   const reindexMutation = useMutation({
     mutationFn: (documentId: string) => embedKnowledgeDocument(documentId),
     onSuccess: async () => {
+      resetRagAnswer()
       await queryClient.invalidateQueries({ queryKey })
       toast.success("Заметка переиндексирована")
       trackEvent({ name: "knowledge_note_reindexed", params: {} })
@@ -1738,7 +1751,14 @@ function KnowledgePanel({
         documents: ragDocuments,
         selectedDocumentId: isAllSourcesMode ? null : selectedDocument?.id,
       }),
-    onSuccess: async (result) => {
+    onMutate: () => {
+      // Tag this request as the latest; a stale response (scope changed or a
+      // source edited/reindexed mid-flight) is dropped in onSuccess.
+      const requestId = (ragRequestIdRef.current += 1)
+      return { requestId }
+    },
+    onSuccess: async (result, _variables, context) => {
+      if (context?.requestId !== ragRequestIdRef.current) return
       setAnswer(result.answer)
       setCitations(result.citations ?? [])
       await queryClient.invalidateQueries({ queryKey })
@@ -1750,6 +1770,16 @@ function KnowledgePanel({
       })
     },
   })
+
+  const submitHint = !hasKnowledgeDocuments
+    ? "Сначала создайте или выберите источник знаний."
+    : canAsk || ragMutation.isPending
+      ? undefined
+      : !hasMinQuestion
+        ? "Сформулируйте вопрос по заметкам: минимум 5 символов."
+        : isAllSourcesMode
+          ? "Дождитесь хотя бы одного источника со статусом «Готово»."
+          : "Дождитесь статуса «Готово» или переиндексируйте заметку."
 
   return (
     <Card data-testid="knowledge-panel">
@@ -1884,7 +1914,7 @@ function KnowledgePanel({
           <Field>
             <FieldLabel htmlFor="rag-source">Область поиска</FieldLabel>
             <Select
-              disabled={!hasKnowledgeDocuments}
+              disabled={!hasKnowledgeDocuments || ragMutation.isPending}
               value={selectedDocumentId}
               onValueChange={selectKnowledgeScope}
             >
@@ -1921,15 +1951,7 @@ function KnowledgePanel({
             disabled={!canAsk || ragMutation.isPending}
             onClick={() => ragMutation.mutate()}
             data-testid="rag-submit"
-            title={
-              hasKnowledgeDocuments
-                ? canAsk || ragMutation.isPending
-                  ? undefined
-                  : isAllSourcesMode
-                    ? "Дождитесь хотя бы одного источника со статусом «Готово»."
-                    : "Дождитесь статуса «Готово» или переиндексируйте заметку."
-                : "Сначала создайте или выберите источник знаний."
-            }
+            title={submitHint}
           >
             {ragMutation.isPending ? (
               <Loader2Icon className="animate-spin" data-icon="inline-start" />
