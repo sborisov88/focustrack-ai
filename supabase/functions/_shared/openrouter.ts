@@ -32,6 +32,10 @@ export class ValidationError extends Error {
   status = 400
 }
 
+export class UpstreamError extends Error {
+  status = 502
+}
+
 // Лимит на суммарный размер тела запроса, уходящего в LLM. Защищает от
 // раздувания стоимости токенов и DoS большими payload'ами. Настраивается
 // секретом MAX_PAYLOAD_CHARS.
@@ -125,6 +129,7 @@ export function requireAuthenticatedUser(request: Request): string {
 export function getErrorStatus(error: unknown) {
   if (error instanceof AuthError) return error.status
   if (error instanceof ValidationError) return error.status
+  if (error instanceof UpstreamError) return error.status
   return 500
 }
 

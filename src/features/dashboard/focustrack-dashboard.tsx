@@ -31,6 +31,7 @@ import {
   createLocalGoal,
   deleteGoal,
   deleteGoalOnServer,
+  generateTasksForGoal,
   loadWorkspace,
   requestGoalClarification,
   requestGoalPlan,
@@ -429,9 +430,20 @@ function CreateGoalDialog({
 
       const goal = createLocalGoal(draft, clarifiedContext)
       const result = await requestGoalPlan({ goal, answers })
+      const generatedTasks: FocusTask[] = result.tasks.map((task, index) => ({
+        id: `task-${Date.now()}-${index}`,
+        goalId: goal.id,
+        title: task.title,
+        notes: task.notes,
+        effort: task.effort,
+        dueDate: task.dueDate,
+        status: "todo",
+        sortOrder: index + 1,
+      }))
       const nextWorkspace: Workspace = {
         ...currentWorkspace,
         goals: [goal, ...currentWorkspace.goals],
+        tasks: [...generatedTasks, ...currentWorkspace.tasks],
         aiSessions: [
           {
             id: `session-plan-${Date.now()}`,
@@ -1188,13 +1200,17 @@ function GoalDetail({
   tasks,
   onToggleTask,
   onRequestReview,
+  onGenerateTasks,
   isReviewPending,
+  isGenerateTasksPending,
 }: {
   goal: Goal
   tasks: FocusTask[]
   onToggleTask: (taskId: string, done: boolean) => void
   onRequestReview: () => void
+  onGenerateTasks: () => void
   isReviewPending: boolean
+  isGenerateTasksPending: boolean
 }) {
   return (
     <Card>
@@ -1223,7 +1239,7 @@ function GoalDetail({
             ) : (
               <RefreshCcwIcon data-icon="inline-start" />
             )}
-            AI Review
+            Обзор недели
           </Button>
         </div>
       </CardHeader>
@@ -1239,6 +1255,36 @@ function GoalDetail({
             className="animate-in fade-in pt-4 duration-200"
           >
             <div className="flex flex-col gap-3">
+              {tasks.length === 0 ? (
+                <Alert data-testid="empty-tasks-state">
+                  <SparklesIcon />
+                  <AlertTitle>Задач пока нет</AlertTitle>
+                  <AlertDescription className="flex flex-col gap-3">
+                    <span>
+                      Сгенерируйте первый набор задач из контекста цели и
+                      дедлайна.
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={onGenerateTasks}
+                      disabled={isGenerateTasksPending}
+                      data-testid="generate-tasks-button"
+                      className="self-start"
+                    >
+                      {isGenerateTasksPending ? (
+                        <Loader2Icon
+                          className="animate-spin"
+                          data-icon="inline-start"
+                        />
+                      ) : (
+                        <SparklesIcon data-icon="inline-start" />
+                      )}
+                      Сгенерировать задачи
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              ) : null}
               {tasks.map((task) => (
                 <div
                   key={task.id}
@@ -1343,7 +1389,7 @@ function AiReviewPanel({
   return (
     <Card data-testid="ai-review-panel">
       <CardHeader>
-        <CardTitle>AI Review</CardTitle>
+        <CardTitle>Обзор недели</CardTitle>
         <CardDescription>
           Серверная модель: google/gemini-2.5-flash-lite.
         </CardDescription>
@@ -1827,7 +1873,63 @@ export function FocusTrackDashboard() {
       })
     },
     onError: (error) => {
-      toast.error("AI Review не выполнен", {
+      toast.error("Обзор недели не выполнен", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    },
+  })
+  const generateTasksMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedGoal) {
+        throw new Error("Выберите цель для генерации задач.")
+      }
+
+      const currentWorkspace =
+        queryClient.getQueryData<Workspace>(currentWorkspaceQueryKey) ??
+        workspace
+      const result = await generateTasksForGoal(
+        currentWorkspace,
+        selectedGoal.id,
+      )
+
+      return {
+        goalId: selectedGoal.id,
+        mode: currentWorkspace.mode,
+        ...result,
+      }
+    },
+    onSuccess: async ({ goalId, mode, result, tasks }) => {
+      if (mode === "supabase") {
+        await queryClient.invalidateQueries({
+          queryKey: currentWorkspaceQueryKey,
+        })
+      } else {
+        updateWorkspace(queryClient, currentWorkspaceQueryKey, (current) => ({
+          ...current,
+          tasks: [...tasks, ...current.tasks],
+          aiSessions: [
+            {
+              id: `session-plan-${Date.now()}`,
+              goalId,
+              type: "plan",
+              model: result.model,
+              status: "completed",
+              summary: result.plan,
+              createdAt: new Date().toISOString(),
+            },
+            ...current.aiSessions,
+          ],
+        }))
+      }
+
+      trackEvent({
+        name: "tasks_generated",
+        params: { goalId, taskCount: String(tasks.length) },
+      })
+      toast.success("Задачи сгенерированы")
+    },
+    onError: (error) => {
+      toast.error("Задачи не сгенерированы", {
         description: error instanceof Error ? error.message : String(error),
       })
     },
@@ -2265,7 +2367,9 @@ export function FocusTrackDashboard() {
                         tasks={selectedTasks}
                         onToggleTask={handleToggleTask}
                         onRequestReview={() => reviewMutation.mutate()}
+                        onGenerateTasks={() => generateTasksMutation.mutate()}
                         isReviewPending={reviewMutation.isPending}
+                        isGenerateTasksPending={generateTasksMutation.isPending}
                       />
                     ) : (
                       <Card data-testid="empty-state">

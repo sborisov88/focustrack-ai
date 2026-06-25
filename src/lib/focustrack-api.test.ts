@@ -8,6 +8,12 @@ const supabaseMock = vi.hoisted(() => ({
         error: Error | null
       }>
     }
+    functions?: {
+      invoke: (
+        name: string,
+        options: { body: unknown },
+      ) => Promise<{ data: unknown; error: Error | null }>
+    }
     from: (table: string) => unknown
   },
   hasConfig: false,
@@ -22,6 +28,7 @@ import {
   createGoal,
   createLocalGoal,
   deleteGoal,
+  generateTasksForGoal,
   loadWorkspace,
   requestGoalClarification,
   requestGoalPlan,
@@ -103,6 +110,110 @@ function createEmptySupabaseClientMock() {
           table === "weekly_reviews" ? { limit: () => response } : response,
       }),
     }),
+  }
+}
+
+type InsertedTaskRow = {
+  user_id: string
+  goal_id: string
+  title: string
+  notes: string
+  effort: "S" | "M" | "L"
+  due_date: string | null
+  status: "todo"
+  sort_order: number
+}
+
+function createPlanningSupabaseClientMock() {
+  const insertedTaskRows: InsertedTaskRow[] = []
+  const insertedSessions: unknown[] = []
+  const invoke = vi.fn(
+    async <T,>(
+      name: string,
+      options: { body: unknown },
+    ): Promise<{ data: T | null; error: Error | null }> => ({
+      data: {
+        type: "plan",
+        model: "test-model",
+        plan: `План для ${JSON.stringify(options.body)}`,
+        tasks: [
+          {
+            title: "Проверить текущий уровень",
+            notes: "Зафиксировать стартовые метрики.",
+            effort: "S",
+            dueDate: "2026-07-01",
+          },
+          {
+            title: "Сделать недельный спринт",
+            notes: "Выполнить первый набор действий.",
+            effort: "M",
+            dueDate: "",
+          },
+        ],
+      } as T,
+      error: name === "ai-plan" ? null : new Error("unexpected function"),
+    }),
+  )
+  const from = vi.fn((table: string) => {
+    if (table === "tasks") {
+      return {
+        insert: (rows: InsertedTaskRow[]) => {
+          insertedTaskRows.push(...rows)
+
+          return {
+            select: () =>
+              Promise.resolve({
+                data: rows.map((row, index) => ({
+                  id: `task-${index + 1}`,
+                  goal_id: row.goal_id,
+                  title: row.title,
+                  notes: row.notes,
+                  effort: row.effort,
+                  due_date: row.due_date,
+                  status: row.status,
+                  sort_order: row.sort_order,
+                })),
+                error: null,
+              }),
+          }
+        },
+      }
+    }
+
+    if (table === "ai_sessions") {
+      return {
+        insert: (row: unknown) => {
+          insertedSessions.push(row)
+
+          return Promise.resolve({ error: null })
+        },
+      }
+    }
+
+    return {
+      select: () => Promise.resolve({ data: [], error: null }),
+    }
+  })
+
+  return {
+    client: {
+      auth: {
+        getSession: () =>
+          Promise.resolve({
+            data: {
+              session: {
+                user: { id: "user-1", email: "demo@focustrack.ai" },
+              },
+            },
+            error: null,
+          }),
+      },
+      functions: { invoke },
+      from,
+    },
+    insertedSessions,
+    insertedTaskRows,
+    invoke,
   }
 }
 
@@ -314,5 +425,91 @@ describe("AI-флоу в демо-режиме (graceful fallback)", () => {
 
     expect(result.model).toBe("demo")
     expect(result.plan).toContain(goal.title)
+    expect(result.tasks).toHaveLength(3)
+    expect(result.tasks[0].effort).toBe("S")
+  })
+
+  it("generateTasksForGoal в демо-режиме возвращает задачи для пустой цели", async () => {
+    const result = await generateTasksForGoal(
+      { ...baseWorkspace, tasks: [] },
+      "g1",
+    )
+
+    expect(result.result.model).toBe("demo")
+    expect(result.tasks).toHaveLength(3)
+    expect(result.tasks[0]).toMatchObject({
+      goalId: "g1",
+      status: "todo",
+      sortOrder: 1,
+    })
+  })
+
+  it("generateTasksForGoal не создаёт дубли для цели с задачами", async () => {
+    await expect(generateTasksForGoal(baseWorkspace, "g1")).rejects.toThrow(
+      "У этой цели уже есть задачи.",
+    )
+  })
+})
+
+describe("AI-планирование в Supabase", () => {
+  it("requestGoalPlan сохраняет структурированные задачи в public.tasks", async () => {
+    const planningMock = createPlanningSupabaseClientMock()
+    supabaseMock.client = planningMock.client
+    supabaseMock.hasConfig = true
+
+    const result = await requestGoalPlan({
+      goal,
+      answers: { "Сколько времени в неделю": "5 часов" },
+    })
+
+    expect(planningMock.invoke).toHaveBeenCalledWith("ai-plan", {
+      body: {
+        goalTitle: goal.title,
+        targetDate: goal.targetDate,
+        answers: { "Сколько времени в неделю": "5 часов" },
+      },
+    })
+    expect(result.tasks).toHaveLength(2)
+    expect(planningMock.insertedTaskRows).toEqual([
+      {
+        user_id: "user-1",
+        goal_id: "g1",
+        title: "Проверить текущий уровень",
+        notes: "Зафиксировать стартовые метрики.",
+        effort: "S",
+        due_date: "2026-07-01",
+        status: "todo",
+        sort_order: 1,
+      },
+      {
+        user_id: "user-1",
+        goal_id: "g1",
+        title: "Сделать недельный спринт",
+        notes: "Выполнить первый набор действий.",
+        effort: "M",
+        due_date: null,
+        status: "todo",
+        sort_order: 2,
+      },
+    ])
+    expect(planningMock.insertedSessions).toHaveLength(1)
+  })
+
+  it("generateTasksForGoal сохраняет задачи для уже существующей пустой цели", async () => {
+    const planningMock = createPlanningSupabaseClientMock()
+    supabaseMock.client = planningMock.client
+    supabaseMock.hasConfig = true
+
+    const result = await generateTasksForGoal(
+      { ...baseWorkspace, mode: "supabase", tasks: [] },
+      "g1",
+    )
+
+    expect(result.tasks.map((task) => task.title)).toEqual([
+      "Проверить текущий уровень",
+      "Сделать недельный спринт",
+    ])
+    expect(planningMock.insertedTaskRows).toHaveLength(2)
+    expect(planningMock.insertedSessions).toHaveLength(1)
   })
 })

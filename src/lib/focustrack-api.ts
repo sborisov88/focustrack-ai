@@ -78,12 +78,20 @@ export type PlanGoalResult = {
   type: "plan"
   model: string
   plan: string
+  tasks: GeneratedTaskInput[]
 }
 
 export type RagAnswerResult = {
   type: "rag-answer"
   model: string
   answer: string
+}
+
+export type GeneratedTaskInput = {
+  title: string
+  notes: string
+  effort: FocusTask["effort"]
+  dueDate: string
 }
 
 type RequestGoalPlanParams = {
@@ -95,6 +103,11 @@ type RequestRagAnswerParams = {
   question: string
   documents: KnowledgeDocument[]
   selectedDocumentId?: string
+}
+
+type GenerateTasksForGoalResult = {
+  result: PlanGoalResult
+  tasks: FocusTask[]
 }
 
 export type SignedOutWorkspaceMode = Extract<
@@ -165,7 +178,7 @@ function mapDocument(row: DbDocumentRow): KnowledgeDocument {
 
 const emptyReview: WeeklyReview = {
   weekStart: "",
-  summary: "Пока нет недельного обзора — он появится после первого AI Review.",
+  summary: "Пока нет недельного обзора — он появится после первого запуска обзора недели.",
   recommendations: [],
   risks: [],
 }
@@ -194,6 +207,92 @@ function currentWeekStart(): string {
   const monday = new Date(now)
   monday.setDate(now.getDate() - mondayOffset)
   return monday.toISOString().slice(0, 10)
+}
+
+function isTaskEffort(value: unknown): value is FocusTask["effort"] {
+  return value === "S" || value === "M" || value === "L"
+}
+
+function normalizeGeneratedTask(
+  task: Partial<GeneratedTaskInput>,
+  index: number,
+): GeneratedTaskInput {
+  const fallbackTitle = `Шаг ${index + 1}`
+
+  return {
+    title: (task.title || fallbackTitle).trim().slice(0, 180),
+    notes: (task.notes || "Сгенерировано AI-планировщиком.").trim(),
+    effort: isTaskEffort(task.effort) ? task.effort : "M",
+    dueDate: (task.dueDate || "").trim(),
+  }
+}
+
+function normalizeGeneratedTasks(tasks: unknown): GeneratedTaskInput[] {
+  if (!Array.isArray(tasks)) {
+    return []
+  }
+
+  return tasks
+    .slice(0, 7)
+    .map((task, index) =>
+      normalizeGeneratedTask(task as Partial<GeneratedTaskInput>, index),
+    )
+    .filter((task) => task.title.length >= 3)
+}
+
+function createDemoTasksForGoal(
+  goalId: string,
+  tasks: GeneratedTaskInput[],
+): FocusTask[] {
+  const createdAt = Date.now()
+
+  return tasks.map((task, index) => ({
+    id: `task-${createdAt}-${index}`,
+    goalId,
+    title: task.title,
+    notes: task.notes,
+    effort: task.effort,
+    dueDate: task.dueDate,
+    status: "todo",
+    sortOrder: index + 1,
+  }))
+}
+
+function createDemoPlanResult(
+  goal: Goal,
+  answers: Record<string, string>,
+): PlanGoalResult {
+  const answerList = Object.entries(answers)
+    .filter(([, answer]) => answer.trim())
+    .map(([question, answer]) => `${question}: ${answer}`)
+    .join("; ")
+  const tasks: GeneratedTaskInput[] = [
+    {
+      title: "Зафиксировать ближайшую контрольную точку",
+      notes: `Сформулировать измеримый результат по цели «${goal.title}».`,
+      effort: "S",
+      dueDate: "",
+    },
+    {
+      title: "Выбрать три задачи на неделю",
+      notes: "Разбить ближайший этап на короткие действия с понятным итогом.",
+      effort: "M",
+      dueDate: "",
+    },
+    {
+      title: "Провести недельную проверку прогресса",
+      notes: "Отметить выполненное, риски и следующий самый важный шаг.",
+      effort: "S",
+      dueDate: goal.targetDate,
+    },
+  ]
+
+  return {
+    type: "plan",
+    model: "demo",
+    plan: `AI-план для цели «${goal.title}»: 1) зафиксировать ближайшую контрольную точку; 2) выбрать 3 задачи на неделю; 3) каждую неделю проверять прогресс. Контекст: ${answerList || "ответы не заполнены"}.`,
+    tasks,
+  }
 }
 
 async function getSupabaseContext(): Promise<SupabaseContext | null> {
@@ -262,6 +361,40 @@ async function saveAiSession(
   if (error) {
     throw error
   }
+}
+
+async function insertGeneratedTasks(
+  context: SupabaseContext,
+  goalId: string,
+  tasks: GeneratedTaskInput[],
+): Promise<FocusTask[]> {
+  const normalizedTasks = normalizeGeneratedTasks(tasks)
+
+  if (normalizedTasks.length === 0) {
+    throw new Error("AI-план не вернул задач для сохранения.")
+  }
+
+  const { data, error } = await context.supabase
+    .from("tasks")
+    .insert(
+      normalizedTasks.map((task, index) => ({
+        user_id: context.userId,
+        goal_id: goalId,
+        title: task.title,
+        notes: task.notes,
+        effort: task.effort,
+        due_date: task.dueDate || null,
+        status: "todo",
+        sort_order: index + 1,
+      })),
+    )
+    .select("id,goal_id,title,notes,effort,due_date,status,sort_order")
+
+  if (error) {
+    throw error
+  }
+
+  return ((data ?? []) as DbTaskRow[]).map(mapTask)
 }
 
 export async function loadWorkspace(
@@ -522,15 +655,63 @@ export async function requestGoalPlan({
   const context = await getSupabaseContext()
 
   if (!context) {
-    const answerList = Object.entries(answers)
-      .filter(([, answer]) => answer.trim())
-      .map(([question, answer]) => `${question}: ${answer}`)
-      .join("; ")
+    return createDemoPlanResult(goal, answers)
+  }
 
+  const body = {
+    goalTitle: goal.title,
+    targetDate: goal.targetDate,
+    answers,
+  }
+  const { data, error } =
+    await context.supabase.functions.invoke<PlanGoalResult>("ai-plan", { body })
+
+  if (error) {
+    throw error
+  }
+
+  const result = {
+    ...(data as PlanGoalResult),
+    tasks: normalizeGeneratedTasks((data as PlanGoalResult).tasks),
+  }
+  const createdTasks = await insertGeneratedTasks(context, goal.id, result.tasks)
+  await saveAiSession(context, {
+    goalId: goal.id,
+    type: "plan",
+    model: result.model,
+    input: body,
+    output: {
+      ...result,
+      taskCount: createdTasks.length,
+      summary: result.plan,
+    },
+  })
+
+  return result
+}
+
+export async function generateTasksForGoal(
+  workspace: Workspace,
+  goalId: string,
+): Promise<GenerateTasksForGoalResult> {
+  const goal = workspace.goals.find((item) => item.id === goalId)
+
+  if (!goal) {
+    throw new Error("Цель не найдена.")
+  }
+
+  if (getGoalTasks(goalId, workspace.tasks).length > 0) {
+    throw new Error("У этой цели уже есть задачи.")
+  }
+
+  const context = await getSupabaseContext()
+  const answers = goal.clarifiedContext
+
+  if (!context) {
+    const result = createDemoPlanResult(goal, answers)
     return {
-      type: "plan",
-      model: "demo",
-      plan: `AI-план для цели «${goal.title}»: 1) зафиксировать ближайшую контрольную точку; 2) выбрать 3 задачи на неделю; 3) каждую неделю проверять прогресс. Контекст: ${answerList || "ответы не заполнены"}.`,
+      result,
+      tasks: createDemoTasksForGoal(goal.id, result.tasks),
     }
   }
 
@@ -546,16 +727,24 @@ export async function requestGoalPlan({
     throw error
   }
 
-  const result = data as PlanGoalResult
+  const result = {
+    ...(data as PlanGoalResult),
+    tasks: normalizeGeneratedTasks((data as PlanGoalResult).tasks),
+  }
+  const tasks = await insertGeneratedTasks(context, goal.id, result.tasks)
   await saveAiSession(context, {
     goalId: goal.id,
     type: "plan",
     model: result.model,
     input: body,
-    output: { ...result, summary: result.plan },
+    output: {
+      ...result,
+      taskCount: tasks.length,
+      summary: result.plan,
+    },
   })
 
-  return result
+  return { result, tasks }
 }
 
 export async function requestRagAnswer({
