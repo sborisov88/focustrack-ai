@@ -109,8 +109,6 @@ local authenticated smoke -> /knowledge empty-state -> стартовый ист
 - фронтенд: реальная инициализация Яндекс.Метрики (`src/lib/analytics.ts` -> `initAnalytics()` из `src/main.tsx`);
   production активен на `VITE_YANDEX_METRIKA_ID=110130059`, иначе в локальной среде безопасный no-op.
 
-Повторная сверка требований: `submissions/reverification-audit-2026-06-17.md`.
-
 ## Что отправлять преподавателю
 
 Основная ссылка:

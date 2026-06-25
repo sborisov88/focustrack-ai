@@ -4,7 +4,7 @@
 
 ## Текущий статус
 
-На 17 июня 2026:
+На текущий момент:
 
 - Зафиксирована и реализована продуктовая и техническая спецификация MVP.
 - Собран рабочий frontend на React, TypeScript, Vite и shadcn/ui.
@@ -92,7 +92,7 @@
 
 - `docs/research/002-knowledge-rag/`
 
-**Статус:** controlled RAG experiment подготовлен и оценён.
+**Статус:** controlled RAG experiment подготовлен; оценены качество, стоимость и риски.
 
 ## Этап 5: Production
 

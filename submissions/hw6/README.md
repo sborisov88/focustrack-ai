@@ -90,8 +90,6 @@ e2e: 9 реально проходящих сценариев (desktop dashboard
 - **Cursor-правила.** Подключены в нативном формате `.cursor/rules/focustrack.mdc` (`alwaysApply`, зеркало корневого `AGENTS.md`).
 - **Unit-тесты.** Добавлен `src/lib/focustrack-api.test.ts` (валидация RAG-вопроса, пустой список документов, демо-фоллбэки без сессии, создание стартового RAG-источника, пересчёт прогресса `toggleTask`), а `src/lib/progress.test.ts` покрывает streak; итого 35 passed в 3 файлах.
 
-Подробности: `submissions/reverification-audit-2026-06-17.md`.
-
 Production evidence:
 
 - `submissions/hw6/evidence/logs/vercel-deploy.log`;
