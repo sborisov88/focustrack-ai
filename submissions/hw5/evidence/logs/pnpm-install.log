@@ -1,7 +1,0 @@
-COMMAND: pnpm install --frozen-lockfile
-Lockfile is up to date, resolution step is skipped
-Already up to date
-
-Done in 494ms using pnpm v10.28.2
-
-EXIT=0

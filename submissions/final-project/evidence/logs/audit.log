@@ -1,4 +1,0 @@
-COMMAND: pnpm audit --audit-level high
-No known vulnerabilities found
-
-EXIT=0

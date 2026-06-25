@@ -1,8 +1,0 @@
-Vercel CLI 54.14.0 (Node.js 26.3.0)
-Retrieving project…
-> Found a repository in your local Git Config: https://github.com/sborisov88/focustrack-ai.git
-? Do you still want to connect https://github.com/sborisov88/focustrack-ai?
-(y/N)[1A[83G[1B[2K[1A[2K[G? Do you still want to connect https://github.com/sborisov88/focustrack-ai?
-(y/N) y[1A[84G[1B[2K[1A[2K[G? Do you still want to connect https://github.com/sborisov88/focustrack-ai? yes[80G
-[?25h> Connecting GitHub repository: https://github.com/sborisov88/focustrack-ai
-Error: Failed to connect sborisov88/focustrack-ai to project. Make sure there aren't any typos and that you have access to the repository if it's private.
