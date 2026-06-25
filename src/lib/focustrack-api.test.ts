@@ -25,6 +25,7 @@ vi.mock("@/lib/supabase", () => ({
 }))
 
 import {
+  createKnowledgeDocumentOnServer,
   createGoal,
   createLocalGoal,
   createStarterKnowledgeDocument,
@@ -35,8 +36,10 @@ import {
   requestGoalPlan,
   requestRagAnswer,
   toggleTask,
+  updateKnowledgeDocumentOnServer,
 } from "@/lib/focustrack-api"
 import type { Goal, KnowledgeDocument, Workspace } from "@/lib/domain"
+import { splitKnowledgeContentIntoChunks } from "@/lib/knowledge-rag"
 
 beforeEach(() => {
   supabaseMock.client = null
@@ -131,6 +134,9 @@ type InsertedKnowledgeDocumentRow = {
   source: string
   content: string
   tags: string[]
+  embedding_status?: "pending" | "indexing" | "ready" | "failed"
+  embedding_error?: string | null
+  embedded_at?: string | null
 }
 
 function createPlanningSupabaseClientMock() {
@@ -228,6 +234,34 @@ function createPlanningSupabaseClientMock() {
 
 function createKnowledgeSupabaseClientMock() {
   const insertedDocuments: InsertedKnowledgeDocumentRow[] = []
+  const updatedDocuments: Array<Partial<InsertedKnowledgeDocumentRow>> = []
+  const insertedSessions: unknown[] = []
+  const invoke = vi.fn(
+    async <T,>(
+      name: string,
+      options: { body: unknown },
+    ): Promise<{ data: T | null; error: Error | null }> => {
+      void options
+
+      return {
+        data:
+          name === "rag-answer"
+            ? ({
+                type: "rag-answer",
+                model: "test-chat",
+                answer: "Ответ по найденному чанку.",
+                citations: [{ title: "Дневник пробежек", similarity: 0.91 }],
+                retrieval: {
+                  matchCount: 1,
+                  threshold: 0.55,
+                  embeddingModel: "baai/bge-m3",
+                },
+              } as T)
+            : ({ type: "embed-knowledge-document", status: "ready" } as T),
+        error: null,
+      }
+    },
+  )
   const from = vi.fn((table: string) => {
     if (table === "knowledge_documents") {
       return {
@@ -243,11 +277,53 @@ function createKnowledgeSupabaseClientMock() {
                     title: row.title,
                     source: row.source,
                     content: row.content,
+                    embedding_status: row.source === "manual" ? "pending" : "ready",
+                    embedding_error: null,
+                    embedded_at: null,
+                    updated_at: "2026-06-25T00:00:00.000Z",
+                    content_hash: null,
                   },
                   error: null,
                 }),
             }),
           }
+        },
+        update: (row: Partial<InsertedKnowledgeDocumentRow>) => {
+          updatedDocuments.push(row)
+
+          return {
+            eq: () => ({
+              eq: () => ({
+                select: () => ({
+                  single: () =>
+                    Promise.resolve({
+                      data: {
+                        id: "doc-edit",
+                        title: row.title,
+                        source: row.source,
+                        content: row.content,
+                        embedding_status: row.embedding_status ?? "pending",
+                        embedding_error: null,
+                        embedded_at: null,
+                        updated_at: "2026-06-25T00:00:00.000Z",
+                        content_hash: null,
+                      },
+                      error: null,
+                    }),
+                }),
+              }),
+            }),
+          }
+        },
+      }
+    }
+
+    if (table === "ai_sessions") {
+      return {
+        insert: (row: unknown) => {
+          insertedSessions.push(row)
+
+          return Promise.resolve({ error: null })
         },
       }
     }
@@ -270,9 +346,13 @@ function createKnowledgeSupabaseClientMock() {
             error: null,
           }),
       },
+      functions: { invoke },
       from,
     },
     insertedDocuments,
+    insertedSessions,
+    updatedDocuments,
+    invoke,
   }
 }
 
@@ -462,6 +542,27 @@ describe("requestRagAnswer (обработка ошибок)", () => {
     expect(result.model).toBe("demo")
     expect(result.answer).toContain("Дневник пробежек")
   })
+
+  it("в Supabase-режиме отправляет selectedDocumentId и сохраняет AI-сессию", async () => {
+    const knowledgeMock = createKnowledgeSupabaseClientMock()
+    supabaseMock.client = knowledgeMock.client
+    supabaseMock.hasConfig = true
+
+    const result = await requestRagAnswer({
+      question: "на какой неделе самая длинная пробежка?",
+      documents,
+      selectedDocumentId: "d1",
+    })
+
+    expect(knowledgeMock.invoke).toHaveBeenCalledWith("rag-answer", {
+      body: {
+        question: "на какой неделе самая длинная пробежка?",
+        selectedDocumentId: "d1",
+      },
+    })
+    expect(result.retrieval?.embeddingModel).toBe("baai/bge-m3")
+    expect(knowledgeMock.insertedSessions).toHaveLength(1)
+  })
 })
 
 describe("knowledge sources", () => {
@@ -472,12 +573,16 @@ describe("knowledge sources", () => {
 
     const document = await createStarterKnowledgeDocument()
 
-    expect(document).toEqual({
+    expect(document).toMatchObject({
       id: "doc-starter",
       title: "Журнал тренировок (стартовый источник)",
       source: "starter",
       content: expect.stringContaining("Нед. 8: длинная 15 км"),
     })
+    expect(knowledgeMock.invoke).toHaveBeenCalledWith(
+      "embed-knowledge-document",
+      { body: { documentId: "doc-starter" } },
+    )
     expect(knowledgeMock.insertedDocuments).toEqual([
       {
         user_id: "user-1",
@@ -487,6 +592,73 @@ describe("knowledge sources", () => {
         tags: ["бег", "тренировки", "стартовый источник"],
       },
     ])
+  })
+
+  it("createKnowledgeDocumentOnServer сохраняет ручную заметку и запускает индексацию", async () => {
+    const knowledgeMock = createKnowledgeSupabaseClientMock()
+    supabaseMock.client = knowledgeMock.client
+    supabaseMock.hasConfig = true
+
+    await createKnowledgeDocumentOnServer({
+      title: "  Контрольный дневник  ",
+      content:
+        "Неделя 12: контрольная пробежка 18 км. Пульс в целевой зоне, самочувствие стабильное.",
+    })
+
+    expect(knowledgeMock.insertedDocuments[0]).toMatchObject({
+      user_id: "user-1",
+      title: "Контрольный дневник",
+      source: "manual",
+      content: expect.stringContaining("контрольная пробежка 18 км"),
+      embedding_status: "pending",
+    })
+    expect(knowledgeMock.invoke).toHaveBeenCalledWith(
+      "embed-knowledge-document",
+      { body: { documentId: "doc-starter" } },
+    )
+  })
+
+  it("updateKnowledgeDocumentOnServer сбрасывает статус и переиндексирует заметку", async () => {
+    const knowledgeMock = createKnowledgeSupabaseClientMock()
+    supabaseMock.client = knowledgeMock.client
+    supabaseMock.hasConfig = true
+
+    await updateKnowledgeDocumentOnServer("doc-edit", {
+      title: "Обновлённый дневник",
+      content:
+        "Неделя 13: длинная пробежка 19 км заменила старый факт о дистанции.",
+    })
+
+    expect(knowledgeMock.updatedDocuments[0]).toMatchObject({
+      title: "Обновлённый дневник",
+      source: "manual",
+      content: expect.stringContaining("19 км"),
+      embedding_status: "pending",
+    })
+    expect(knowledgeMock.invoke).toHaveBeenCalledWith(
+      "embed-knowledge-document",
+      { body: { documentId: "doc-edit" } },
+    )
+  })
+})
+
+describe("splitKnowledgeContentIntoChunks", () => {
+  it("сохраняет порядок абзацев и добавляет overlap между чанками", () => {
+    const chunks = splitKnowledgeContentIntoChunks(
+      [
+        "Первый абзац про лёгкую пробежку 8 км.",
+        "Второй абзац фиксирует длинную пробежку 16 км.",
+        "Третий абзац описывает восстановление и сон.",
+      ].join("\n\n"),
+      { maxChunkChars: 75, overlapChars: 18 },
+    )
+
+    expect(chunks.length).toBeGreaterThan(1)
+    expect(chunks.map((chunk) => chunk.chunkIndex)).toEqual(
+      chunks.map((_, index) => index),
+    )
+    expect(chunks[0].content).toContain("Первый абзац")
+    expect(chunks[1].content).toContain("Второй абзац")
   })
 })
 

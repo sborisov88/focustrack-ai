@@ -28,7 +28,7 @@
 | CRUD              | создание, чтение, обновление task status и удаление цели |
 | Прогресс          | shadcn Progress + Recharts                               |
 | Weekly AI Review  | кнопка `AI Review` и панель результата                   |
-| Knowledge/RAG     | источники, empty-state и Edge Function `rag-answer`      |
+| Knowledge/RAG     | CRUD заметок, индексация, vector retrieval и citations   |
 | Auth              | email/password sign in, sign up, logout и Google OAuth   |
 | Аналитика         | `trackEvent` с поддержкой Яндекс.Метрики                 |
 
@@ -102,7 +102,7 @@
    Format: план -> код компонента -> список проверок.
    ```
 
-   Результат: `KnowledgePanel` с условием `canAsk = question.trim().length >= 5 && Boolean(selectedDocument)`, empty-state для пустого `knowledge_documents`, кнопкой создания стартового источника и серверным запросом `requestRagAnswer`.
+   Результат: `KnowledgePanel` с условием `canAsk = question.trim().length >= 5 && canUseDocumentForRag(...)`, empty-state для пустого `knowledge_documents`, созданием стартового источника, ручным добавлением/редактированием заметки, статусами `Индексируется` / `Готово` / `Ошибка индексации` и серверным запросом `requestRagAnswer`.
 
 4. **Тесты обработки ошибок API-слоя.**
 
@@ -145,6 +145,7 @@ AI применялся не только для генерации кода, н
 | Auth не показывал регистрацию                          | Email/password диалог получил режим `sign-up`, сохранив demo login и Google OAuth                                     |
 | Не хватало глобального loading/error                   | Добавлены loading banner/state, retry-state для workspace query и `AppErrorBoundary`                                  |
 | Яндекс.Метрика не инициализировалась                   | `initAnalytics()` (`src/lib/analytics.ts`) грузит `tag.js` из `main.tsx`; активна только при `VITE_YANDEX_METRIKA_ID` |
+| RAG не имел semantic retrieval                         | Добавлен UI CRUD заметок, запуск `embed-knowledge-document`, блокировка вопроса до статуса `Готово` и вывод citations |
 
 ## Правила проекта в Cursor
 
@@ -152,10 +153,10 @@ AI применялся не только для генерации кода, н
 
 ## Тесты
 
-Unit (30 тестов в трёх файлах):
+Unit (39 тестов в трёх файлах):
 
 - `src/lib/progress.test.ts` — расчёт прогресса, группировка задач и подписи статусов;
-- `src/lib/focustrack-api.test.ts` — обработка ошибок и edge-кейсы: валидация короткого RAG-вопроса (`throws "Введите вопрос по заметкам."`), пустой список документов (`throws "Нет документов для RAG-ответа."`), демо-фоллбэки `requestGoalClarification` / `requestGoalPlan` / `requestRagAnswer` без сессии, пересчёт прогресса в `toggleTask` и edge на несуществующую задачу.
+- `src/lib/focustrack-api.test.ts` — обработка ошибок и edge-кейсы: валидация короткого RAG-вопроса (`throws "Введите вопрос по заметкам."`), пустой список документов (`throws "Нет документов для RAG-ответа."`), демо-фоллбэки `requestGoalClarification` / `requestGoalPlan` / `requestRagAnswer` без сессии, новый контракт `rag-answer` с `selectedDocumentId`, создание/редактирование заметки с вызовом `embed-knowledge-document`, chunking с overlap, пересчёт прогресса в `toggleTask` и edge на несуществующую задачу.
 - `src/lib/auth.test.ts` — сообщения об ошибках OAuth и парольной аутентификации, ветки sign-up (подтверждение email).
 
 E2E (9 passed / 11 skipped):
@@ -164,6 +165,11 @@ E2E (9 passed / 11 skipped):
 - пропущены: кросс-проектные дубли desktop/mobile и live-Supabase сценарий, требующий env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`.
 
 Google OAuth подключён через Supabase Auth (`src/lib/auth.ts`) как реальная точка входа; сквозной автоматический e2e-вход через Google не входит в набор — провайдерский сценарий проверяется вручную.
+
+Edge Functions:
+
+- `deno check supabase/functions/rag-answer/index.ts` — passed;
+- `deno check supabase/functions/embed-knowledge-document/index.ts` — passed.
 
 Команды:
 
@@ -177,4 +183,4 @@ pnpm run test:e2e
 
 ## Вывод
 
-Frontend MVP реализован как рабочее приложение, а не как лендинг: пользователь может создать цель, отметить задачу, увидеть прогресс и запустить weekly review. Дальше основной риск — production hardening авторизации и AI rate limits.
+Frontend MVP реализован как рабочее приложение, а не как лендинг: пользователь может создать цель, отметить задачу, увидеть прогресс, запустить weekly review и работать с RAG-заметками. Production vector RAG gate закрыт 26 июня 2026 по Москве: OpenRouter `/embeddings` smoke подтвердил `baai/bge-m3` с `embedding.length === 1024`, Supabase migration/functions задеплоены, authenticated production smoke получил grounded answer с citation.

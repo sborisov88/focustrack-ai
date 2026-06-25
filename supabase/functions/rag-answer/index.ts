@@ -2,25 +2,34 @@ import "@supabase/functions-js/edge-runtime.d.ts"
 
 import {
   assertPayloadSize,
+  callOpenRouterEmbedding,
   callOpenRouter,
   getErrorStatus,
   handleOptions,
   jsonResponse,
   readJson,
-  requireArray,
   requireAuthenticatedUser,
   requireNonEmptyString,
 } from "../_shared/openrouter.ts"
 import { createLogger } from "../_shared/logger.ts"
+import { createUserSupabaseClient } from "../_shared/supabase-user.ts"
 
 const log = createLogger("rag-answer")
 
 type RagRequest = {
   question: string
-  documents: Array<{
-    title: string
-    content: string
-  }>
+  selectedDocumentId?: string
+}
+
+type MatchedChunk = {
+  chunk_id: string
+  document_id: string
+  title: string
+  source: string
+  content: string
+  similarity: number
+  chunk_index: number
+  metadata: Record<string, unknown> | null
 }
 
 export default {
@@ -29,30 +38,131 @@ export default {
     if (options) return options
 
     try {
-      requireAuthenticatedUser(request)
+      const userId = requireAuthenticatedUser(request)
       const body = await readJson<RagRequest>(request)
-      requireNonEmptyString(body.question, "question")
-      requireArray(body.documents, "documents")
-      const serialized = assertPayloadSize(body)
-      log.info("RAG-запрос по документам", {
-        documentCount: body.documents?.length ?? 0,
+      const question = requireNonEmptyString(body.question, "question").trim()
+      const selectedDocumentId =
+        typeof body.selectedDocumentId === "string" &&
+        body.selectedDocumentId.trim()
+          ? body.selectedDocumentId.trim()
+          : null
+      const supabase = createUserSupabaseClient(request)
+      const matchThreshold = Number(Deno.env.get("RAG_MATCH_THRESHOLD") ?? "0.55")
+      const matchCount = Number(Deno.env.get("RAG_MATCH_COUNT") ?? "6")
+
+      log.info("Vector RAG-запрос", {
+        selectedDocumentId,
+        matchThreshold,
+        matchCount,
       })
+
+      const embeddingResult = await callOpenRouterEmbedding(question)
+      const { data: matchedChunks, error: matchError } = await supabase.rpc(
+        "match_knowledge_chunks",
+        {
+          query_embedding: embeddingResult.embeddings[0],
+          match_threshold: matchThreshold,
+          match_count: matchCount,
+          filter_document_id: selectedDocumentId,
+        },
+      )
+
+      if (matchError) {
+        throw matchError
+      }
+
+      const chunks = ((matchedChunks ?? []) as MatchedChunk[]).map((chunk) => ({
+        ...chunk,
+        similarity: Number(chunk.similarity),
+      }))
+      const citations = chunks.map((chunk) => ({
+        chunkId: chunk.chunk_id,
+        documentId: chunk.document_id,
+        title: chunk.title,
+        source: chunk.source,
+        chunkIndex: chunk.chunk_index,
+        similarity: Number(chunk.similarity.toFixed(4)),
+        content: chunk.content.slice(0, 500),
+      }))
+
+      if (chunks.length === 0) {
+        const answer =
+          "В заметках недостаточно данных, чтобы ответить на этот вопрос без выдумки."
+        const { error: answerError } = await supabase
+          .from("knowledge_answers")
+          .insert({
+            user_id: userId,
+            document_id: selectedDocumentId,
+            question,
+            answer,
+            citations,
+            model: embeddingResult.model,
+          })
+
+        if (answerError) {
+          throw answerError
+        }
+
+        return jsonResponse(request, {
+          type: "rag-answer",
+          model: embeddingResult.model,
+          answer,
+          citations,
+          retrieval: {
+            matchCount: 0,
+            threshold: matchThreshold,
+            embeddingModel: embeddingResult.model,
+          },
+        })
+      }
+
+      const contextPayload = {
+        question,
+        chunks: chunks.map((chunk, index) => ({
+          ref: index + 1,
+          title: chunk.title,
+          source: chunk.source,
+          similarity: Number(chunk.similarity.toFixed(4)),
+          content: chunk.content,
+        })),
+      }
+      const serialized = assertPayloadSize(contextPayload)
       const { content, model } = await callOpenRouter([
         {
           role: "system",
           content:
-            "Ты RAG-помощник FocusTrack AI. Отвечай только по переданным документам. Если данных не хватает, скажи это явно. В конце добавь список источников по названиям документов.",
+            "Ты RAG-помощник FocusTrack AI. Отвечай только по найденным фрагментам заметок. Если фрагментов недостаточно, скажи: \"В заметках недостаточно данных\". Не придумывай факты. В конце добавь короткий список источников с номерами фрагментов.",
         },
         {
           role: "user",
           content: serialized,
         },
       ])
+      const { error: answerError } = await supabase
+        .from("knowledge_answers")
+        .insert({
+          user_id: userId,
+          document_id: chunks[0]?.document_id ?? selectedDocumentId,
+          question,
+          answer: content,
+          citations,
+          model,
+        })
+
+      if (answerError) {
+        throw answerError
+      }
 
       return jsonResponse(request, {
         type: "rag-answer",
         model,
         answer: content,
+        citations,
+        retrieval: {
+          matchCount: chunks.length,
+          threshold: matchThreshold,
+          embeddingModel: embeddingResult.model,
+        },
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

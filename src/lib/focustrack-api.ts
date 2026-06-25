@@ -2,6 +2,7 @@ import type {
   AiSession,
   FocusTask,
   Goal,
+  KnowledgeEmbeddingStatus,
   KnowledgeDocument,
   NewGoalInput,
   TaskStatus,
@@ -65,7 +66,15 @@ type DbDocumentRow = {
   title: string
   source: string
   content: string
+  embedding_status?: KnowledgeEmbeddingStatus | null
+  embedding_error?: string | null
+  embedded_at?: string | null
+  updated_at?: string | null
+  content_hash?: string | null
 }
+
+const documentSelect =
+  "id,title,source,content,embedding_status,embedding_error,embedded_at,updated_at,content_hash"
 
 const starterKnowledgeDocument = {
   title: "Журнал тренировок (стартовый источник)",
@@ -93,6 +102,20 @@ export type RagAnswerResult = {
   type: "rag-answer"
   model: string
   answer: string
+  citations?: Array<{
+    chunkId?: string
+    documentId?: string
+    title: string
+    source?: string
+    chunkIndex?: number
+    similarity?: number
+    content?: string
+  }>
+  retrieval?: {
+    matchCount: number
+    threshold: number
+    embeddingModel: string
+  }
 }
 
 export type GeneratedTaskInput = {
@@ -111,6 +134,11 @@ type RequestRagAnswerParams = {
   question: string
   documents: KnowledgeDocument[]
   selectedDocumentId?: string
+}
+
+export type KnowledgeDocumentInput = {
+  title: string
+  content: string
 }
 
 type GenerateTasksForGoalResult = {
@@ -181,7 +209,29 @@ function mapDocument(row: DbDocumentRow): KnowledgeDocument {
     title: row.title,
     source: row.source,
     content: row.content,
+    embeddingStatus: row.embedding_status ?? "pending",
+    embeddingError: row.embedding_error ?? "",
+    embeddedAt: row.embedded_at ?? "",
+    updatedAt: row.updated_at ?? "",
+    contentHash: row.content_hash ?? "",
   }
+}
+
+function normalizeKnowledgeDocumentInput(
+  input: KnowledgeDocumentInput,
+): KnowledgeDocumentInput {
+  const title = input.title.trim().slice(0, 140)
+  const content = input.content.trim()
+
+  if (title.length < 3) {
+    throw new Error("Название заметки должно быть не короче 3 символов.")
+  }
+
+  if (content.length < 20) {
+    throw new Error("Текст заметки должен быть не короче 20 символов.")
+  }
+
+  return { title, content }
 }
 
 const emptyReview: WeeklyReview = {
@@ -444,7 +494,7 @@ export async function loadWorkspace(
         .limit(1),
       supabase
         .from("knowledge_documents")
-        .select("id,title,source,content")
+        .select(documentSelect)
         .order("created_at"),
     ])
 
@@ -547,21 +597,107 @@ export async function deleteGoalOnServer(goalId: string): Promise<void> {
 }
 
 export async function createStarterKnowledgeDocument(): Promise<KnowledgeDocument> {
-  const { supabase, userId } = await requireSupabaseContext()
+  const context = await requireSupabaseContext()
+  const { supabase, userId } = context
   const { data, error } = await supabase
     .from("knowledge_documents")
     .insert({
       user_id: userId,
       ...starterKnowledgeDocument,
     })
-    .select("id,title,source,content")
+    .select(documentSelect)
     .single()
 
   if (error) {
     throw error
   }
 
-  return mapDocument(data as DbDocumentRow)
+  const document = mapDocument(data as DbDocumentRow)
+  await embedKnowledgeDocument(document.id, context)
+
+  return document
+}
+
+export async function createKnowledgeDocumentOnServer(
+  input: KnowledgeDocumentInput,
+): Promise<KnowledgeDocument> {
+  const context = await requireSupabaseContext()
+  const { supabase, userId } = context
+  const normalized = normalizeKnowledgeDocumentInput(input)
+  const { data, error } = await supabase
+    .from("knowledge_documents")
+    .insert({
+      user_id: userId,
+      title: normalized.title,
+      source: "manual",
+      content: normalized.content,
+      tags: ["manual"],
+      embedding_status: "pending",
+      embedding_error: null,
+      embedded_at: null,
+    })
+    .select(documentSelect)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  const document = mapDocument(data as DbDocumentRow)
+  await embedKnowledgeDocument(document.id, context)
+
+  return document
+}
+
+export async function updateKnowledgeDocumentOnServer(
+  documentId: string,
+  input: KnowledgeDocumentInput,
+): Promise<KnowledgeDocument> {
+  const context = await requireSupabaseContext()
+  const { supabase, userId } = context
+  const normalized = normalizeKnowledgeDocumentInput(input)
+  const { data, error } = await supabase
+    .from("knowledge_documents")
+    .update({
+      title: normalized.title,
+      source: "manual",
+      content: normalized.content,
+      embedding_status: "pending",
+      embedding_error: null,
+      embedded_at: null,
+    })
+    .eq("id", documentId)
+    .eq("user_id", userId)
+    .select(documentSelect)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  const document = mapDocument(data as DbDocumentRow)
+  await embedKnowledgeDocument(document.id, context)
+
+  return document
+}
+
+export async function embedKnowledgeDocument(
+  documentId: string,
+  context?: SupabaseContext,
+) {
+  const currentContext = context ?? (await requireSupabaseContext())
+  const { data, error } = await currentContext.supabase.functions.invoke(
+    "embed-knowledge-document",
+    {
+      body: { documentId },
+    },
+  )
+
+  if (error) {
+    throw error
+  }
+
+  return data
 }
 
 export function toggleTask(
@@ -797,15 +933,27 @@ export async function requestRagAnswer({
       type: "rag-answer",
       model: "demo",
       answer: `По документу «${selectedDocument.title}»: неделя 8 содержит самую длинную пробежку — 15 км. Источник: ${selectedDocument.title}.`,
+      citations: [
+        {
+          documentId: selectedDocument.id,
+          title: selectedDocument.title,
+          source: selectedDocument.source,
+          chunkIndex: 0,
+          similarity: 1,
+          content: selectedDocument.content,
+        },
+      ],
+      retrieval: {
+        matchCount: 1,
+        threshold: 1,
+        embeddingModel: "demo",
+      },
     }
   }
 
   const body = {
     question: cleanQuestion,
-    documents: documents.map((document) => ({
-      title: document.title,
-      content: document.content,
-    })),
+    selectedDocumentId: selectedDocument.id,
   }
   const { data, error } =
     await context.supabase.functions.invoke<RagAnswerResult>("rag-answer", {
@@ -817,21 +965,6 @@ export async function requestRagAnswer({
   }
 
   const result = data as RagAnswerResult
-  const { error: answerError } = await context.supabase
-    .from("knowledge_answers")
-    .insert({
-      user_id: context.userId,
-      document_id: selectedDocument.id,
-      question: cleanQuestion,
-      answer: result.answer,
-      citations: documents.map((document) => ({ title: document.title })),
-      model: result.model,
-    })
-
-  if (answerError) {
-    throw answerError
-  }
-
   await saveAiSession(context, {
     type: "rag",
     model: result.model,

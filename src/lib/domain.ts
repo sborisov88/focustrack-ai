@@ -3,6 +3,11 @@ export type TaskStatus = "todo" | "doing" | "done" | "blocked"
 export type TaskEffort = "S" | "M" | "L"
 export type AiSessionType = "clarify" | "plan" | "review" | "rag"
 export type WorkspaceMode = "anonymous" | "demo" | "supabase"
+export type KnowledgeEmbeddingStatus =
+  | "pending"
+  | "indexing"
+  | "ready"
+  | "failed"
 
 export type Goal = {
   id: string
@@ -47,6 +52,11 @@ export type KnowledgeDocument = {
   title: string
   source: string
   content: string
+  embeddingStatus?: KnowledgeEmbeddingStatus
+  embeddingError?: string
+  embeddedAt?: string
+  updatedAt?: string
+  contentHash?: string
 }
 
 export type Workspace = {

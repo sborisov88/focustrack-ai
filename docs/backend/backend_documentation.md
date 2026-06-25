@@ -20,7 +20,7 @@ VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
 ```
 
-Секреты не коммитятся. `OPENROUTER_API_KEY` и `OPENROUTER_MODEL` заданы как Supabase secrets.
+Секреты не коммитятся. `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `OPENROUTER_EMBEDDING_MODEL`, `RAG_MATCH_THRESHOLD` и `RAG_MATCH_COUNT` задаются как Supabase secrets.
 
 ## Миграции
 
@@ -29,6 +29,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
 ```text
 supabase/migrations/20260617024511_init_focustrack_schema.sql
 supabase/migrations/20260617033231_restrict_anon_table_grants.sql
+supabase/migrations/20260625204340_add_vector_rag.sql
 ```
 
 Они создают и настраивают:
@@ -41,7 +42,11 @@ supabase/migrations/20260617033231_restrict_anon_table_grants.sql
 - `ai_sessions`;
 - `weekly_reviews`;
 - `knowledge_documents`;
+- `knowledge_chunks`;
 - `knowledge_answers`;
+- pgvector extension и `embedding vector(1024)`;
+- HNSW-индекс по chunks embeddings;
+- RPC `match_knowledge_chunks`;
 - индексы;
 - triggers `updated_at`;
 - RLS policies;
@@ -50,13 +55,14 @@ supabase/migrations/20260617033231_restrict_anon_table_grants.sql
 
 ## Edge Functions
 
-| Endpoint                         | Метод | Назначение                 |
-| -------------------------------- | ----- | -------------------------- |
-| `/functions/v1/ai-clarify`       | POST  | вопросы для уточнения цели |
-| `/functions/v1/ai-plan`          | POST  | план задач                 |
-| `/functions/v1/ai-weekly-review` | POST  | weekly review              |
-| `/functions/v1/rag-answer`       | POST  | ответ по документам        |
-| `/functions/v1/health`           | GET   | health-check               |
+| Endpoint                                 | Метод | Назначение                         |
+| ---------------------------------------- | ----- | ---------------------------------- |
+| `/functions/v1/ai-clarify`               | POST  | вопросы для уточнения цели         |
+| `/functions/v1/ai-plan`                  | POST  | план задач                         |
+| `/functions/v1/ai-weekly-review`         | POST  | weekly review                      |
+| `/functions/v1/embed-knowledge-document` | POST  | chunking + embeddings для заметки  |
+| `/functions/v1/rag-answer`               | POST  | vector retrieval + grounded answer |
+| `/functions/v1/health`                   | GET   | health-check                       |
 
 ## Примеры запросов (`curl`)
 
@@ -149,7 +155,7 @@ curl -X POST \
 
 ### `rag-answer`
 
-Контракт: `{question, documents: [{title, content}]}` → `{type: "rag-answer", model, answer}`.
+Контракт: `{question, selectedDocumentId?}` → `{type: "rag-answer", model, answer, citations, retrieval}`.
 
 ```bash
 curl -X POST \
@@ -158,9 +164,7 @@ curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
     "question": "Какой темп держать на длительной?",
-    "documents": [
-      {"title": "План недели", "content": "Длительная — 12 км в темпе 5:40."}
-    ]
+    "selectedDocumentId": "00000000-0000-0000-0000-000000000000"
   }'
 ```
 
@@ -170,9 +174,38 @@ curl -X POST \
 {
   "type": "rag-answer",
   "model": "google/gemini-2.5-flash-lite",
-  "answer": "..."
+  "answer": "...",
+  "citations": [
+    {
+      "chunkId": "...",
+      "documentId": "...",
+      "title": "План недели",
+      "source": "manual",
+      "chunkIndex": 0,
+      "similarity": 0.81,
+      "content": "..."
+    }
+  ],
+  "retrieval": {
+    "matchCount": 1,
+    "threshold": 0.55,
+    "embeddingModel": "baai/bge-m3"
+  }
 }
 ```
+
+### `embed-knowledge-document`
+
+Контракт: `{documentId}` → `{type: "embed-knowledge-document", documentId, status, chunkCount, model, dimensions}`.
+
+Функция:
+
+- проверяет пользовательский JWT;
+- читает `knowledge_documents` через user-scoped Supabase client и RLS;
+- режет `content` на chunks;
+- вызывает OpenRouter `/embeddings` с `OPENROUTER_EMBEDDING_MODEL=baai/bge-m3`;
+- пересоздаёт `knowledge_chunks`;
+- обновляет `embedding_status` на `ready` или `failed`.
 
 ### `health`
 
@@ -244,6 +277,7 @@ supabase db push --workdir . --yes
 supabase functions deploy ai-clarify --workdir .
 supabase functions deploy ai-plan --workdir .
 supabase functions deploy ai-weekly-review --workdir .
+supabase functions deploy embed-knowledge-document --workdir .
 supabase functions deploy rag-answer --workdir .
 supabase functions deploy health --workdir .
 ```
@@ -252,6 +286,23 @@ supabase functions deploy health --workdir .
 
 - `supabase db push --workdir . --yes` применяет текущие миграции;
 - локальная база стартует через Supabase CLI;
+- `supabase migration up` локально применил `20260625204340_add_vector_rag.sql`;
+- `knowledge_chunks.embedding` проверен как `vector(1024)`;
+- `match_knowledge_chunks` проверен RLS-smoke: пользователь A не видит chunk пользователя B;
 - `health` возвращает HTTP 200;
-- `ai-weekly-review` без JWT возвращает HTTP 401;
+- `rag-answer` без JWT возвращает HTTP 401;
 - `health` показывает наличие server-side OpenRouter secret без раскрытия значения.
+
+Production rollout 26 июня 2026 по Москве:
+
+- OpenRouter `/embeddings` preflight: `baai/bge-m3`, HTTP 200, `embedding.length = 1024`;
+- `supabase secrets set` обновил `OPENROUTER_API_KEY`, `OPENROUTER_EMBEDDING_MODEL=baai/bge-m3`, `RAG_MATCH_THRESHOLD=0.55`, `RAG_MATCH_COUNT=6`;
+- `supabase db push --workdir . --yes` применил `20260625204340_add_vector_rag.sql` к `wbxyyvvuqrhqtuywfeto`;
+- `supabase functions deploy embed-knowledge-document --project-ref wbxyyvvuqrhqtuywfeto --workdir .` выполнен успешно;
+- `supabase functions deploy rag-answer --project-ref wbxyyvvuqrhqtuywfeto --workdir .` выполнен успешно;
+- authenticated production smoke создал документ, chunk и answer, получил `embedDimensions=1024`, `ragMatchCount=1`, `citationCount=1`, затем удалил smoke-данные.
+
+Evidence:
+
+- `submissions/final-project/evidence/openrouter-embedding-preflight-2026-06-25.json`;
+- `submissions/final-project/evidence/production-vector-rag-smoke-2026-06-26.json`.

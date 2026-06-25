@@ -15,6 +15,7 @@ import {
   LogInIcon,
   LogOutIcon,
   Loader2Icon,
+  PencilIcon,
   PlusIcon,
   RadarIcon,
   RefreshCcwIcon,
@@ -26,6 +27,7 @@ import {
 
 import {
   anonymousWorkspace,
+  createKnowledgeDocumentOnServer,
   createStarterKnowledgeDocument,
   createGoal,
   createGoalOnServer,
@@ -39,7 +41,10 @@ import {
   requestRagAnswer,
   requestWeeklyReview,
   toggleTask,
+  updateKnowledgeDocumentOnServer,
   updateTaskStatusOnServer,
+  embedKnowledgeDocument,
+  type RagAnswerResult,
 } from "@/lib/focustrack-api"
 import {
   getOAuthErrorMessage,
@@ -56,6 +61,8 @@ import type {
   AiSession,
   FocusTask,
   Goal,
+  KnowledgeDocument,
+  KnowledgeEmbeddingStatus,
   NewGoalInput,
   WorkspaceMode,
   Workspace,
@@ -306,6 +313,32 @@ function getAiSessionStatusLabel(status: AiSession["status"]) {
   }
 
   return labels[status]
+}
+
+function getKnowledgeStatusLabel(status?: KnowledgeEmbeddingStatus) {
+  const labels: Record<KnowledgeEmbeddingStatus, string> = {
+    pending: "Ожидает индексации",
+    indexing: "Индексируется",
+    ready: "Готово",
+    failed: "Ошибка индексации",
+  }
+
+  return labels[status ?? "pending"]
+}
+
+function getKnowledgeStatusVariant(status?: KnowledgeEmbeddingStatus) {
+  if (status === "ready") return "default"
+  if (status === "failed") return "destructive"
+  if (status === "indexing") return "secondary"
+  return "outline"
+}
+
+function canUseDocumentForRag(
+  workspaceMode: WorkspaceMode,
+  document?: KnowledgeDocument,
+) {
+  if (!document) return false
+  return workspaceMode !== "supabase" || document.embeddingStatus === "ready"
 }
 
 function buildClarifiedContext(
@@ -1588,23 +1621,93 @@ function KnowledgePanel({
     workspace.knowledgeDocuments[0]?.id ?? "",
   )
   const [answer, setAnswer] = useState("")
+  const [citations, setCitations] = useState<RagAnswerResult["citations"]>([])
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false)
+  const [editingDocumentId, setEditingDocumentId] = useState<string | null>(
+    null,
+  )
+  const [noteTitle, setNoteTitle] = useState("")
+  const [noteContent, setNoteContent] = useState("")
   const queryClient = useQueryClient()
   const selectedDocument =
     workspace.knowledgeDocuments.find(
       (document) => document.id === selectedDocumentId,
     ) ?? workspace.knowledgeDocuments[0]
   const hasKnowledgeDocuments = workspace.knowledgeDocuments.length > 0
-  const canAsk = question.trim().length >= 5 && Boolean(selectedDocument)
+  const isSelectedDocumentReady = canUseDocumentForRag(
+    workspace.mode,
+    selectedDocument,
+  )
+  const canAsk = question.trim().length >= 5 && isSelectedDocumentReady
+  const canSaveNote =
+    noteTitle.trim().length >= 3 && noteContent.trim().length >= 20
+  const openCreateNoteDialog = () => {
+    setEditingDocumentId(null)
+    setNoteTitle("")
+    setNoteContent("")
+    setNoteDialogOpen(true)
+  }
+  const openEditNoteDialog = (document: KnowledgeDocument) => {
+    setEditingDocumentId(document.id)
+    setNoteTitle(document.title)
+    setNoteContent(document.content)
+    setNoteDialogOpen(true)
+  }
+  const closeNoteDialog = () => {
+    setNoteDialogOpen(false)
+    setEditingDocumentId(null)
+    setNoteTitle("")
+    setNoteContent("")
+  }
   const createDocumentMutation = useMutation({
     mutationFn: createStarterKnowledgeDocument,
     onSuccess: async (document) => {
       setSelectedDocumentId(document.id)
       await queryClient.invalidateQueries({ queryKey })
-      toast.success("Источник добавлен")
+      toast.success("Источник добавлен и проиндексирован")
       trackEvent({ name: "knowledge_source_created", params: {} })
     },
     onError: (error) => {
-      toast.error("Источник не создан", {
+      toast.error("Источник не готов", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    },
+  })
+  const saveDocumentMutation = useMutation({
+    mutationFn: () =>
+      editingDocumentId
+        ? updateKnowledgeDocumentOnServer(editingDocumentId, {
+            title: noteTitle,
+            content: noteContent,
+          })
+        : createKnowledgeDocumentOnServer({
+            title: noteTitle,
+            content: noteContent,
+          }),
+    onSuccess: async (document) => {
+      setSelectedDocumentId(document.id)
+      setAnswer("")
+      setCitations([])
+      closeNoteDialog()
+      await queryClient.invalidateQueries({ queryKey })
+      toast.success("Заметка сохранена и проиндексирована")
+      trackEvent({ name: "knowledge_note_saved", params: {} })
+    },
+    onError: (error) => {
+      toast.error("Заметка не сохранена", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    },
+  })
+  const reindexMutation = useMutation({
+    mutationFn: (documentId: string) => embedKnowledgeDocument(documentId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey })
+      toast.success("Заметка переиндексирована")
+      trackEvent({ name: "knowledge_note_reindexed", params: {} })
+    },
+    onError: (error) => {
+      toast.error("Переиндексация не выполнена", {
         description: error instanceof Error ? error.message : String(error),
       })
     },
@@ -1620,6 +1723,7 @@ function KnowledgePanel({
       }),
     onSuccess: async (result) => {
       setAnswer(result.answer)
+      setCitations(result.citations ?? [])
       await queryClient.invalidateQueries({ queryKey })
       trackEvent({ name: "rag_answer_completed", params: {} })
     },
@@ -1632,11 +1736,22 @@ function KnowledgePanel({
 
   return (
     <Card data-testid="knowledge-panel">
-      <CardHeader>
-        <CardTitle>Knowledge/RAG</CardTitle>
-        <CardDescription>
-          Ответы по вашим заметкам и истории целей.
-        </CardDescription>
+      <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <CardTitle>Knowledge/RAG</CardTitle>
+          <CardDescription>
+            Ответы по вашим заметкам и истории целей.
+          </CardDescription>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={openCreateNoteDialog}
+          data-testid="add-knowledge-document-button"
+        >
+          <PlusIcon data-icon="inline-start" />
+          Добавить заметку
+        </Button>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {!hasKnowledgeDocuments && (
@@ -1669,6 +1784,85 @@ function KnowledgePanel({
             </AlertDescription>
           </Alert>
         )}
+        <Dialog
+          open={noteDialogOpen}
+          onOpenChange={(open) => {
+            if (open) {
+              setNoteDialogOpen(true)
+            } else {
+              closeNoteDialog()
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-2xl">
+            <form
+              className="flex flex-col gap-4"
+              onSubmit={(event) => {
+                event.preventDefault()
+                if (canSaveNote) {
+                  saveDocumentMutation.mutate()
+                }
+              }}
+            >
+              <DialogHeader>
+                <DialogTitle>
+                  {editingDocumentId ? "Редактировать заметку" : "Новая заметка"}
+                </DialogTitle>
+                <DialogDescription>Источник знаний</DialogDescription>
+              </DialogHeader>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="knowledge-note-title">
+                    Название
+                  </FieldLabel>
+                  <Input
+                    id="knowledge-note-title"
+                    value={noteTitle}
+                    onChange={(event) => setNoteTitle(event.target.value)}
+                    data-testid="knowledge-note-title-input"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="knowledge-note-content">
+                    Текст
+                  </FieldLabel>
+                  <Textarea
+                    id="knowledge-note-content"
+                    value={noteContent}
+                    onChange={(event) => setNoteContent(event.target.value)}
+                    className="min-h-44"
+                    data-testid="knowledge-note-content-input"
+                  />
+                </Field>
+              </FieldGroup>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeNoteDialog}
+                  disabled={saveDocumentMutation.isPending}
+                >
+                  Отмена
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!canSaveNote || saveDocumentMutation.isPending}
+                  data-testid="knowledge-note-save-button"
+                >
+                  {saveDocumentMutation.isPending ? (
+                    <Loader2Icon
+                      className="animate-spin"
+                      data-icon="inline-start"
+                    />
+                  ) : (
+                    <PlusIcon data-icon="inline-start" />
+                  )}
+                  Сохранить
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
         <FieldGroup>
           <Field>
             <FieldLabel htmlFor="rag-source">Источник</FieldLabel>
@@ -1684,7 +1878,8 @@ function KnowledgePanel({
                 <SelectGroup>
                   {workspace.knowledgeDocuments.map((document) => (
                     <SelectItem key={document.id} value={document.id}>
-                      {document.title}
+                      {document.title} ·{" "}
+                      {getKnowledgeStatusLabel(document.embeddingStatus)}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -1708,7 +1903,9 @@ function KnowledgePanel({
             data-testid="rag-submit"
             title={
               hasKnowledgeDocuments
-                ? undefined
+                ? isSelectedDocumentReady
+                  ? undefined
+                  : "Дождитесь статуса «Готово» или переиндексируйте заметку."
                 : "Сначала создайте или выберите источник знаний."
             }
           >
@@ -1729,15 +1926,83 @@ function KnowledgePanel({
             </AlertDescription>
           </Alert>
         )}
+        {citations && citations.length > 0 && (
+          <div className="flex flex-col gap-2" data-testid="rag-citations">
+            {citations.map((citation, index) => (
+              <div
+                key={`${citation.chunkId ?? citation.documentId ?? index}-${index}`}
+                className="rounded-lg border p-3 text-sm"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium">{citation.title}</span>
+                  {typeof citation.similarity === "number" && (
+                    <Badge variant="secondary">
+                      сходство {citation.similarity.toFixed(2)}
+                    </Badge>
+                  )}
+                </div>
+                {citation.content && (
+                  <p className="text-muted-foreground mt-2 line-clamp-2">
+                    {citation.content}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
         {workspace.knowledgeDocuments.map((document) => (
           <div key={document.id} className="rounded-lg border p-3">
-            <div className="flex items-center justify-between gap-3">
-              <span className="font-medium">{document.title}</span>
-              <Badge variant="outline">{document.source}</Badge>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <span className="font-medium">{document.title}</span>
+                <Badge variant="outline">{document.source}</Badge>
+                <Badge
+                  variant={getKnowledgeStatusVariant(
+                    document.embeddingStatus,
+                  )}
+                >
+                  {getKnowledgeStatusLabel(document.embeddingStatus)}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openEditNoteDialog(document)}
+                  data-testid={`edit-knowledge-document-${document.id}`}
+                >
+                  <PencilIcon data-icon="inline-start" />
+                  Редактировать
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={reindexMutation.isPending}
+                  onClick={() => reindexMutation.mutate(document.id)}
+                  data-testid={`reindex-knowledge-document-${document.id}`}
+                >
+                  {reindexMutation.isPending ? (
+                    <Loader2Icon
+                      className="animate-spin"
+                      data-icon="inline-start"
+                    />
+                  ) : (
+                    <RefreshCcwIcon data-icon="inline-start" />
+                  )}
+                  Переиндексировать
+                </Button>
+              </div>
             </div>
             <p className="text-muted-foreground mt-2 line-clamp-2 text-sm">
               {document.content}
             </p>
+            {document.embeddingError && (
+              <p className="text-destructive mt-2 text-sm">
+                {document.embeddingError}
+              </p>
+            )}
           </div>
         ))}
       </CardContent>

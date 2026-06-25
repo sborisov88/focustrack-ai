@@ -456,6 +456,12 @@ entrypoint = "./functions/rag-answer/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/rag-answer/*.html" ]
 
+[functions.embed-knowledge-document]
+enabled = true
+verify_jwt = true
+import_map = "./functions/embed-knowledge-document/deno.json"
+entrypoint = "./functions/embed-knowledge-document/index.ts"
+
 [functions.health]
 enabled = true
 verify_jwt = false

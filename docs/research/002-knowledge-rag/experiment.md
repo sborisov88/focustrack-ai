@@ -2,62 +2,89 @@
 
 ## Цель
 
-Проверить, нужен ли FocusTrack AI слой ответов по личным заметкам пользователя (журнал тренировок, бюджет, план подготовки к IELTS).
+Проверить слой ответов по личным заметкам пользователя: журнал тренировок, бюджет, план подготовки, рабочие заметки по целям.
 
-## Гипотеза
+## Архитектура
 
-Пользователю полезно задавать вопросы вроде:
+Текущая реализация переведена с controlled RAG на vector RAG:
 
-- сколько километров я набегал за последнюю неделю по журналу тренировок;
-- какие траты в бюджете можно сократить, чтобы быстрее собрать подушку безопасности;
-- какие темы IELTS я ещё не проработал по своему плану подготовки;
-- почему OpenRouter должен вызываться только с сервера.
+1. пользователь создаёт или редактирует заметку на `/knowledge`;
+2. frontend сохраняет запись в `public.knowledge_documents`;
+3. Edge Function `embed-knowledge-document` читает документ через пользовательский JWT и RLS;
+4. текст режется на стабильные chunks с overlap;
+5. для chunks строятся embeddings через OpenRouter `baai/bge-m3`;
+6. embeddings сохраняются в `public.knowledge_chunks.embedding vector(1024)`;
+7. `rag-answer` строит embedding вопроса, вызывает RPC `match_knowledge_chunks`, передаёт модели только найденные фрагменты и сохраняет ответ в `public.knowledge_answers`.
 
-## MVP-подход
+`service_role` в пользовательском RAG-потоке не используется.
 
-На этом этапе не строится полноценный embedding index. Реализован controlled RAG:
+## Схема
 
-1. frontend или backend передаёт в `rag-answer` список заметок;
-2. Edge Function отправляет вопрос и заметки в OpenRouter;
-3. system prompt запрещает отвечать вне переданного контекста;
-4. модель возвращает ответ и источники по названиям заметок.
+Основные таблицы:
 
-Для нового Supabase-пользователя UI не оставляет кнопку вопроса заблокированной без объяснения: `/knowledge` показывает empty-state, создаёт стартовый источник в `knowledge_documents`, после чего тот же экран выполняет `rag-answer` и сохраняет результат в `knowledge_answers`.
+- `knowledge_documents` — исходные заметки, статус индексации и hash контента;
+- `knowledge_chunks` — chunks, metadata и embedding `vector(1024)`;
+- `knowledge_answers` — сохранённые ответы с citations.
 
-## Реализация
+Индексы и retrieval:
+
+- `knowledge_chunks_embedding_hnsw_idx` через HNSW + `vector_cosine_ops`;
+- `match_knowledge_chunks(query_embedding, match_threshold, match_count, filter_document_id)` фильтрует строки по `auth.uid()`.
+
+## Контракт UI
+
+- `+ Добавить заметку` создаёт ручной источник и запускает индексацию.
+- `Редактировать` обновляет заметку, сбрасывает статус и переиндексирует chunks.
+- `Переиндексировать` повторно запускает `embed-knowledge-document`.
+- Вопрос активен только для источника со статусом `Готово`.
+- Ответ показывает текст модели и citations по найденным chunks со score сходства.
+
+## Проверки 25 июня 2026
+
+Локально выполнено:
 
 ```text
-supabase/functions/rag-answer/index.ts
+pnpm lint -> passed
+pnpm typecheck -> passed
+pnpm test -> 39 passed
+pnpm build -> passed
+pnpm test:e2e -> 9 passed / 11 skipped
+deno check rag-answer -> passed
+deno check embed-knowledge-document -> passed
+supabase migration up -> applied 20260625204340_add_vector_rag.sql
 ```
 
-Таблицы для дальнейшего развития:
+SQL/RLS smoke:
 
-- `knowledge_documents`;
-- `knowledge_answers`.
-
-## Пример запроса
-
-```json
-{
-  "question": "Сколько километров я набегал на этой неделе?",
-  "documents": [
-    {
-      "title": "Журнал тренировок",
-      "content": "Пн 5 км, Ср 8 км, Сб 12 км..."
-    }
-  ]
-}
+```text
+extension vector -> 1
+knowledge_chunks.embedding -> vector(1024)
+match_knowledge_chunks -> 1
+HNSW index -> 1
+RLS: user A sees only "RLS smoke A"; user B chunk is hidden
+rag-answer without JWT -> 401
 ```
 
-## Критерии оценки
+Evidence:
 
-| Критерий            | Ожидание                                       |
-| ------------------- | ---------------------------------------------- |
-| Ответ по заметкам   | модель ссылается только на переданный контекст |
-| Нехватка данных     | модель явно сообщает, что данных недостаточно  |
-| Стоимость           | один chat completion без embedding pipeline    |
-| Риск                | ниже, чем у полного RAG, но хуже recall        |
+- `submissions/final-project/evidence/local-vector-rag-sql-rls-smoke-2026-06-25.json`
+- `submissions/final-project/evidence/openrouter-embedding-preflight-2026-06-25.json`
+- `submissions/final-project/evidence/production-vector-rag-smoke-2026-06-26.json`
 
-## Решение по MVP
+## Production rollout
 
-RAG остаётся экспериментом и демонстрационным плюсом. В core MVP входят цели, задачи, прогресс и weekly review. Полноценный RAG на pgvector стоит добавлять позже, если пользователю действительно нужно искать по большому архиву личных заметок.
+Production rollout выполнен 26 июня 2026 по Москве:
+
+- OpenRouter `/embeddings` preflight для `baai/bge-m3` вернул HTTP 200 и `embedding.length === 1024`;
+- Supabase secrets заданы: `OPENROUTER_API_KEY`, `OPENROUTER_EMBEDDING_MODEL`, `RAG_MATCH_THRESHOLD`, `RAG_MATCH_COUNT`;
+- cloud migration `20260625204340_add_vector_rag.sql` применена к проекту `wbxyyvvuqrhqtuywfeto`;
+- Edge Functions `embed-knowledge-document` и `rag-answer` задеплоены;
+- authenticated production smoke создал `knowledge_documents`, `knowledge_chunks`, `knowledge_answers`, получил grounded answer с citation и затем очистил smoke-данные.
+
+```text
+production smoke -> ok
+embedDimensions -> 1024
+ragMatchCount -> 1
+citationCount -> 1
+answerContainsExpectedFact -> true
+```

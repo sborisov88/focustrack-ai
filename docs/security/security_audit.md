@@ -52,6 +52,8 @@ OPENROUTER_API_KEY, Supabase service role key. Проверь, что во front
 | Секреты в Git                   | не найдено       | `.env.local` в `.gitignore`, `.env.example` без секретов                 |
 | CORS с wildcard `*`             | исправлено       | заменён на allowlist `ALLOWED_ORIGINS` с `Vary: Origin` в Edge Functions |
 | Нет структурированных логов     | исправлено       | добавлен `_shared/logger.ts` (JSON, уровни info\|warn\|error)            |
+| Vector RAG chunks могут раскрыть чужие заметки | исправлено | `knowledge_chunks` защищён RLS, RPC `match_knowledge_chunks` фильтрует по `auth.uid()` |
+| Embeddings key во frontend      | не найдено       | OpenRouter `/embeddings` вызывается только из Edge Functions             |
 
 ## OWASP notes
 
@@ -63,9 +65,13 @@ Frontend не строит SQL вручную. CRUD идёт через Supabase
 
 Основной механизм контроля доступа — RLS policies по `auth.uid()`.
 
+Для vector RAG добавлена отдельная проверка: `knowledge_chunks` имеет RLS policy по `user_id` и связанному `knowledge_documents.user_id`; RPC `match_knowledge_chunks` дополнительно фильтрует `knowledge_chunks.user_id = auth.uid()` и `knowledge_documents.user_id = auth.uid()`. Локальный smoke 25 июня 2026 показал: пользователь A видит только `RLS smoke A`, chunk пользователя B не возвращается ни прямым SELECT, ни RPC.
+
 ### Sensitive Data Exposure
 
 Секреты OpenRouter и Supabase service role не используются во frontend.
+
+`OPENROUTER_API_KEY` используется для chat completions и embeddings только в Edge Functions. Пользовательский CRUD/RAG-поток работает через user-scoped Supabase client и RLS; `service_role` не используется для `knowledge_documents`, `knowledge_chunks` или `knowledge_answers`.
 
 ### Security Logging
 
@@ -102,6 +108,7 @@ No known vulnerabilities found
 - настроить централизованные алерты поверх JSON-логов (выполнено: структурированное логирование в `_shared/logger.ts`);
 - включить Supabase alerts;
 - добавить регулярный dependency audit в CI.
+- production vector RAG rollout выполнен после authenticated OpenRouter `/embeddings` smoke с `embedding.length === 1024`.
 
 ## Supabase smoke 17 июня 2026
 
@@ -110,4 +117,33 @@ GET /functions/v1/health -> 200
 checks.database.reachable -> true
 POST /functions/v1/ai-weekly-review без JWT -> 401
 OpenRouter model -> google/gemini-2.5-flash-lite
+```
+
+## Vector RAG smoke 25 июня 2026
+
+Локально:
+
+```text
+supabase migration up -> applied 20260625204340_add_vector_rag.sql
+knowledge_chunks.embedding -> vector(1024)
+match_knowledge_chunks -> exists
+HNSW index -> exists
+RLS smoke -> user A sees only RLS smoke A
+POST /functions/v1/rag-answer без JWT -> 401
+```
+
+Production rollout выполнен 26 июня 2026 по Москве:
+
+```text
+OpenRouter /embeddings baai/bge-m3 -> 200
+embedding.length -> 1024
+supabase db push -> migration applied
+embed-knowledge-document deploy -> ok
+rag-answer deploy -> ok
+authenticated vector RAG smoke -> ok
+embedDimensions -> 1024
+ragMatchCount -> 1
+citationCount -> 1
+knowledge_answers created -> 1
+smoke documents/answers cleanup -> ok
 ```

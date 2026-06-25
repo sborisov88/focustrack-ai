@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-06-25T20:54:58.001Z",
+  "localOnly": true,
+  "remoteProductionTouched": false,
+  "migration": {
+    "file": "supabase/migrations/20260625204340_add_vector_rag.sql",
+    "appliedWith": "supabase migration up",
+    "extensionVectorCount": 1,
+    "knowledgeDocumentColumnsAdded": 5,
+    "knowledgeChunksTableCount": 1,
+    "embeddingType": "vector(1024)",
+    "rpcCount": 1,
+    "hnswIndexCount": 1
+  },
+  "rlsSmoke": {
+    "directVisibleChunksForUserA": 1,
+    "directVisibleContent": "RLS smoke A content",
+    "rpcVisibleTitles": [
+      "RLS smoke A"
+    ],
+    "userBChunkHidden": true,
+    "rolledBack": true
+  },
+  "authSmoke": {
+    "ragAnswerWithoutJwtStatus": 401
+  }
+}
