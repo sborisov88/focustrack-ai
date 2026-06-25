@@ -71,6 +71,21 @@ POST /functions/v1/ai-weekly-review с publishable/anon JWT -> 401 (реальн
 Playwright screenshots/video -> output/playwright/ и output/playwright/production/
 ```
 
+Дополнительная проверка 25 июня 2026 после закрытия fresh-user RAG flow:
+
+```text
+commit -> c1b021652a6783d9fcaf5b7bb44b7784de20d37a
+GitHub Actions run -> https://github.com/sborisov88/focustrack-ai/actions/runs/28139826719
+Quality gate -> success
+Vercel frontend deploy -> success
+production alias -> https://focustrack-ai.vercel.app
+production asset -> assets/index-BW00rx_I.js содержит empty-state и starter-source RAG flow
+GET /knowledge -> 200
+GET /functions/v1/health -> 200, checks.database.reachable -> true
+POST /functions/v1/rag-answer без JWT -> 401
+local authenticated smoke -> /knowledge empty-state -> стартовый источник -> rag-answer -> knowledge_answers
+```
+
 Изменения этой итерации (актуализация по аудиту):
 
 - закрыт формальный риск «минимум 3 экрана/страницы»: добавлены отдельные URL `/dashboard`, `/planner`,
@@ -111,7 +126,7 @@ https://github.com/sborisov88/focustrack-ai
 - evidence проекта: `submissions/final-project/evidence/`;
 - демо-доступ: `DEMO_ACCESS.md`;
 - production demo: `https://focustrack-ai.vercel.app`;
-- финальный tag: `final-project-submitted` (`486a2d6`); самая свежая ветка `main` — `f383397`.
+- финальный tag: `final-project-submitted` (`486a2d6`); актуальный production feature commit на `main` — `c1b0216` (fresh-user RAG flow).
 
 История сквозной разработки зафиксирована опубликованными Git tags:
 

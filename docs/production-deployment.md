@@ -148,6 +148,19 @@ Vercel frontend deploy: success
 Production alias: https://focustrack-ai.vercel.app
 ```
 
+Фактический автоматический deploy 25 июня 2026 после закрытия fresh-user RAG flow:
+
+```text
+Commit: c1b021652a6783d9fcaf5b7bb44b7784de20d37a
+Run: https://github.com/sborisov88/focustrack-ai/actions/runs/28139826719
+Quality gate: success
+Vercel frontend deploy: success
+Supabase deploy: skipped по условию workflow, изменений Edge Functions в этом commit не было
+Production alias: https://focustrack-ai.vercel.app
+Deployment URL: https://focustrack-2yx8lri9a-sborisov88s-projects.vercel.app
+Production asset: assets/index-BW00rx_I.js
+```
+
 ## GitHub Actions deploy
 
 В `.github/workflows/ci.yml` добавлен job `vercel-frontend-deploy`.
@@ -180,6 +193,9 @@ health_status=200
 health_database_reachable=true
 protected_ai_without_jwt_status=401
 protected_ai_publishable_jwt_status=401
+fresh_user_rag_bundle_has_empty_state=true
+fresh_user_rag_bundle_has_starter_source_flow=true
+protected_rag_without_jwt_status=401
 ```
 
 Лог:
@@ -187,6 +203,8 @@ protected_ai_publishable_jwt_status=401
 ```text
 output/verification/logs/vercel-production-smoke.log
 output/verification/logs/github-actions-final-production-smoke.log
+submissions/final-project/evidence/logs/starter-rag-production-smoke.log
+submissions/hw6/evidence/logs/starter-rag-production-smoke.log
 ```
 
 ## Playwright evidence

@@ -58,6 +58,10 @@ Production frontend smoke -> 200
 GET /functions/v1/health -> 200, checks.database.reachable -> true
 POST /functions/v1/ai-weekly-review без JWT -> 401
 POST /functions/v1/ai-weekly-review с publishable/anon Bearer -> 401
+GitHub Actions run 28139826719 -> Quality gate success, Vercel frontend deploy success
+Production asset assets/index-BW00rx_I.js -> contains fresh-user RAG empty-state and starter-source flow
+POST /functions/v1/rag-answer без JWT -> 401
+Fresh-user RAG local smoke -> /knowledge empty-state -> стартовый источник -> rag-answer -> knowledge_answers
 ```
 
 e2e: 9 реально проходящих сценариев (desktop dashboard flow, AI clarify+plan, RAG, sidebar-навигация, строгий 404, login-диалог, delete goal, закрытие demo-mode, mobile usability); 11 skipped — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, который требует env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`.
@@ -95,6 +99,7 @@ Production evidence:
 - `submissions/hw6/evidence/logs/github-actions-final-production-smoke.log`;
 - `submissions/hw6/evidence/logs/github-run-27682163117/vercel-deploy-url.txt`;
 - `submissions/hw6/evidence/logs/vercel-production-smoke.log`;
+- `submissions/hw6/evidence/logs/starter-rag-production-smoke.log`;
 - `submissions/hw6/evidence/logs/playwright-production-capture.log`;
 - `submissions/hw6/evidence/media/vercel-production/`.
 

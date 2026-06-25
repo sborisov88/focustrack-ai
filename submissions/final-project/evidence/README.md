@@ -37,7 +37,7 @@
 - финальная проектная работа: `submissions/final-project/README.md`;
 - production demo: `https://focustrack-ai.vercel.app`;
 - демо-доступ: `DEMO_ACCESS.md`;
-- опубликованный финальный checkpoint: `final-project-submitted` (`486a2d6`); самая свежая ветка `main` — `f383397`;
+- опубликованный финальный checkpoint: `final-project-submitted` (`486a2d6`); актуальный production feature commit на `main` — `c1b0216` (fresh-user RAG flow);
 - опубликованные checkpoints по ДЗ: `hw1-submitted`, `hw2-submitted`, `hw3-submitted`, `hw4-submitted`, `hw5-submitted`, `hw6-submitted`.
 
 ## Логи
@@ -53,6 +53,7 @@
 - `logs/live-supabase-e2e.log` — live login, создание цели и task toggle через Supabase с проверкой после reload (требует env `E2E_DEMO_EMAIL`/`E2E_DEMO_PASSWORD`).
 - `logs/start-check.log` — `FOCUSTRACK_CHECK_ONLY=1 ./start.sh`, one-command cloud-only smoke: production frontend 200 и Supabase health 200.
 - `logs/supabase-smoke.log`
+- `logs/starter-rag-production-smoke.log` — GitHub Actions run `28139826719`, production asset `assets/index-BW00rx_I.js`, `GET /knowledge -> 200`, health `200`, protected `rag-answer` без JWT `401`, local authenticated smoke `/knowledge -> стартовый источник -> rag-answer -> knowledge_answers`.
 - `logs/tooling.log`
 
 ## Медиа

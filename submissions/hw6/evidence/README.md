@@ -34,8 +34,11 @@
 - `logs/audit.log`
 - `logs/e2e.log`
 - `logs/supabase-smoke.log`
+- `logs/starter-rag-production-smoke.log`
 
 Актуальный прогон 25 июня 2026: unit `35 passed` в 3 файлах (`progress.test.ts` + `focustrack-api.test.ts` + `auth.test.ts`), e2e `9 passed / 11 skipped` (9 проходящих: desktop dashboard flow, AI clarify+plan, RAG, sidebar-навигация, strict 404, login-диалог, delete goal, demo close, mobile usability; 11 skipped — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, требующий env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`). Дополнительно вручную проверен локальный Supabase-пользователь: `/knowledge` -> empty-state -> стартовый источник -> RAG-ответ -> строки в `knowledge_documents` и `knowledge_answers`.
+
+Production smoke 25 июня 2026: GitHub Actions run `28139826719` на commit `c1b0216` прошёл `Quality gate` и `Vercel frontend deploy`; production `/knowledge` отдаёт `200`, asset `assets/index-BW00rx_I.js` содержит fresh-user RAG empty-state и starter-source flow, Supabase health отдаёт `200` с `checks.database.reachable=true`, защищённый `rag-answer` без JWT отдаёт `401`.
 
 ## Медиа
 
