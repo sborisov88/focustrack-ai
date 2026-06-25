@@ -43,4 +43,4 @@ https://github.com/sborisov88/focustrack-ai
 | ДЗ 4 | [`hw4-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw4-submitted) | `bf35de9` |
 | ДЗ 5 | [`hw5-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw5-submitted) | `bf35de9` |
 | ДЗ 6 | [`hw6-submitted`](https://github.com/sborisov88/focustrack-ai/tree/hw6-submitted) | `bf35de9` |
-| Проект | [`final-project-submitted`](https://github.com/sborisov88/focustrack-ai/tree/final-project-submitted) | актуальный финальный пакет для преподавателя |
+| Проект | [`final-project-submitted`](https://github.com/sborisov88/focustrack-ai/tree/final-project-submitted) | финальный checkpoint; самая свежая ветка `main` содержит последующие полировки |

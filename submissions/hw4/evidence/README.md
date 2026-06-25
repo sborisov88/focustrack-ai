@@ -2,12 +2,12 @@
 
 ## Проверенные критерии
 
-Подтверждено сборкой и тестами 2026-06-19 (ветка `closure-docs-2026-06-19`): typecheck, lint, unit, build, e2e — все с EXIT 0.
+Подтверждено сборкой и тестами 2026-06-25: typecheck, lint, unit, build, e2e — все с EXIT 0.
 
 - frontend-приложение запускается и собирается (build EXIT=0);
 - реализованы минимум 3 функции из ТЗ: цели, задачи, прогресс, AI Review, RAG, responsive dashboard;
 - правила проекта подключены для AI-агента в нативном формате Cursor: `.cursor/rules/focustrack.mdc` (`alwaysApply`, зеркало `AGENTS.md`);
-- unit-тесты: 30 passed в 3 файлах (`progress.test.ts` + `focustrack-api.test.ts` + `auth.test.ts`), включая streak, обработку ошибок и edge-кейсы;
+- unit-тесты: 35 passed в 3 файлах (`progress.test.ts` + `focustrack-api.test.ts` + `auth.test.ts`), включая streak, обработку ошибок, стартовый RAG-источник и edge-кейсы;
 - Playwright e2e: 9 passed / 11 skipped (добавлен строгий 404-сценарий; skip — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, требующий env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`);
 - отчёт о разработке содержит примеры промптов и пример мультимодальной отладки (`docs/frontend/development_report.md`);
 - контрольный multimodal debugging evidence по скриншотам desktop/mobile сохранен в `multimodal-debugging.md`;
@@ -36,7 +36,7 @@
 
 - `logs/lint.log` (EXIT=0)
 - `logs/typecheck.log` (EXIT=0)
-- `logs/unit-test.log` — 30 passed в 3 файлах (EXIT=0)
+- `logs/unit-test.log` — 35 passed в 3 файлах (EXIT=0)
 - `logs/build.log` (EXIT=0)
 - `logs/e2e.log` — 9 passed / 11 skipped (EXIT=0)
 

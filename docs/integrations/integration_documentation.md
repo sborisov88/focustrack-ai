@@ -168,6 +168,8 @@ VITE_YANDEX_METRIKA_ID=
 - если ID не задан (или `0`) — `initAnalytics()` и `trackEvent()` работают как безопасный no-op (наружу ничего не отправляется);
 - на сервере / в тестах при отсутствии `window`/`document` — тоже no-op.
 
+Production-состояние на 25 июня 2026: в Vercel Production задан `VITE_YANDEX_METRIKA_ID=110130059`, переменная не помечена как `Sensitive`, чтобы GitHub Actions + Vercel prebuilt build могли встроить значение в Vite-бандл. Smoke production подтвердил загрузку `https://mc.yandex.ru/metrika/tag.js`; в основном browser runtime `window.ym` доступен как `function`.
+
 `trackEvent({ name, params })` отправляет `reachGoal`-события (`window.ym(counterId, "reachGoal", name, params)`); в dev-режиме дополнительно логирует событие в консоль.
 
 В UI (`src/features/dashboard/focustrack-dashboard.tsx`) вызывается не менее 3 `reachGoal`-событий — фактически больше. Актуальные точки на 20 июня 2026:

@@ -42,7 +42,7 @@ pnpm run test:e2e
 - отметка задач;
 - прогресс и график;
 - weekly AI review;
-- RAG-ответ по заметкам пользователя;
+- RAG-ответ по заметкам пользователя, включая стартовый источник для нового Supabase-пользователя;
 - responsive layout;
 - Google OAuth entry point через Supabase Auth (`src/lib/auth.ts`); вход через Google проверяется вручную, автоматического e2e-доказательства входа нет;
 - Яндекс.Метрика: `src/lib/analytics.ts` (`initAnalytics`/`trackEvent`); подключается из `src/main.tsx` и активна только при заданном `VITE_YANDEX_METRIKA_ID`, иначе безопасный no-op.
@@ -54,13 +54,13 @@ pnpm run test:e2e
 | Frontend запускается и собирается        | done   | `pnpm dev`, `pnpm run build` (build EXIT=0)                                                                     |
 | Реализованы минимум 3 функции из ТЗ      | done   | цели, задачи, прогресс, Weekly AI Review, RAG (`src/features/dashboard/focustrack-dashboard.tsx`)               |
 | Правила проекта подключены для AI-агента | done   | `.cursor/rules/focustrack.mdc` (`alwaysApply`, зеркало `AGENTS.md`)                                             |
-| Unit-тесты, включая обработку ошибок     | done   | 30 unit-тестов в 3 файлах: `src/lib/progress.test.ts`, `src/lib/focustrack-api.test.ts`, `src/lib/auth.test.ts` |
+| Unit-тесты, включая обработку ошибок     | done   | 35 unit-тестов в 3 файлах: `src/lib/progress.test.ts`, `src/lib/focustrack-api.test.ts`, `src/lib/auth.test.ts` |
 | E2E-тесты (Playwright)                   | done   | `tests/e2e/focustrack.spec.ts` — 9 passed / 11 skipped                                                          |
 | Отчет о разработке с примерами промптов  | done   | `docs/frontend/development_report.md` + `submissions/hw4/evidence/multimodal-debugging.md`                      |
 | Скриншоты/видео                          | done   | `submissions/hw4/evidence/media/` (после запуска e2e — `output/playwright/`)                                    |
 | Google OAuth e2e автоматизирован         | нет    | entry point реальный, вход через Google проверяется вручную                                                     |
 
-Подтверждено сборкой и тестами 20 июня 2026: typecheck, lint, unit (30 passed), build, e2e (9 passed / 11 skipped) — все с EXIT 0.
+Подтверждено сборкой и тестами 25 июня 2026: typecheck, lint, unit (35 passed), build, e2e (9 passed / 11 skipped) — все с EXIT 0.
 
 ## Текст для отправки
 
@@ -69,7 +69,7 @@ pnpm run test:e2e
 
 Frontend реализован на React + TypeScript + Vite + shadcn/ui.
 Правила проекта для AI-агента подключены в нативном формате Cursor: .cursor/rules/focustrack.mdc (зеркало AGENTS.md).
-Unit-тесты: 30 passed в 3 файлах (src/lib/progress.test.ts, src/lib/focustrack-api.test.ts и src/lib/auth.test.ts, включая streak, обработку ошибок RAG-вопроса, пустых документов, демо-фоллбэки и toggleTask).
+Unit-тесты: 35 passed в 3 файлах (src/lib/progress.test.ts, src/lib/focustrack-api.test.ts и src/lib/auth.test.ts, включая streak, обработку ошибок RAG-вопроса, пустых документов, стартовый RAG-источник, демо-фоллбэки и toggleTask).
 E2E (Playwright): 9 passed / 11 skipped (добавлен строгий 404-сценарий; skip — кросс-проектные дубли desktop/mobile и live-Supabase сценарий, требующий env E2E_DEMO_EMAIL/E2E_DEMO_PASSWORD).
 Основной отчет с примерами промптов и примером мультимодальной отладки: docs/frontend/development_report.md.
 Контрольный multimodal debugging evidence: submissions/hw4/evidence/multimodal-debugging.md.

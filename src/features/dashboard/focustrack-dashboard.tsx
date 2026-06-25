@@ -26,6 +26,7 @@ import {
 
 import {
   anonymousWorkspace,
+  createStarterKnowledgeDocument,
   createGoal,
   createGoalOnServer,
   createLocalGoal,
@@ -1592,8 +1593,22 @@ function KnowledgePanel({
     workspace.knowledgeDocuments.find(
       (document) => document.id === selectedDocumentId,
     ) ?? workspace.knowledgeDocuments[0]
-  const canAsk =
-    question.trim().length >= 5 && workspace.knowledgeDocuments.length > 0
+  const hasKnowledgeDocuments = workspace.knowledgeDocuments.length > 0
+  const canAsk = question.trim().length >= 5 && Boolean(selectedDocument)
+  const createDocumentMutation = useMutation({
+    mutationFn: createStarterKnowledgeDocument,
+    onSuccess: async (document) => {
+      setSelectedDocumentId(document.id)
+      await queryClient.invalidateQueries({ queryKey })
+      toast.success("Источник добавлен")
+      trackEvent({ name: "knowledge_source_created", params: {} })
+    },
+    onError: (error) => {
+      toast.error("Источник не создан", {
+        description: error instanceof Error ? error.message : String(error),
+      })
+    },
+  })
   const ragMutation = useMutation({
     mutationFn: () =>
       requestRagAnswer({
@@ -1624,10 +1639,41 @@ function KnowledgePanel({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {!hasKnowledgeDocuments && (
+          <Alert data-testid="knowledge-empty-state">
+            <FileQuestionIcon />
+            <AlertTitle>Источников пока нет</AlertTitle>
+            <AlertDescription className="mt-2 flex flex-col gap-3">
+              <span>
+                Добавьте стартовую заметку, чтобы задать вопрос и получить
+                ответ только по сохранённому контексту.
+              </span>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-fit"
+                disabled={createDocumentMutation.isPending}
+                onClick={() => createDocumentMutation.mutate()}
+                data-testid="create-starter-document-button"
+              >
+                {createDocumentMutation.isPending ? (
+                  <Loader2Icon
+                    className="animate-spin"
+                    data-icon="inline-start"
+                  />
+                ) : (
+                  <PlusIcon data-icon="inline-start" />
+                )}
+                Создать стартовый источник
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         <FieldGroup>
           <Field>
             <FieldLabel htmlFor="rag-source">Источник</FieldLabel>
             <Select
+              disabled={!hasKnowledgeDocuments}
               value={selectedDocument?.id ?? ""}
               onValueChange={setSelectedDocumentId}
             >
@@ -1660,6 +1706,11 @@ function KnowledgePanel({
             disabled={!canAsk || ragMutation.isPending}
             onClick={() => ragMutation.mutate()}
             data-testid="rag-submit"
+            title={
+              hasKnowledgeDocuments
+                ? undefined
+                : "Сначала создайте или выберите источник знаний."
+            }
           >
             {ragMutation.isPending ? (
               <Loader2Icon className="animate-spin" data-icon="inline-start" />

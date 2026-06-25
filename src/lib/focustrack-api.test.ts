@@ -27,6 +27,7 @@ vi.mock("@/lib/supabase", () => ({
 import {
   createGoal,
   createLocalGoal,
+  createStarterKnowledgeDocument,
   deleteGoal,
   generateTasksForGoal,
   loadWorkspace,
@@ -124,6 +125,14 @@ type InsertedTaskRow = {
   sort_order: number
 }
 
+type InsertedKnowledgeDocumentRow = {
+  user_id: string
+  title: string
+  source: string
+  content: string
+  tags: string[]
+}
+
 function createPlanningSupabaseClientMock() {
   const insertedTaskRows: InsertedTaskRow[] = []
   const insertedSessions: unknown[] = []
@@ -214,6 +223,56 @@ function createPlanningSupabaseClientMock() {
     insertedSessions,
     insertedTaskRows,
     invoke,
+  }
+}
+
+function createKnowledgeSupabaseClientMock() {
+  const insertedDocuments: InsertedKnowledgeDocumentRow[] = []
+  const from = vi.fn((table: string) => {
+    if (table === "knowledge_documents") {
+      return {
+        insert: (row: InsertedKnowledgeDocumentRow) => {
+          insertedDocuments.push(row)
+
+          return {
+            select: () => ({
+              single: () =>
+                Promise.resolve({
+                  data: {
+                    id: "doc-starter",
+                    title: row.title,
+                    source: row.source,
+                    content: row.content,
+                  },
+                  error: null,
+                }),
+            }),
+          }
+        },
+      }
+    }
+
+    return {
+      select: () => Promise.resolve({ data: [], error: null }),
+    }
+  })
+
+  return {
+    client: {
+      auth: {
+        getSession: () =>
+          Promise.resolve({
+            data: {
+              session: {
+                user: { id: "user-1", email: "demo@focustrack.ai" },
+              },
+            },
+            error: null,
+          }),
+      },
+      from,
+    },
+    insertedDocuments,
   }
 }
 
@@ -402,6 +461,32 @@ describe("requestRagAnswer (обработка ошибок)", () => {
 
     expect(result.model).toBe("demo")
     expect(result.answer).toContain("Дневник пробежек")
+  })
+})
+
+describe("knowledge sources", () => {
+  it("createStarterKnowledgeDocument создаёт стартовый источник в public.knowledge_documents", async () => {
+    const knowledgeMock = createKnowledgeSupabaseClientMock()
+    supabaseMock.client = knowledgeMock.client
+    supabaseMock.hasConfig = true
+
+    const document = await createStarterKnowledgeDocument()
+
+    expect(document).toEqual({
+      id: "doc-starter",
+      title: "Журнал тренировок (стартовый источник)",
+      source: "starter",
+      content: expect.stringContaining("Нед. 8: длинная 15 км"),
+    })
+    expect(knowledgeMock.insertedDocuments).toEqual([
+      {
+        user_id: "user-1",
+        title: "Журнал тренировок (стартовый источник)",
+        source: "starter",
+        content: expect.stringContaining("самая длинная пробежка"),
+        tags: ["бег", "тренировки", "стартовый источник"],
+      },
+    ])
   })
 })
 

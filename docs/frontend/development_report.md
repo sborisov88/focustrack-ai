@@ -28,7 +28,7 @@
 | CRUD              | создание, чтение, обновление task status и удаление цели |
 | Прогресс          | shadcn Progress + Recharts                               |
 | Weekly AI Review  | кнопка `AI Review` и панель результата                   |
-| Knowledge/RAG     | блок документов и Edge Function `rag-answer`             |
+| Knowledge/RAG     | источники, empty-state и Edge Function `rag-answer`      |
 | Auth              | email/password sign in, sign up, logout и Google OAuth   |
 | Аналитика         | `trackEvent` с поддержкой Яндекс.Метрики                 |
 
@@ -102,7 +102,7 @@
    Format: план -> код компонента -> список проверок.
    ```
 
-   Результат: `KnowledgePanel` с условием `canAsk = question.trim().length >= 5 && knowledgeDocuments.length > 0` и серверным запросом `requestRagAnswer`.
+   Результат: `KnowledgePanel` с условием `canAsk = question.trim().length >= 5 && Boolean(selectedDocument)`, empty-state для пустого `knowledge_documents`, кнопкой создания стартового источника и серверным запросом `requestRagAnswer`.
 
 4. **Тесты обработки ошибок API-слоя.**
 
@@ -116,7 +116,7 @@
    Format: список сценариев -> файл теста -> команды проверки.
    ```
 
-   Результат: `src/lib/focustrack-api.test.ts` с проверками `throws "Введите вопрос по заметкам."`, `throws "Нет документов для RAG-ответа."`, демо-фоллбэков и пересчёта прогресса в `toggleTask`.
+   Результат: `src/lib/focustrack-api.test.ts` с проверками `throws "Введите вопрос по заметкам."`, `throws "Нет документов для RAG-ответа."`, создания стартового RAG-источника, демо-фоллбэков и пересчёта прогресса в `toggleTask`.
 
 ### Мультимодальная и диагностическая отладка
 

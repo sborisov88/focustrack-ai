@@ -59,7 +59,7 @@ https://focustrack-ai.vercel.app
 
 ```text
 typecheck/lint/unit/build/e2e -> pass
-unit -> 30 passed в 3 файлах (src/lib/progress.test.ts + src/lib/focustrack-api.test.ts + src/lib/auth.test.ts)
+unit -> 35 passed в 3 файлах (src/lib/progress.test.ts + src/lib/focustrack-api.test.ts + src/lib/auth.test.ts)
 Playwright e2e -> 9 passed / 11 skipped: desktop dashboard flow, AI-clarify+AI-plan, RAG,
                   route navigation, strict 404, auth sign-in/sign-up modes, delete goal, demo close, mobile usability
                   (skip — кросс-проектные дубли desktop/mobile и live-Supabase сценарий,
@@ -86,10 +86,13 @@ Playwright screenshots/video -> output/playwright/ и output/playwright/producti
   Supabase/OpenRouter в sidebar теперь обычные статусные строки, а не кликабельные кнопки;
 - расширено unit-покрытие: добавлен `src/lib/focustrack-api.test.ts` (валидация RAG-вопроса и пустого списка
   документов, демо-фоллбэки AI/RAG без сессии, пересчёт прогресса в `toggleTask` и edge на несуществующую задачу);
+- закрыт fresh-user RAG happy path: при пустом `knowledge_documents` экран `/knowledge` показывает empty-state,
+  создаёт стартовый источник через Supabase Data API и после этого выполняет `rag-answer` с сохранением ответа
+  в `knowledge_answers`;
 - бэкенд: структурированное JSON-логирование (`supabase/functions/_shared/logger.ts`) и явный CORS-allowlist
   вместо wildcard `*` (`supabase/functions/_shared/openrouter.ts`, `Vary: Origin`);
-- фронтенд: реальная инициализация Яндекс.Метрики (`src/lib/analytics.ts` -> `initAnalytics()` из `src/main.tsx`),
-  активна только при заданном `VITE_YANDEX_METRIKA_ID`, иначе безопасный no-op.
+- фронтенд: реальная инициализация Яндекс.Метрики (`src/lib/analytics.ts` -> `initAnalytics()` из `src/main.tsx`);
+  production активен на `VITE_YANDEX_METRIKA_ID=110130059`, иначе в локальной среде безопасный no-op.
 
 Повторная сверка требований: `submissions/reverification-audit-2026-06-17.md`.
 
@@ -108,7 +111,7 @@ https://github.com/sborisov88/focustrack-ai
 - evidence проекта: `submissions/final-project/evidence/`;
 - демо-доступ: `DEMO_ACCESS.md`;
 - production demo: `https://focustrack-ai.vercel.app`;
-- финальный tag: `final-project-submitted`.
+- финальный tag: `final-project-submitted` (`486a2d6`); самая свежая ветка `main` — `f383397`.
 
 История сквозной разработки зафиксирована опубликованными Git tags:
 

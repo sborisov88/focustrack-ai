@@ -23,7 +23,7 @@ https://focustrack-ai.vercel.app
 ## Интеграции
 
 - Google OAuth через Supabase Auth (`src/lib/auth.ts -> signInWithOAuth("google")`) — entry point реальный; сквозной вход через Google проверяется вручную, автоматизированного e2e-доказательства полного OAuth-цикла нет;
-- Яндекс.Метрика реально инициализируется (`src/lib/analytics.ts -> initAnalytics()` из `src/main.tsx`); активна только при заданном `VITE_YANDEX_METRIKA_ID > 0`, без ID — безопасный no-op (события не отправляются); в UI вызывается не менее 3 `reachGoal`-событий;
+- Яндекс.Метрика реально инициализируется (`src/lib/analytics.ts -> initAnalytics()` из `src/main.tsx`); production-счётчик `110130059` активен через `VITE_YANDEX_METRIKA_ID`, без ID в локальной среде — безопасный no-op (события не отправляются); в UI вызывается не менее 3 `reachGoal`-событий;
 - Supabase health endpoint;
 - JWT protection для AI/RAG Edge Functions (`verify_jwt=true`), health открыт (`verify_jwt=false`);
 - структурированное JSON-логирование Edge Functions (`supabase/functions/_shared/logger.ts`, уровни `info|warn|error`);
@@ -48,7 +48,7 @@ pnpm audit
 ```text
 pnpm run lint -> pass
 pnpm run typecheck -> pass
-pnpm run test -> 30 passed (3 файла: progress.test.ts + focustrack-api.test.ts + auth.test.ts)
+pnpm run test -> 35 passed (3 файла: progress.test.ts + focustrack-api.test.ts + auth.test.ts)
 pnpm run build -> pass
 pnpm run test:e2e -> 9 passed / 11 skipped
 pnpm audit --audit-level high -> No known vulnerabilities found
@@ -79,12 +79,12 @@ e2e: 9 реально проходящих сценариев (desktop dashboard
 
 - **Логирование.** Реализовано структурированное JSON-логирование Edge Functions: `supabase/functions/_shared/logger.ts` — `logEvent(level, fn, message, fields)` и `createLogger(fn)`, уровни `info|warn|error`, каждая запись — строка JSON `{level, ts, fn, message, ...}`. Подключено в `ai-clarify`, `ai-plan`, `ai-weekly-review`, `rag-answer`, `health` и в `callOpenRouter` (`_shared/openrouter.ts` — латентность и ошибки модели). Пример AI-промпта для анализа логов добавлен в `docs/integrations/integration_documentation.md`.
 - **Документирование использования AI.** Описано применение AI в CI/CD и анализе логов (`docs/integrations/integration_documentation.md`) и в аудите безопасности (`docs/security/security_audit.md`).
-- **Аналитика.** Яндекс.Метрика реально инициализируется (`initAnalytics()` подгружает `tag.js`, определяет `window.ym`); активна только при заданном `VITE_YANDEX_METRIKA_ID > 0`. Честно: без заданного ID события не отправляются (no-op) — это конфигурируемо через env.
+- **Аналитика.** Яндекс.Метрика реально инициализируется (`initAnalytics()` подгружает `tag.js`, определяет `window.ym`); production активен на `VITE_YANDEX_METRIKA_ID=110130059`. Честно: без заданного ID в локальной среде события не отправляются (no-op) — это конфигурируемо через env. Runtime-smoke 25 июня 2026 подтвердил загрузку `https://mc.yandex.ru/metrika/tag.js` и `window.ym` как `function`.
 - **OAuth Google.** Entry point реальный (Supabase Auth, `src/lib/auth.ts`); сквозной вход через Google проверяется вручную. Автоматизированного e2e-доказательства полного OAuth-цикла в evidence нет.
 - **CORS.** Wildcard `*` заменён на явный allowlist (`_shared/openrouter.ts`: `ALLOWED_ORIGINS` из env, по умолчанию prod + localhost; `corsHeaders(request)` отражает только разрешённый Origin + `Vary: Origin`); аналогично в `health/index.ts`.
 - **Удалены неинтерактивные кнопки.** Декоративный Select из карточки «Категории целей» убран (рабочий — `rag-source-select`); sidebar-индикаторы Supabase/OpenRouter стали статусными строками.
 - **Cursor-правила.** Подключены в нативном формате `.cursor/rules/focustrack.mdc` (`alwaysApply`, зеркало корневого `AGENTS.md`).
-- **Unit-тесты.** Добавлен `src/lib/focustrack-api.test.ts` (валидация RAG-вопроса, пустой список документов, демо-фоллбэки без сессии, пересчёт прогресса `toggleTask`), а `src/lib/progress.test.ts` покрывает streak; итого 30 passed в 3 файлах.
+- **Unit-тесты.** Добавлен `src/lib/focustrack-api.test.ts` (валидация RAG-вопроса, пустой список документов, демо-фоллбэки без сессии, создание стартового RAG-источника, пересчёт прогресса `toggleTask`), а `src/lib/progress.test.ts` покрывает streak; итого 35 passed в 3 файлах.
 
 Подробности: `submissions/reverification-audit-2026-06-17.md`.
 
@@ -109,8 +109,8 @@ CORS allowlist, security audit и RAG experiment. Использование AI 
 (CI/CD, аудит безопасности, анализ логов).
 Production: https://focustrack-ai.vercel.app
 
-Проверка (20 июня 2026, EXIT 0): typecheck, lint, build, unit 30 passed,
-e2e 9 passed / 11 skipped, pnpm audit без уязвимостей.
+Проверка (25 июня 2026, EXIT 0): typecheck, lint, build, unit 35 passed,
+e2e 9 passed / 11 skipped, pnpm audit без уязвимостей. RAG fresh-user flow проверен через создание стартового источника.
 
 Основные файлы:
 - .github/workflows/ci.yml

@@ -91,11 +91,13 @@ VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
-Опциональная переменная:
+Дополнительная production-переменная для аналитики:
 
 ```text
 VITE_YANDEX_METRIKA_ID
 ```
+
+Текущий production на Vercel использует счётчик Яндекс.Метрики `110130059`. Переменная задана в окружении `Production` и не должна быть помечена как `Sensitive`, потому что Vite встраивает `VITE_*` значения в frontend-бандл на этапе build.
 
 Проверить наличие переменных без раскрытия значений:
 
@@ -108,7 +110,12 @@ npx vercel env ls production
 ```text
 VITE_SUPABASE_URL                  Encrypted           Production
 VITE_SUPABASE_PUBLISHABLE_KEY      Encrypted           Production
+VITE_YANDEX_METRIKA_ID             Encrypted           Production
 ```
+
+Проверка production-активации Метрики: открыть `https://focustrack-ai.vercel.app` в браузере с DevTools Network и убедиться, что загружается `https://mc.yandex.ru/metrika/tag.js`; в Console `typeof window.ym` должен быть `function`.
+
+Фактический smoke 25 июня 2026: production-бандл `assets/index-3NZZdJ3R.js` содержит `110130059`, `mc.yandex` и `ym(..., "init", ...)`; браузерная runtime-проверка загрузила `https://mc.yandex.ru/metrika/tag.js`, а `window.ym` доступен как `function`.
 
 ## Production deploy
 

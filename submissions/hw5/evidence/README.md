@@ -9,7 +9,7 @@
 - AI/RAG функции защищены JWT (`verify_jwt=true`), публичный только `health`;
 - CORS переведён с wildcard `*` на явный allowlist `ALLOWED_ORIGINS` с `Vary: Origin` (`_shared/openrouter.ts`, `health/index.ts`);
 - во всех функциях включено структурированное JSON-логирование через `_shared/logger.ts`; `callOpenRouter` логирует латентность и ошибки модели;
-- `rag-answer` отвечает по личным заметкам пользователя (журнал тренировок, бюджет, план IELTS);
+- `rag-answer` отвечает по личным заметкам пользователя; fresh-user flow создаёт стартовый источник в `knowledge_documents` и сохраняет ответ в `knowledge_answers`;
 - frontend интегрирован с Supabase client и Edge Functions;
 - UI содержит рабочие формы и кнопки для `ai-clarify`, `ai-plan`, `rag-answer`, создания целей и переключения задач;
 - live Supabase e2e подтверждает сохранение созданной цели и статуса задачи после reload (сценарий выполняется при заданных env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`, иначе пропускается);
@@ -45,7 +45,7 @@
 
 - `logs/typecheck.log` — typecheck, EXIT 0.
 - `logs/lint.log` — lint, EXIT 0.
-- `logs/unit-test.log` — unit-тесты: 30 passed (`progress.test.ts` + `focustrack-api.test.ts` + `auth.test.ts`).
+- `logs/unit-test.log` — unit-тесты: 35 passed (`progress.test.ts` + `focustrack-api.test.ts` + `auth.test.ts`).
 - `logs/build.log` — production build, EXIT 0.
 - `logs/e2e.log` — e2e: 9 passed / 11 skipped (desktop dashboard, AI-clarify/AI-plan, RAG, sidebar-навигация, strict 404, login dialog, delete goal, mobile usability; skip — кросс-проектные дубли и live-Supabase сценарий).
 - `logs/supabase-smoke.log` — functions, secrets names, migrations, health 200, protected endpoint 401.

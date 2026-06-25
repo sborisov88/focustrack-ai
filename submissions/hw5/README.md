@@ -30,7 +30,7 @@
 - структурированное JSON-логирование во всех функциях (`_shared/logger.ts`);
 - frontend создает цели и переключает задачи через Supabase при активной сессии;
 - `ai-clarify`, `ai-plan` и `rag-answer` доступны из UI;
-- `rag-answer` отвечает по личным заметкам пользователя (журнал тренировок, бюджет, план подготовки к IELTS).
+- `rag-answer` отвечает по личным заметкам пользователя; для нового Supabase-пользователя UI создаёт стартовый источник в `knowledge_documents`.
 
 ## Доработки этой итерации (closure-docs 2026-06-19)
 
@@ -58,7 +58,7 @@ supabase functions deploy health --workdir .
 ```text
 typecheck -> EXIT 0
 lint -> EXIT 0
-unit -> 30 passed (progress.test.ts + focustrack-api.test.ts + auth.test.ts)
+unit -> 35 passed (progress.test.ts + focustrack-api.test.ts + auth.test.ts)
 build -> EXIT 0
 e2e -> 9 passed / 11 skipped
 supabase db push --workdir . --yes -> применена 20260617033231_restrict_anon_table_grants.sql
@@ -75,7 +75,7 @@ E2E: 9 реально проходящих сценариев (desktop dashboard
 
 Backend развернут на Supabase Cloud. В репозитории есть миграции, RLS policies, ограниченные grants, JWT-protected Edge Functions и frontend-интеграция.
 В документации добавлены примеры curl для каждого endpoint. CORS переведён с wildcard на явный allowlist (ALLOWED_ORIGINS, Vary: Origin), добавлено структурированное JSON-логирование во всех функциях.
-Frontend вызывает AI-уточнение, AI-план, RAG-вопрос и сохраняет создание целей/статусы задач через Supabase при активной сессии.
+Frontend вызывает AI-уточнение, AI-план, RAG-вопрос, создаёт стартовый RAG-источник при пустой базе знаний и сохраняет создание целей/статусы задач через Supabase при активной сессии.
 Документация:
 - docs/backend/backend_documentation.md
 - docs/backend/backend_report.md

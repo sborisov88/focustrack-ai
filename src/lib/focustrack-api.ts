@@ -67,6 +67,14 @@ type DbDocumentRow = {
   content: string
 }
 
+const starterKnowledgeDocument = {
+  title: "Журнал тренировок (стартовый источник)",
+  source: "starter",
+  content:
+    "Нед. 1: 12 км. Нед. 4: длинная 12 км. Нед. 6: интервалы 6×400 м. Нед. 8: длинная 15 км — пока самая длинная пробежка. Средний недельный объём растёт примерно на 1 км.",
+  tags: ["бег", "тренировки", "стартовый источник"],
+}
+
 export type ClarifyGoalResult = {
   type: "clarify"
   model: string
@@ -536,6 +544,24 @@ export async function deleteGoalOnServer(goalId: string): Promise<void> {
   if (!data || data.length === 0) {
     throw new Error("Цель не найдена или уже удалена.")
   }
+}
+
+export async function createStarterKnowledgeDocument(): Promise<KnowledgeDocument> {
+  const { supabase, userId } = await requireSupabaseContext()
+  const { data, error } = await supabase
+    .from("knowledge_documents")
+    .insert({
+      user_id: userId,
+      ...starterKnowledgeDocument,
+    })
+    .select("id,title,source,content")
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  return mapDocument(data as DbDocumentRow)
 }
 
 export function toggleTask(
