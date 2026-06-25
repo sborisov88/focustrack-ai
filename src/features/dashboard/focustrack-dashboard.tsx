@@ -194,6 +194,8 @@ const chartConfig = {
 type KnownAppRoute = "dashboard" | "planner" | "knowledge" | "review"
 type AppRoute = KnownAppRoute | "not-found"
 
+const ALL_KNOWLEDGE_SOURCES = "__all__"
+
 const navItems: Array<{
   id: KnownAppRoute
   label: string
@@ -1618,7 +1620,7 @@ function KnowledgePanel({
     "на какой неделе была самая длинная пробежка",
   )
   const [selectedDocumentId, setSelectedDocumentId] = useState(
-    workspace.knowledgeDocuments[0]?.id ?? "",
+    ALL_KNOWLEDGE_SOURCES,
   )
   const [answer, setAnswer] = useState("")
   const [citations, setCitations] = useState<RagAnswerResult["citations"]>([])
@@ -1629,16 +1631,30 @@ function KnowledgePanel({
   const [noteTitle, setNoteTitle] = useState("")
   const [noteContent, setNoteContent] = useState("")
   const queryClient = useQueryClient()
+  const readyDocuments = workspace.knowledgeDocuments.filter((document) =>
+    canUseDocumentForRag(workspace.mode, document),
+  )
+  const isAllSourcesMode = selectedDocumentId === ALL_KNOWLEDGE_SOURCES
   const selectedDocument =
-    workspace.knowledgeDocuments.find(
-      (document) => document.id === selectedDocumentId,
-    ) ?? workspace.knowledgeDocuments[0]
+    isAllSourcesMode
+      ? undefined
+      : workspace.knowledgeDocuments.find(
+          (document) => document.id === selectedDocumentId,
+        )
   const hasKnowledgeDocuments = workspace.knowledgeDocuments.length > 0
+  const hasReadyKnowledgeDocuments = readyDocuments.length > 0
   const isSelectedDocumentReady = canUseDocumentForRag(
     workspace.mode,
     selectedDocument,
   )
-  const canAsk = question.trim().length >= 5 && isSelectedDocumentReady
+  const ragDocuments = isAllSourcesMode
+    ? readyDocuments
+    : selectedDocument
+      ? [selectedDocument]
+      : []
+  const canAsk =
+    question.trim().length >= 5 &&
+    (isAllSourcesMode ? hasReadyKnowledgeDocuments : isSelectedDocumentReady)
   const canSaveNote =
     noteTitle.trim().length >= 3 && noteContent.trim().length >= 20
   const openCreateNoteDialog = () => {
@@ -1659,10 +1675,14 @@ function KnowledgePanel({
     setNoteTitle("")
     setNoteContent("")
   }
+  const selectKnowledgeScope = (documentId: string) => {
+    setSelectedDocumentId(documentId)
+    setAnswer("")
+    setCitations([])
+  }
   const createDocumentMutation = useMutation({
     mutationFn: createStarterKnowledgeDocument,
-    onSuccess: async (document) => {
-      setSelectedDocumentId(document.id)
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey })
       toast.success("Источник добавлен и проиндексирован")
       trackEvent({ name: "knowledge_source_created", params: {} })
@@ -1684,8 +1704,7 @@ function KnowledgePanel({
             title: noteTitle,
             content: noteContent,
           }),
-    onSuccess: async (document) => {
-      setSelectedDocumentId(document.id)
+    onSuccess: async () => {
       setAnswer("")
       setCitations([])
       closeNoteDialog()
@@ -1716,10 +1735,8 @@ function KnowledgePanel({
     mutationFn: () =>
       requestRagAnswer({
         question,
-        documents: selectedDocument
-          ? [selectedDocument]
-          : workspace.knowledgeDocuments,
-        selectedDocumentId: selectedDocument?.id,
+        documents: ragDocuments,
+        selectedDocumentId: isAllSourcesMode ? null : selectedDocument?.id,
       }),
     onSuccess: async (result) => {
       setAnswer(result.answer)
@@ -1865,17 +1882,20 @@ function KnowledgePanel({
         </Dialog>
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="rag-source">Источник</FieldLabel>
+            <FieldLabel htmlFor="rag-source">Область поиска</FieldLabel>
             <Select
               disabled={!hasKnowledgeDocuments}
-              value={selectedDocument?.id ?? ""}
-              onValueChange={setSelectedDocumentId}
+              value={selectedDocumentId}
+              onValueChange={selectKnowledgeScope}
             >
               <SelectTrigger id="rag-source" data-testid="rag-source-select">
                 <SelectValue placeholder="Источник знаний" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
+                  <SelectItem value={ALL_KNOWLEDGE_SOURCES}>
+                    Все источники · {readyDocuments.length} готово
+                  </SelectItem>
                   {workspace.knowledgeDocuments.map((document) => (
                     <SelectItem key={document.id} value={document.id}>
                       {document.title} ·{" "}
@@ -1903,9 +1923,11 @@ function KnowledgePanel({
             data-testid="rag-submit"
             title={
               hasKnowledgeDocuments
-                ? isSelectedDocumentReady
+                ? canAsk || ragMutation.isPending
                   ? undefined
-                  : "Дождитесь статуса «Готово» или переиндексируйте заметку."
+                  : isAllSourcesMode
+                    ? "Дождитесь хотя бы одного источника со статусом «Готово»."
+                    : "Дождитесь статуса «Готово» или переиндексируйте заметку."
                 : "Сначала создайте или выберите источник знаний."
             }
           >

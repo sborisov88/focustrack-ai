@@ -65,6 +65,21 @@ const documents: KnowledgeDocument[] = [
   },
 ]
 
+const multiDocuments: KnowledgeDocument[] = [
+  {
+    id: "d-first",
+    title: "Первая заметка",
+    source: "manual",
+    content: "Сегодня я хорошо потренировался и сделал восстановительную работу.",
+  },
+  {
+    id: "d-journal",
+    title: "Журнал тренировок",
+    source: "manual",
+    content: "Неделя 8: длинная пробежка 15 км — пока самая длинная пробежка.",
+  },
+]
+
 const baseWorkspace: Workspace = {
   mode: "demo",
   goals: [goal],
@@ -241,7 +256,8 @@ function createKnowledgeSupabaseClientMock() {
       name: string,
       options: { body: unknown },
     ): Promise<{ data: T | null; error: Error | null }> => {
-      void options
+      const body = options.body as { selectedDocumentId?: string | null }
+      const scope = body.selectedDocumentId == null ? "all" : "document"
 
       return {
         data:
@@ -255,6 +271,7 @@ function createKnowledgeSupabaseClientMock() {
                   matchCount: 1,
                   threshold: 0.55,
                   embeddingModel: "baai/bge-m3",
+                  scope,
                 },
               } as T)
             : ({ type: "embed-knowledge-document", status: "ready" } as T),
@@ -543,7 +560,43 @@ describe("requestRagAnswer (обработка ошибок)", () => {
     expect(result.answer).toContain("Дневник пробежек")
   })
 
-  it("в Supabase-режиме отправляет selectedDocumentId и сохраняет AI-сессию", async () => {
+  it("в демо-режиме all-mode выбирает релевантный источник не по первому документу", async () => {
+    const result = await requestRagAnswer({
+      question: "на какой неделе самая длинная пробежка?",
+      documents: multiDocuments,
+      selectedDocumentId: null,
+    })
+
+    expect(result.model).toBe("demo")
+    expect(result.answer).toContain("Журнал тренировок")
+    expect(result.citations?.map((citation) => citation.documentId)).toContain(
+      "d-journal",
+    )
+    expect(result.retrieval?.scope).toBe("all")
+  })
+
+  it("в Supabase-режиме отправляет selectedDocumentId null для всех источников", async () => {
+    const knowledgeMock = createKnowledgeSupabaseClientMock()
+    supabaseMock.client = knowledgeMock.client
+    supabaseMock.hasConfig = true
+
+    const result = await requestRagAnswer({
+      question: "на какой неделе самая длинная пробежка?",
+      documents: multiDocuments,
+      selectedDocumentId: null,
+    })
+
+    expect(knowledgeMock.invoke).toHaveBeenCalledWith("rag-answer", {
+      body: {
+        question: "на какой неделе самая длинная пробежка?",
+        selectedDocumentId: null,
+      },
+    })
+    expect(result.retrieval?.scope).toBe("all")
+    expect(knowledgeMock.insertedSessions).toHaveLength(1)
+  })
+
+  it("в Supabase-режиме отправляет selectedDocumentId для выбранного источника", async () => {
     const knowledgeMock = createKnowledgeSupabaseClientMock()
     supabaseMock.client = knowledgeMock.client
     supabaseMock.hasConfig = true
@@ -561,6 +614,7 @@ describe("requestRagAnswer (обработка ошибок)", () => {
       },
     })
     expect(result.retrieval?.embeddingModel).toBe("baai/bge-m3")
+    expect(result.retrieval?.scope).toBe("document")
     expect(knowledgeMock.insertedSessions).toHaveLength(1)
   })
 })

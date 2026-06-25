@@ -29,14 +29,14 @@
 Индексы и retrieval:
 
 - `knowledge_chunks_embedding_hnsw_idx` через HNSW + `vector_cosine_ops`;
-- `match_knowledge_chunks(query_embedding, match_threshold, match_count, filter_document_id)` фильтрует строки по `auth.uid()`.
+- `match_knowledge_chunks(query_embedding, match_threshold, match_count, filter_document_id)` фильтрует строки по `auth.uid()`; `filter_document_id = null` ищет по всем источникам пользователя.
 
 ## Контракт UI
 
 - `+ Добавить заметку` создаёт ручной источник и запускает индексацию.
 - `Редактировать` обновляет заметку, сбрасывает статус и переиндексирует chunks.
 - `Переиндексировать` повторно запускает `embed-knowledge-document`.
-- Вопрос активен только для источника со статусом `Готово`.
+- По умолчанию вопрос ищет по всем источникам со статусом `Готово`; пользователь может вручную ограничить область поиска одним источником.
 - Ответ показывает текст модели и citations по найденным chunks со score сходства.
 
 ## Проверки 25 июня 2026

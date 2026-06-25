@@ -152,12 +152,18 @@ test("desktop RAG panel answers a question from knowledge documents", async ({
   await expect(page.getByTestId("workspace-title")).toBeVisible()
   await openDemoWorkspace(page)
   await expect(page.getByTestId("route-knowledge")).toBeVisible()
+  await expect(page.getByTestId("rag-source-select")).toContainText(
+    "Все источники",
+  )
 
   await page
     .getByTestId("rag-question-input")
     .fill("на какой неделе была самая длинная пробежка")
   await page.getByTestId("rag-submit").click()
   await expect(page.getByTestId("rag-answer")).toContainText(/15 км|недел/i)
+  await expect(page.getByTestId("rag-citations")).toContainText(
+    "Журнал тренировок",
+  )
 })
 
 test("desktop navigation opens four primary routes", async ({

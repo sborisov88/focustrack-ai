@@ -145,7 +145,7 @@ AI применялся не только для генерации кода, н
 | Auth не показывал регистрацию                          | Email/password диалог получил режим `sign-up`, сохранив demo login и Google OAuth                                     |
 | Не хватало глобального loading/error                   | Добавлены loading banner/state, retry-state для workspace query и `AppErrorBoundary`                                  |
 | Яндекс.Метрика не инициализировалась                   | `initAnalytics()` (`src/lib/analytics.ts`) грузит `tag.js` из `main.tsx`; активна только при `VITE_YANDEX_METRIKA_ID` |
-| RAG не имел semantic retrieval                         | Добавлен UI CRUD заметок, запуск `embed-knowledge-document`, блокировка вопроса до статуса `Готово` и вывод citations |
+| RAG не имел semantic retrieval                         | Добавлен UI CRUD заметок, запуск `embed-knowledge-document`, поиск по всем готовым источникам по умолчанию, ручное ограничение источника и вывод citations |
 
 ## Правила проекта в Cursor
 
@@ -153,10 +153,10 @@ AI применялся не только для генерации кода, н
 
 ## Тесты
 
-Unit (39 тестов в трёх файлах):
+Unit (41 тест в трёх файлах):
 
 - `src/lib/progress.test.ts` — расчёт прогресса, группировка задач и подписи статусов;
-- `src/lib/focustrack-api.test.ts` — обработка ошибок и edge-кейсы: валидация короткого RAG-вопроса (`throws "Введите вопрос по заметкам."`), пустой список документов (`throws "Нет документов для RAG-ответа."`), демо-фоллбэки `requestGoalClarification` / `requestGoalPlan` / `requestRagAnswer` без сессии, новый контракт `rag-answer` с `selectedDocumentId`, создание/редактирование заметки с вызовом `embed-knowledge-document`, chunking с overlap, пересчёт прогресса в `toggleTask` и edge на несуществующую задачу.
+- `src/lib/focustrack-api.test.ts` — обработка ошибок и edge-кейсы: валидация короткого RAG-вопроса (`throws "Введите вопрос по заметкам."`), пустой список документов (`throws "Нет документов для RAG-ответа."`), демо-фоллбэки `requestGoalClarification` / `requestGoalPlan` / `requestRagAnswer` без сессии, новый контракт `rag-answer` с `selectedDocumentId: null` для all-source режима и UUID для выбранного источника, создание/редактирование заметки с вызовом `embed-knowledge-document`, chunking с overlap, пересчёт прогресса в `toggleTask` и edge на несуществующую задачу.
 - `src/lib/auth.test.ts` — сообщения об ошибках OAuth и парольной аутентификации, ветки sign-up (подтверждение email).
 
 E2E (9 passed / 11 skipped):

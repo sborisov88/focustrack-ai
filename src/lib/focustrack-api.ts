@@ -115,6 +115,7 @@ export type RagAnswerResult = {
     matchCount: number
     threshold: number
     embeddingModel: string
+    scope?: "all" | "document"
   }
 }
 
@@ -133,7 +134,7 @@ type RequestGoalPlanParams = {
 type RequestRagAnswerParams = {
   question: string
   documents: KnowledgeDocument[]
-  selectedDocumentId?: string
+  selectedDocumentId?: string | null
 }
 
 export type KnowledgeDocumentInput = {
@@ -314,6 +315,67 @@ function createDemoTasksForGoal(
     status: "todo",
     sortOrder: index + 1,
   }))
+}
+
+function selectDemoRagDocuments(
+  question: string,
+  documents: KnowledgeDocument[],
+): KnowledgeDocument[] {
+  const normalizedQuestion = question.toLowerCase()
+  const keywords = normalizedQuestion
+    .split(/[\s?!.,:;()«»"'-]+/)
+    .map((keyword) => keyword.trim())
+    .filter((keyword) => keyword.length >= 5)
+
+  const semanticHints = [
+    normalizedQuestion.includes("длин") ? "длин" : "",
+    normalizedQuestion.includes("сам") ? "сам" : "",
+    normalizedQuestion.includes("пробеж") ? "пробеж" : "",
+    normalizedQuestion.includes("когда") ? "нед" : "",
+  ].filter(Boolean)
+
+  const candidates = documents.filter((document) => {
+    const content = `${document.title} ${document.content}`.toLowerCase()
+    return [...keywords, ...semanticHints].some((keyword) =>
+      content.includes(keyword),
+    )
+  })
+
+  return candidates.length > 0 ? candidates : documents
+}
+
+const distanceWords: Record<string, number> = {
+  десять: 10,
+  одиннадцать: 11,
+  двенадцать: 12,
+  тринадцать: 13,
+  четырнадцать: 14,
+  пятнадцать: 15,
+  шестнадцать: 16,
+  семнадцать: 17,
+  восемнадцать: 18,
+  девятнадцать: 19,
+  двадцать: 20,
+}
+
+function findMaxDistanceKm(document: KnowledgeDocument) {
+  const text = `${document.title} ${document.content}`.toLowerCase()
+  const numericDistances = Array.from(
+    text.matchAll(/(\d+(?:[,.]\d+)?)\s*(?:км|километр(?:ов|а)?)/gi),
+  ).map((match) => Number(match[1].replace(",", ".")))
+  const wordDistances = Object.entries(distanceWords)
+    .filter(
+      ([word]) =>
+        text.includes(`${word} километр`) || text.includes(`${word} км`),
+    )
+    .map(([, distance]) => distance)
+  const distances = [...numericDistances, ...wordDistances].filter(
+    (distance) => Number.isFinite(distance) && distance > 0,
+  )
+
+  if (distances.length === 0) return null
+
+  return Math.max(...distances)
 }
 
 function createDemoPlanResult(
@@ -925,35 +987,58 @@ export async function requestRagAnswer({
 
   const context = await getSupabaseContext()
   const selectedDocument =
-    documents.find((document) => document.id === selectedDocumentId) ??
-    documents[0]
+    selectedDocumentId == null
+      ? null
+      : documents.find((document) => document.id === selectedDocumentId) ??
+        documents[0]
+  const scopedDocuments =
+    selectedDocument == null
+      ? selectDemoRagDocuments(cleanQuestion, documents)
+      : [selectedDocument]
+  const scope = selectedDocument == null ? "all" : "document"
 
   if (!context) {
+    const rankedDocuments = scopedDocuments
+      .map((document) => ({
+        document,
+        distanceKm: findMaxDistanceKm(document),
+      }))
+      .filter(
+        (
+          item,
+        ): item is { document: KnowledgeDocument; distanceKm: number } =>
+          item.distanceKm != null,
+      )
+      .sort((left, right) => right.distanceKm - left.distanceKm)
+    const bestDistance = rankedDocuments[0]
+    const joinedCitations = scopedDocuments.map((document) => ({
+      documentId: document.id,
+      title: document.title,
+      source: document.source,
+      chunkIndex: 0,
+      similarity: 1,
+      content: document.content,
+    }))
+
     return {
       type: "rag-answer",
       model: "demo",
-      answer: `По документу «${selectedDocument.title}»: неделя 8 содержит самую длинную пробежку — 15 км. Источник: ${selectedDocument.title}.`,
-      citations: [
-        {
-          documentId: selectedDocument.id,
-          title: selectedDocument.title,
-          source: selectedDocument.source,
-          chunkIndex: 0,
-          similarity: 1,
-          content: selectedDocument.content,
-        },
-      ],
+      answer: bestDistance
+        ? `По источнику «${bestDistance.document.title}»: самая длинная найденная пробежка — ${bestDistance.distanceKm} км.`
+        : "В заметках недостаточно данных, чтобы ответить на этот вопрос без выдумки.",
+      citations: joinedCitations,
       retrieval: {
-        matchCount: 1,
+        matchCount: scopedDocuments.length,
         threshold: 1,
         embeddingModel: "demo",
+        scope,
       },
     }
   }
 
   const body = {
     question: cleanQuestion,
-    selectedDocumentId: selectedDocument.id,
+    selectedDocumentId: selectedDocument?.id ?? null,
   }
   const { data, error } =
     await context.supabase.functions.invoke<RagAnswerResult>("rag-answer", {

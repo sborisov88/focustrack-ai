@@ -18,7 +18,7 @@ const log = createLogger("rag-answer")
 
 type RagRequest = {
   question: string
-  selectedDocumentId?: string
+  selectedDocumentId?: string | null
 }
 
 type MatchedChunk = {
@@ -46,6 +46,7 @@ export default {
         body.selectedDocumentId.trim()
           ? body.selectedDocumentId.trim()
           : null
+      const scope = selectedDocumentId == null ? "all" : "document"
       const supabase = createUserSupabaseClient(request)
       const matchThreshold = Number(Deno.env.get("RAG_MATCH_THRESHOLD") ?? "0.55")
       const matchCount = Number(Deno.env.get("RAG_MATCH_COUNT") ?? "6")
@@ -92,7 +93,7 @@ export default {
           .from("knowledge_answers")
           .insert({
             user_id: userId,
-            document_id: selectedDocumentId,
+            document_id: scope === "document" ? selectedDocumentId : null,
             question,
             answer,
             citations,
@@ -112,6 +113,7 @@ export default {
             matchCount: 0,
             threshold: matchThreshold,
             embeddingModel: embeddingResult.model,
+            scope,
           },
         })
       }
@@ -131,7 +133,7 @@ export default {
         {
           role: "system",
           content:
-            "Ты RAG-помощник FocusTrack AI. Отвечай только по найденным фрагментам заметок. Если фрагментов недостаточно, скажи: \"В заметках недостаточно данных\". Не придумывай факты. В конце добавь короткий список источников с номерами фрагментов.",
+            "Ты RAG-помощник FocusTrack AI. Отвечай только по найденным фрагментам заметок. Если найдено несколько фрагментов с числами, датами или дистанциями, сравнивай только эти найденные значения и явно называй источник каждого вывода. Если фрагментов недостаточно, скажи: \"В заметках недостаточно данных\". Не придумывай факты. В конце добавь короткий список источников с номерами фрагментов.",
         },
         {
           role: "user",
@@ -142,7 +144,10 @@ export default {
         .from("knowledge_answers")
         .insert({
           user_id: userId,
-          document_id: chunks[0]?.document_id ?? selectedDocumentId,
+          document_id:
+            scope === "document"
+              ? chunks[0]?.document_id ?? selectedDocumentId
+              : null,
           question,
           answer: content,
           citations,
@@ -162,6 +167,7 @@ export default {
           matchCount: chunks.length,
           threshold: matchThreshold,
           embeddingModel: embeddingResult.model,
+          scope,
         },
       })
     } catch (error) {

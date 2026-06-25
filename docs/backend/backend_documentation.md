@@ -155,7 +155,7 @@ curl -X POST \
 
 ### `rag-answer`
 
-Контракт: `{question, selectedDocumentId?}` → `{type: "rag-answer", model, answer, citations, retrieval}`.
+Контракт: `{question, selectedDocumentId?: string | null}` → `{type: "rag-answer", model, answer, citations, retrieval}`. `selectedDocumentId: null` означает поиск по всем готовым источникам пользователя; UUID ограничивает retrieval одним документом.
 
 ```bash
 curl -X POST \
@@ -164,7 +164,7 @@ curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
     "question": "Какой темп держать на длительной?",
-    "selectedDocumentId": "00000000-0000-0000-0000-000000000000"
+    "selectedDocumentId": null
   }'
 ```
 
