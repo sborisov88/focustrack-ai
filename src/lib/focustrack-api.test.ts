@@ -619,6 +619,344 @@ describe("requestRagAnswer (обработка ошибок)", () => {
   })
 })
 
+describe("requestRagAnswer (демо-ретрив — регрессии A1–A6)", () => {
+  it("A1: на не-беговой вопрос отвечает из релевантной заметки, а не «недостаточно данных»", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "run",
+        title: "Дневник пробежек",
+        source: "demo",
+        content: "Неделя 8: самая длинная пробежка 15 км.",
+      },
+      {
+        id: "budget",
+        title: "Бюджет",
+        source: "demo",
+        content: "Откладываю по 20000 рублей в месяц на марафон.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "сколько я откладываю в месяц?",
+      documents: docs,
+      selectedDocumentId: null,
+    })
+
+    expect(result.model).toBe("demo")
+    expect(result.answer).toContain("Бюджет")
+    expect(result.answer).toContain("20000")
+    expect(result.answer).not.toContain("недостаточно данных")
+  })
+
+  it("A2: недельный объём не выдаётся за самую длинную пробежку", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "log",
+        title: "План",
+        source: "demo",
+        content: "Недельный объём 40 км.\nСамая длинная пробежка 18 км.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "какая была самая длинная пробежка?",
+      documents: docs,
+      selectedDocumentId: null,
+    })
+
+    expect(result.answer).toContain("18 км")
+    expect(result.answer).not.toContain("40 км")
+  })
+
+  it("A3: без релевантных источников отвечает «недостаточно данных», не фабрикуя из всех заметок", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "run",
+        title: "Дневник пробежек",
+        source: "demo",
+        content: "Неделя 8: пробежка 15 км.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "какая столица Франции?",
+      documents: docs,
+      selectedDocumentId: null,
+    })
+
+    expect(result.answer).toContain("недостаточно данных")
+    expect(result.citations).toHaveLength(0)
+  })
+
+  it("A4: цитирует только релевантные источники и не помечает их сходством 1.00", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "run",
+        title: "Дневник пробежек",
+        source: "demo",
+        content: "Неделя 8: самая длинная пробежка 15 км.",
+      },
+      {
+        id: "ielts",
+        title: "IELTS",
+        source: "demo",
+        content: "Подготовка к экзамену по английскому языку.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "самая длинная пробежка?",
+      documents: docs,
+      selectedDocumentId: null,
+    })
+
+    const citedIds = result.citations?.map((citation) => citation.documentId)
+    expect(citedIds).toContain("run")
+    expect(citedIds).not.toContain("ielts")
+    for (const citation of result.citations ?? []) {
+      expect(citation.similarity).toBeLessThan(1)
+    }
+  })
+
+  it("A5: сшивает русские словоформы там, где подстрочный includes() промахивался", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "fin",
+        title: "Финансы",
+        source: "demo",
+        content: "Откладывать на цель помогают месячные лимиты.",
+      },
+      {
+        id: "run",
+        title: "Пробежки",
+        source: "demo",
+        content: "Неделя 8: пробежка 15 км.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "сколько откладываю каждый месяц?",
+      documents: docs,
+      selectedDocumentId: null,
+    })
+
+    expect(result.answer).toContain("Финансы")
+    expect(result.citations?.map((citation) => citation.documentId)).toContain(
+      "fin",
+    )
+  })
+
+  it("A6: отвечает по заметке с дистанцией прописью (старый парсер 10–20 ломался)", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "run",
+        title: "Тренировки",
+        source: "demo",
+        content: "В субботу пробежка на тридцать километров прошла отлично.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "что было на тренировке в субботу?",
+      documents: docs,
+      selectedDocumentId: null,
+    })
+
+    expect(result.answer).toContain("тридцать")
+  })
+})
+
+describe("requestRagAnswer (демо-ретрив — регрессии адверсариального ревью)", () => {
+  it("R1: межтематическое слово не матчится по короткому префиксу (проблема ≠ пробежка)", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "run",
+        title: "Дневник пробежек",
+        source: "demo",
+        content: "Неделя 8: самая длинная пробежка 15 км.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "какие у меня проблемы со сном?",
+      documents: docs,
+      selectedDocumentId: null,
+    })
+
+    expect(result.answer).toContain("недостаточно данных")
+    expect(result.citations).toHaveLength(0)
+  })
+
+  it("R2: короткие числовые факты участвуют в demo-поиске", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "starter",
+        title: "Стартовая заметка",
+        source: "demo",
+        content: "Нед. 8: длинная пробежка 15 км.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "на какой неделе было 15 км?",
+      documents: docs,
+      selectedDocumentId: null,
+    })
+
+    expect(result.answer).toContain("Стартовая заметка")
+    expect(result.answer).toContain("Нед. 8")
+    expect(result.answer).toContain("15 км")
+    expect(result.answer).not.toContain("недостаточно данных")
+    expect(result.citations?.map((citation) => citation.documentId)).toContain(
+      "starter",
+    )
+  })
+
+  it("R3: полное короткое слово не считается словоформой более длинного слова-префикса", async () => {
+    const cases: Array<{
+      question: string
+      document: KnowledgeDocument
+      forbiddenAnswer: string
+    }> = [
+      {
+        question: "какой день был продуктивным?",
+        document: {
+          id: "money",
+          title: "Финансы",
+          source: "demo",
+          content: "Деньги на марафон отложены в резерв.",
+        },
+        forbiddenAnswer: "Деньги",
+      },
+      {
+        question: "какой план на вечер?",
+        document: {
+          id: "core",
+          title: "Тренировки",
+          source: "demo",
+          content: "Планка по утрам укрепляет корпус.",
+        },
+        forbiddenAnswer: "Планка",
+      },
+    ]
+
+    for (const testCase of cases) {
+      const result = await requestRagAnswer({
+        question: testCase.question,
+        documents: [testCase.document],
+        selectedDocumentId: null,
+      })
+
+      expect(result.answer).toContain("недостаточно данных")
+      expect(result.answer).not.toContain(testCase.forbiddenAnswer)
+      expect(result.citations).toHaveLength(0)
+    }
+  })
+
+  it("R4: выбранный вручную источник без пересечения с вопросом → «недостаточно данных», не первое предложение", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "run",
+        title: "Дневник пробежек",
+        source: "demo",
+        content: "Неделя 8: самая длинная пробежка 15 км.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "какая столица Франции?",
+      documents: docs,
+      selectedDocumentId: "run",
+    })
+
+    expect(result.answer).toContain("недостаточно данных")
+    expect(result.citations).toHaveLength(0)
+  })
+
+  it("R5: совпадение только по заголовку не выдаёт нерелевантное предложение контента", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "b",
+        title: "Бюджет на марафон",
+        source: "demo",
+        content: "Сегодня пробежал десять км отлично.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "какой у меня бюджет?",
+      documents: docs,
+      selectedDocumentId: null,
+    })
+
+    expect(result.answer).not.toContain("пробежал")
+    expect(result.answer).toContain("недостаточно данных")
+  })
+
+  it("R6: неизвестный selectedDocumentId трактуется как «все источники», а не молча первый документ", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "a",
+        title: "Заметка о сне",
+        source: "demo",
+        content: "Сон по 8 часов улучшает восстановление.",
+      },
+      {
+        id: "b",
+        title: "Бюджет",
+        source: "demo",
+        content: "Откладываю 20000 рублей в месяц.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "сколько откладываю в месяц?",
+      documents: docs,
+      selectedDocumentId: "DELETED",
+    })
+
+    expect(result.retrieval?.scope).toBe("all")
+    expect(result.answer).toContain("Бюджет")
+  })
+
+  it("R7: коллизия 4-символьного префикса не фабрикует цитируемый ответ (горох ≠ город, корова ≠ король)", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "city",
+        title: "Город",
+        source: "demo",
+        content: "В городе живёт много людей. Король правил мудро.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "где паслась корова на лугу?",
+      documents: docs,
+      selectedDocumentId: null,
+    })
+
+    expect(result.answer).toContain("недостаточно данных")
+    expect(result.answer).not.toContain("Король")
+    expect(result.citations).toHaveLength(0)
+  })
+
+  it("R8: сходство в цитатах согласовано с порядком списка (по найденным словам, не по доле в документе)", async () => {
+    const docs: KnowledgeDocument[] = [
+      {
+        id: "run",
+        title: "Дневник пробежек",
+        source: "demo",
+        content: "Неделя 8: самая длинная пробежка 15 км.",
+      },
+    ]
+    const result = await requestRagAnswer({
+      question: "какая была самая длинная пробежка?",
+      documents: docs,
+      selectedDocumentId: null,
+    })
+
+    const similarities = (result.citations ?? []).map(
+      (citation) => citation.similarity ?? 0,
+    )
+    // Список отсортирован по убыванию — отображаемое сходство не должно расти.
+    for (let index = 1; index < similarities.length; index += 1) {
+      expect(similarities[index]).toBeLessThanOrEqual(similarities[index - 1])
+    }
+    for (const similarity of similarities) {
+      expect(similarity).toBeGreaterThan(0)
+      expect(similarity).toBeLessThan(1)
+    }
+  })
+})
+
 describe("knowledge sources", () => {
   it("createStarterKnowledgeDocument создаёт стартовый источник в public.knowledge_documents", async () => {
     const knowledgeMock = createKnowledgeSupabaseClientMock()

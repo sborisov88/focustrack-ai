@@ -317,65 +317,155 @@ function createDemoTasksForGoal(
   }))
 }
 
-function selectDemoRagDocuments(
-  question: string,
-  documents: KnowledgeDocument[],
-): KnowledgeDocument[] {
-  const normalizedQuestion = question.toLowerCase()
-  const keywords = normalizedQuestion
-    .split(/[\s?!.,:;()«»"'-]+/)
-    .map((keyword) => keyword.trim())
-    .filter((keyword) => keyword.length >= 5)
+// --- Offline demo RAG (extractive) ---------------------------------------
+// В демо/offline-режиме нет ни эмбеддингов, ни LLM, поэтому ретрив и ответ
+// строятся чисто лексически: документы ранжируются по доле совпавших слов
+// вопроса, а ответ — это самое релевантное предложение лучшего источника
+// (экстрактивно, без выдумки про «самую длинную пробежку»).
 
-  const semanticHints = [
-    normalizedQuestion.includes("длин") ? "длин" : "",
-    normalizedQuestion.includes("сам") ? "сам" : "",
-    normalizedQuestion.includes("пробеж") ? "пробеж" : "",
-    normalizedQuestion.includes("когда") ? "нед" : "",
-  ].filter(Boolean)
+const RAG_STOP_WORDS = new Set([
+  "как",
+  "какой",
+  "какая",
+  "какие",
+  "что",
+  "где",
+  "когда",
+  "это",
+  "для",
+  "или",
+  "при",
+  "про",
+  "так",
+  "уже",
+  "его",
+  "был",
+  "была",
+  "были",
+])
 
-  const candidates = documents.filter((document) => {
-    const content = `${document.title} ${document.content}`.toLowerCase()
-    return [...keywords, ...semanticHints].some((keyword) =>
-      content.includes(keyword),
-    )
-  })
-
-  return candidates.length > 0 ? candidates : documents
-}
-
-const distanceWords: Record<string, number> = {
-  десять: 10,
-  одиннадцать: 11,
-  двенадцать: 12,
-  тринадцать: 13,
-  четырнадцать: 14,
-  пятнадцать: 15,
-  шестнадцать: 16,
-  семнадцать: 17,
-  восемнадцать: 18,
-  девятнадцать: 19,
-  двадцать: 20,
-}
-
-function findMaxDistanceKm(document: KnowledgeDocument) {
-  const text = `${document.title} ${document.content}`.toLowerCase()
-  const numericDistances = Array.from(
-    text.matchAll(/(\d+(?:[,.]\d+)?)\s*(?:км|километр(?:ов|а)?)/gi),
-  ).map((match) => Number(match[1].replace(",", ".")))
-  const wordDistances = Object.entries(distanceWords)
+function tokenizeForRag(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/[^a-zа-яё0-9]+/i)
     .filter(
-      ([word]) =>
-        text.includes(`${word} километр`) || text.includes(`${word} км`),
+      (word) =>
+        !RAG_STOP_WORDS.has(word) && (/^\d+$/.test(word) || word.length >= 3),
     )
-    .map(([, distance]) => distance)
-  const distances = [...numericDistances, ...wordDistances].filter(
-    (distance) => Number.isFinite(distance) && distance > 0,
+}
+
+const RAG_SHORT_INFLECTION_ENDINGS = new Set([
+  "а",
+  "е",
+  "у",
+  "ы",
+  "и",
+  "ю",
+  "я",
+  "ом",
+  "ем",
+  "ой",
+  "ым",
+  "им",
+  "ах",
+  "ях",
+  "ам",
+  "ям",
+  "s",
+  "es",
+])
+
+// Дешёвый стеммер: два слова считаем одной лексемой при общем 4-символьном
+// префиксе. Этого достаточно, чтобы сшить русские словоформы
+// (неделе/неделя, откладываю/откладывать, пробежка/пробежек), не скатываясь в
+// подстрочные ложные срабатывания короткого includes().
+function wordsShareLexeme(a: string, b: string): boolean {
+  if (a === b) return true
+  const shorter = a.length <= b.length ? a : b
+  const longer = a.length <= b.length ? b : a
+  if (shorter.length < 4) return false
+  let common = 0
+  while (common < shorter.length && shorter[common] === longer[common]) {
+    common += 1
+  }
+  // Общий префикс должен покрыть почти всё короткое слово (допускаем до 2
+  // символов словоизменительного «хвоста») и быть не короче 4 символов: так
+  // отсекаются разные основы с общим коротким началом (пробежка/проблема,
+  // интервал/интернет).
+  if (common < 4 || common < shorter.length - 2) return false
+  // Префикса в 4 символа МАЛО для пары одинаково коротких слов, расходящихся
+  // лишь корневыми согласными в хвосте (горох/город, корова/король,
+  // молоко/молодой) — это разные слова, а не словоформы. Подтверждаем общую
+  // основу одним из надёжных признаков:
+  const shorterTail = shorter.length - common // «хвост» короткого слова
+  const longerExtra = longer.length - common // насколько длинное длиннее общего
+  return (
+    // короткое слово целиком — префикс длинного + флективный хвост
+    // (рост→росте, цель→целью); не «день→деньги» и не «план→планка»:
+    (shorterTail === 0 &&
+      RAG_SHORT_INFLECTION_ENDINGS.has(longer.slice(common))) ||
+    // общий префикс ≥5 символов — это уже явно одна основа (недел|я/е):
+    common >= 5 ||
+    // у короткого сменился ровно последний согласный основы, а длинное заметно
+    // длиннее — словообразование/длинная флексия (месяц→месячные), а не пара
+    // разных корней (молоко/молодой, у которых расходятся два символа):
+    (shorterTail === 1 && longerExtra >= 3)
   )
+}
 
-  if (distances.length === 0) return null
+function countQueryMatches(queryTerms: string[], text: string): number {
+  const textTerms = tokenizeForRag(text)
+  return queryTerms.filter((term) =>
+    textTerms.some((word) => wordsShareLexeme(term, word)),
+  ).length
+}
 
-  return Math.max(...distances)
+// Доля слов вопроса, нашедших соответствие в документе, в диапазоне [0, 1].
+function scoreDemoDocument(
+  queryTerms: string[],
+  document: KnowledgeDocument,
+): number {
+  if (queryTerms.length === 0) return 0
+  return (
+    countQueryMatches(queryTerms, `${document.title}\n${document.content}`) /
+    queryTerms.length
+  )
+}
+
+function splitIntoSentences(text: string): string[] {
+  return text
+    // Нормализуем границы в перенос строки БЕЗ lookbehind (он роняет парсинг
+    // модуля на Safari < 16.4): конец предложения и точка с запятой.
+    // Тире остаётся внутри предложения, чтобы не терять полезную нагрузку
+    // фактов вида "Нед. 8: длинная 15 км — пока самая длинная пробежка".
+    .replace(/([!?…;])\s+/g, "$1\n")
+    .replace(/\.\s+(?!\d)/g, ".\n")
+    .split(/\n+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence.length > 0)
+}
+
+// Предложение источника, наиболее релевантное вопросу — основа
+// экстрактивного demo-ответа.
+function selectAnswerSentence(
+  queryTerms: string[],
+  document: KnowledgeDocument,
+): { sentence: string; overlap: number } {
+  const sentences = splitIntoSentences(document.content)
+  if (sentences.length === 0) {
+    return { sentence: document.content.trim(), overlap: 0 }
+  }
+
+  let bestSentence = sentences[0]
+  let bestOverlap = 0
+  for (const sentence of sentences) {
+    const overlap = countQueryMatches(queryTerms, sentence)
+    if (overlap > bestOverlap) {
+      bestOverlap = overlap
+      bestSentence = sentence
+    }
+  }
+  return { sentence: bestSentence, overlap: bestOverlap }
 }
 
 function createDemoPlanResult(
@@ -986,50 +1076,62 @@ export async function requestRagAnswer({
   }
 
   const context = await getSupabaseContext()
+  // Неизвестный/устаревший selectedDocumentId НЕ подменяем молча на documents[0]
+  // (это скоупило бы и demo-ответ, и серверный поиск на чужую заметку с ложной
+  // меткой scope="document") — трактуем как null → режим «все источники».
   const selectedDocument =
     selectedDocumentId == null
       ? null
-      : documents.find((document) => document.id === selectedDocumentId) ??
-        documents[0]
-  const scopedDocuments =
-    selectedDocument == null
-      ? selectDemoRagDocuments(cleanQuestion, documents)
-      : [selectedDocument]
-  const scope = selectedDocument == null ? "all" : "document"
-
+      : documents.find((document) => document.id === selectedDocumentId) ?? null
   if (!context) {
-    const rankedDocuments = scopedDocuments
-      .map((document) => ({
-        document,
-        distanceKm: findMaxDistanceKm(document),
-      }))
-      .filter(
-        (
-          item,
-        ): item is { document: KnowledgeDocument; distanceKm: number } =>
-          item.distanceKm != null,
+    const scope = selectedDocument == null ? "all" : "document"
+    const queryTerms = Array.from(new Set(tokenizeForRag(cleanQuestion)))
+    const candidateDocuments =
+      selectedDocument == null ? documents : [selectedDocument]
+    // Источник попадает в ответ ТОЛЬКО если в его тексте есть предложение,
+    // пересекающееся с вопросом. Это убирает фолбэк «вернуть все», ответы из
+    // нерелевантного источника, срабатывания лишь по заголовку и фабрикацию из
+    // первого предложения — в т.ч. когда документ выбран вручную.
+    const ranked = candidateDocuments
+      .map((document) => {
+        const answer = selectAnswerSentence(queryTerms, document)
+        return {
+          document,
+          sentence: answer.sentence,
+          overlap: answer.overlap,
+          score: scoreDemoDocument(queryTerms, document),
+        }
+      })
+      .filter((scored) => scored.overlap > 0)
+      .sort(
+        (left, right) =>
+          right.overlap - left.overlap || right.score - left.score,
       )
-      .sort((left, right) => right.distanceKm - left.distanceKm)
-    const bestDistance = rankedDocuments[0]
-    const joinedCitations = scopedDocuments.map((document) => ({
+    const best = ranked[0]
+    const citations = ranked.map(({ document, overlap }) => ({
       documentId: document.id,
       title: document.title,
       source: document.source,
       chunkIndex: 0,
-      similarity: 1,
+      // Показываем тот же сигнал, по которому ранжируем (доля слов вопроса,
+      // найденных в лучшем предложении источника), иначе порядок списка и
+      // отображаемое «сходство» противоречат друг другу. Лексическое
+      // пересечение — приближение, а не косинус эмбеддингов: не выдаём за
+      // идеальное совпадение и цитируем только реально найденное.
+      similarity: Math.min(0.99, Number((overlap / queryTerms.length).toFixed(2))),
       content: document.content,
     }))
 
     return {
       type: "rag-answer",
       model: "demo",
-      answer: bestDistance
-        ? `По источнику «${bestDistance.document.title}»: самая длинная найденная пробежка — ${bestDistance.distanceKm} км.`
+      answer: best
+        ? `По источнику «${best.document.title}»: ${best.sentence}`
         : "В заметках недостаточно данных, чтобы ответить на этот вопрос без выдумки.",
-      citations: joinedCitations,
+      citations,
       retrieval: {
-        matchCount: scopedDocuments.length,
-        threshold: 1,
+        matchCount: citations.length,
+        threshold: 0,
         embeddingModel: "demo",
         scope,
       },
