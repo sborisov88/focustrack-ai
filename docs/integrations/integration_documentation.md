@@ -22,6 +22,8 @@ Pipeline состоит из трёх jobs: `quality` (quality gate), `vercel-fr
 - lint (`pnpm run lint`);
 - typecheck (`pnpm run typecheck`);
 - unit tests (`pnpm run test`);
+- dependency audit (`pnpm audit --audit-level high`);
+- Deno checks для всех Edge Functions;
 - build (`pnpm run build`);
 - e2e (`pnpm run test:e2e`);
 - upload Playwright артефактов (шаг с `if: always()`, артефакт `playwright-evidence`, путь `output/playwright`).
@@ -43,12 +45,12 @@ Pipeline состоит из трёх jobs: `quality` (quality gate), `vercel-fr
 
 ### Supabase deploy (`supabase-deploy`)
 
-Зависит от `quality` (`needs: quality`). Включается только при push в `main` и `vars.SUPABASE_DEPLOY_ENABLED == 'true'`. Шаги:
+Зависит от `quality` (`needs: quality`). Включается при push в `main`, если `vars.SUPABASE_DEPLOY_ENABLED != 'false'`. Шаги:
 
 - setup Supabase CLI;
 - link project (`supabase link --project-ref`);
 - push database migrations (`supabase db push --yes`);
-- deploy Edge Functions: `ai-clarify`, `ai-plan`, `ai-weekly-review`, `rag-answer`, `health`.
+- deploy Edge Functions: `ai-clarify`, `ai-plan`, `ai-weekly-review`, `rag-answer`, `embed-knowledge-document`, `health`.
 
 Необходимые secrets:
 
@@ -93,7 +95,7 @@ Flow:
 3. Supabase Auth выполняет redirect к Google и обратно на origin приложения;
 4. provider client secret хранится только в настройках Supabase Auth, в коде фронтенда его нет.
 
-Статус проверки: entry point реальный и собирается. Сквозной (end-to-end) вход именно через Google проверяется вручную — автоматизированного e2e-доказательства полного OAuth-цикла в evidence нет. e2e-сценарий логина в наборе покрывает диалог входа, а live-Supabase сценарий пропускается без env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`.
+Статус проверки: entry point реальный и собирается. Полный Google OAuth callback/session проверяется ручным production smoke без сохранения токенов, cookies и персональных данных. e2e-сценарий логина в наборе покрывает диалог входа, а live-Supabase сценарий запускается при наличии env `E2E_DEMO_EMAIL` / `E2E_DEMO_PASSWORD`.
 
 ### Настройка Google OAuth в Supabase Cloud
 
@@ -172,14 +174,7 @@ Production-состояние на 25 июня 2026: в Vercel Production зад
 
 `trackEvent({ name, params })` отправляет `reachGoal`-события (`window.ym(counterId, "reachGoal", name, params)`); в dev-режиме дополнительно логирует событие в консоль.
 
-В UI (`src/features/dashboard/focustrack-dashboard.tsx`) вызывается не менее 3 `reachGoal`-событий — фактически больше. Актуальные точки на 20 июня 2026:
-
-- `goal_created` (`:395`) — создана цель;
-- `task_toggled` (`:1923`) — переключён статус задачи;
-- `weekly_review_completed` (`:1824`) — завершён еженедельный обзор;
-- `ai_clarify_completed` (`:414`), `ai_plan_completed` (`:467`), `rag_answer_completed` (`:1558`) — завершены AI-сценарии;
-- `oauth_started` (`:659`), `password_sign_in` (`:783`), `sign_out` (`:935`) — события аутентификации;
-- `sidebar_navigation_clicked` (`:1947`) — навигация по разделам.
+В UI (`src/features/dashboard/focustrack-dashboard.tsx`) вызывается не менее 3 `reachGoal`-событий: создание цели, переключение задачи, weekly review, AI clarify, AI plan, RAG answer, OAuth/password auth, sign out и навигация по разделам. Документация намеренно не фиксирует номера строк, чтобы не устаревать при изменении компонента.
 
 ## Monitoring
 

@@ -1,8 +1,0 @@
-raw_deployment_url=https://focustrack-a5hkbzktu-sborisov88s-projects.vercel.app
-raw_deployment_status=401
-raw_deployment_has_title=false
-production_alias_url=https://focustrack-ai.vercel.app
-production_alias_status=200
-production_alias_has_title=true
-health_status=200
-protected_ai_without_jwt_status=401

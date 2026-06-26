@@ -37,6 +37,25 @@ async function openHeaderNewGoalDialog(page: Page) {
   await page.locator("header").getByTestId("new-goal-button").click()
 }
 
+async function deleteGoalByTitle(page: Page, title: string) {
+  await page.getByTestId("nav-dashboard").click()
+  await expect(page.getByTestId("route-dashboard")).toBeVisible()
+
+  const goal = page.getByTestId("goal-item").filter({ hasText: title })
+  await expect(goal).toBeVisible()
+
+  const deleteResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes("/rest/v1/goals") &&
+      response.request().method() === "DELETE" &&
+      response.ok(),
+  )
+  await goal.getByTestId("delete-goal-button").click()
+  await page.getByTestId("confirm-delete-goal-button").click()
+  await deleteResponse
+  await expect(goal).toHaveCount(0)
+}
+
 test("desktop dashboard flow renders and updates local state", async ({
   page,
 }, testInfo) => {
@@ -326,59 +345,74 @@ test("live Supabase flow persists created goals and task status", async ({
   )
 
   const title = `E2E persistence ${Date.now()}`
+  let createdGoal = false
 
   await page.goto("/")
-  await page.getByTestId("login-trigger").click()
-  await page.getByTestId("login-email-input").fill(process.env.E2E_DEMO_EMAIL!)
-  await page
-    .getByTestId("login-password-input")
-    .fill(process.env.E2E_DEMO_PASSWORD!)
-  await page.getByTestId("login-submit").click()
-  await expect(page.getByTestId("mode-badge")).toContainText("Supabase")
-  // After login the demo banner disappears.
-  await expect(page.getByTestId("demo-banner")).toHaveCount(0)
+  try {
+    await page.getByTestId("login-trigger").click()
+    await page
+      .getByTestId("login-email-input")
+      .fill(process.env.E2E_DEMO_EMAIL!)
+    await page
+      .getByTestId("login-password-input")
+      .fill(process.env.E2E_DEMO_PASSWORD!)
+    await page.getByTestId("login-submit").click()
+    await expect(page.getByTestId("mode-badge")).toContainText("Supabase")
+    // After login the demo banner disappears.
+    await expect(page.getByTestId("demo-banner")).toHaveCount(0)
 
-  await openHeaderNewGoalDialog(page)
-  await page.getByTestId("goal-title-input").fill(title)
-  await page
-    .getByTestId("goal-context-input")
-    .fill("Проверка сохранения цели через Supabase Data API.")
-  await page.getByTestId("goal-submit").click()
-  await expect(
-    page.getByTestId("goal-item").filter({ hasText: title }),
-  ).toBeVisible()
+    await openHeaderNewGoalDialog(page)
+    await page.getByTestId("goal-title-input").fill(title)
+    await page
+      .getByTestId("goal-context-input")
+      .fill("Проверка сохранения цели через Supabase Data API.")
+    await page.getByTestId("goal-submit").click()
+    await expect(
+      page.getByTestId("goal-item").filter({ hasText: title }),
+    ).toBeVisible()
+    createdGoal = true
 
-  await page.reload()
-  await expect(
-    page.getByTestId("goal-item").filter({ hasText: title }),
-  ).toBeVisible()
+    await page.reload()
+    await expect(
+      page.getByTestId("goal-item").filter({ hasText: title }),
+    ).toBeVisible()
 
-  await page.getByTestId("nav-planner").click()
-  await expect(page.getByTestId("route-planner")).toBeVisible()
-  const firstTask = page.getByTestId("task-item").first()
-  const checkbox = firstTask.getByTestId("task-checkbox")
-  const initiallyChecked = await checkbox.isChecked()
-  const taskUpdate = page.waitForResponse(
-    (response) =>
-      response.url().includes("/rest/v1/tasks") &&
-      response.request().method() === "PATCH" &&
-      response.ok(),
-  )
-  await checkbox.click()
-  await taskUpdate
-  await expect(checkbox).toBeChecked({ checked: !initiallyChecked })
-  await page.reload()
-  await expect(page.getByTestId("mode-badge")).toContainText("Supabase")
-  await expect(
-    page.getByTestId("task-item").first().getByTestId("task-checkbox"),
-  ).toBeChecked({ checked: !initiallyChecked })
+    await page.getByTestId("nav-planner").click()
+    await expect(page.getByTestId("route-planner")).toBeVisible()
+    const firstTask = page.getByTestId("task-item").first()
+    const checkbox = firstTask.getByTestId("task-checkbox")
+    const initiallyChecked = await checkbox.isChecked()
+    const taskUpdate = page.waitForResponse(
+      (response) =>
+        response.url().includes("/rest/v1/tasks") &&
+        response.request().method() === "PATCH" &&
+        response.ok(),
+    )
+    await checkbox.click()
+    await taskUpdate
+    await expect(checkbox).toBeChecked({ checked: !initiallyChecked })
+    await page.reload()
+    await expect(page.getByTestId("mode-badge")).toContainText("Supabase")
+    await expect(
+      page.getByTestId("task-item").first().getByTestId("task-checkbox"),
+    ).toBeChecked({ checked: !initiallyChecked })
+
+    await deleteGoalByTitle(page, title)
+    createdGoal = false
+    await page.reload()
+    await expect(
+      page.getByTestId("goal-item").filter({ hasText: title }),
+    ).toHaveCount(0)
+  } finally {
+    if (createdGoal) {
+      await deleteGoalByTitle(page, title)
+    }
+  }
 
   await page.getByTestId("signout-button").click()
   await expect(page.getByTestId("mode-badge")).toContainText("Вход не выполнен")
   await expect(page.getByTestId("user-email")).toHaveCount(0)
   await expect(page.getByTestId("signed-out-empty-state")).toBeVisible()
-  await expect(
-    page.getByTestId("goal-item").filter({ hasText: title }),
-  ).toHaveCount(0)
+
   await expect(page.getByTestId("goal-item")).toHaveCount(0)
 })

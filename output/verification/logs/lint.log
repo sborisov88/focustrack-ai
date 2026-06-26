@@ -1,7 +1,0 @@
-COMMAND: pnpm run lint
-
-> focustrack-ai@0.1.0 lint /Users/sborisov/Otus/ИИ-агенты продвинутое внедрение и использование/focustrack-ai
-> eslint .
-
-
-EXIT=0

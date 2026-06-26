@@ -2,6 +2,7 @@ import "@supabase/functions-js/edge-runtime.d.ts"
 
 import {
   callOpenRouterEmbedding,
+  errorResponseBody,
   getErrorStatus,
   handleOptions,
   jsonResponse,
@@ -16,6 +17,7 @@ import {
   sha256Hex,
   splitKnowledgeContentIntoChunks,
 } from "../_shared/knowledge.ts"
+import { enforceRateLimit } from "../_shared/rate-limit.ts"
 
 const log = createLogger("embed-knowledge-document")
 
@@ -43,6 +45,7 @@ export default {
     try {
       const userId = requireAuthenticatedUser(request)
       supabase = createUserSupabaseClient(request)
+      await enforceRateLimit(supabase, userId, "embed-knowledge-document")
       const body = await readJson<EmbedKnowledgeDocumentRequest>(request)
       documentId = requireNonEmptyString(body.documentId, "documentId")
 
@@ -161,7 +164,11 @@ export default {
       }
 
       log.error("Ошибка индексации документа", { documentId, message })
-      return jsonResponse(request, { error: message }, getErrorStatus(error))
+      return jsonResponse(
+        request,
+        errorResponseBody(error),
+        getErrorStatus(error),
+      )
     }
   },
 }

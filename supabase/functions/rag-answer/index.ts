@@ -4,6 +4,7 @@ import {
   assertPayloadSize,
   callOpenRouterEmbedding,
   callOpenRouter,
+  errorResponseBody,
   getErrorStatus,
   handleOptions,
   jsonResponse,
@@ -13,6 +14,7 @@ import {
 } from "../_shared/openrouter.ts"
 import { createLogger } from "../_shared/logger.ts"
 import { createUserSupabaseClient } from "../_shared/supabase-user.ts"
+import { enforceRateLimit } from "../_shared/rate-limit.ts"
 
 const log = createLogger("rag-answer")
 
@@ -39,6 +41,8 @@ export default {
 
     try {
       const userId = requireAuthenticatedUser(request)
+      const supabase = createUserSupabaseClient(request)
+      await enforceRateLimit(supabase, userId, "rag-answer")
       const body = await readJson<RagRequest>(request)
       const question = requireNonEmptyString(body.question, "question").trim()
       const selectedDocumentId =
@@ -47,8 +51,9 @@ export default {
           ? body.selectedDocumentId.trim()
           : null
       const scope = selectedDocumentId == null ? "all" : "document"
-      const supabase = createUserSupabaseClient(request)
-      const matchThreshold = Number(Deno.env.get("RAG_MATCH_THRESHOLD") ?? "0.55")
+      const matchThreshold = Number(
+        Deno.env.get("RAG_MATCH_THRESHOLD") ?? "0.55",
+      )
       const matchCount = Number(Deno.env.get("RAG_MATCH_COUNT") ?? "6")
 
       log.info("Vector RAG-запрос", {
@@ -133,7 +138,7 @@ export default {
         {
           role: "system",
           content:
-            "Ты RAG-помощник FocusTrack AI. Отвечай только по найденным фрагментам заметок. Если найдено несколько фрагментов с числами, датами или дистанциями, сравнивай только эти найденные значения и явно называй источник каждого вывода. Если фрагментов недостаточно, скажи: \"В заметках недостаточно данных\". Не придумывай факты. В конце добавь короткий список источников с номерами фрагментов.",
+            'Ты RAG-помощник FocusTrack AI. Отвечай только по найденным фрагментам заметок. Если найдено несколько фрагментов с числами, датами или дистанциями, сравнивай только эти найденные значения и явно называй источник каждого вывода. Если фрагментов недостаточно, скажи: "В заметках недостаточно данных". Не придумывай факты. В конце добавь короткий список источников с номерами фрагментов.',
         },
         {
           role: "user",
@@ -146,7 +151,7 @@ export default {
           user_id: userId,
           document_id:
             scope === "document"
-              ? chunks[0]?.document_id ?? selectedDocumentId
+              ? (chunks[0]?.document_id ?? selectedDocumentId)
               : null,
           question,
           answer: content,
@@ -173,7 +178,11 @@ export default {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       log.error("Ошибка обработки запроса", { message })
-      return jsonResponse(request, { error: message }, getErrorStatus(error))
+      return jsonResponse(
+        request,
+        errorResponseBody(error),
+        getErrorStatus(error),
+      )
     }
   },
 }

@@ -17,6 +17,6 @@
 
 ### Known limitations
 
-- full authenticated data loading is prepared by schema/API but demo UI still uses local workspace fallback;
+- authenticated users load and mutate their workspace through Supabase; signed-out users can still open a local demo workspace;
 - health endpoint is public for smoke checks and uses restricted CORS; AI/RAG calls require a user JWT;
 - Yandex ID, alerts and deployment secrets must be configured in provider dashboards.

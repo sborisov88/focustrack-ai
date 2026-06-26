@@ -21,8 +21,6 @@ build/
 # Logs
 *.log
 npm-debug.log*
-!output/verification/logs/*.log
-!submissions/**/evidence/logs/*.log
 
 # Supabase
 .branches
@@ -30,4 +28,5 @@ npm-debug.log*
 
 # Test
 coverage/
+output/
 output/playwright/

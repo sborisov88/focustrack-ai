@@ -109,6 +109,7 @@ pnpm run test:e2e
 | Раздел                                                                                             | Содержание                                        |
 | -------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | [docs/product/](./docs/product/)                                                                   | Описание продукта, UI-концепции, user stories, ТЗ |
+| [docs/product/demo_walkthrough.md](./docs/product/demo_walkthrough.md)                             | 10-минутный сценарий демонстрации продукта        |
 | [docs/backend/backend_architecture.md](./docs/backend/backend_architecture.md)                     | Архитектура backend-а и AI-функций                |
 | [docs/backend/backend_documentation.md](./docs/backend/backend_documentation.md)                   | Backend-документация                              |
 | [docs/frontend/development_report.md](./docs/frontend/development_report.md)                       | Отчёт по frontend                                 |

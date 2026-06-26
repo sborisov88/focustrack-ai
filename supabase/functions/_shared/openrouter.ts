@@ -139,10 +139,25 @@ export function requireAuthenticatedUser(request: Request): string {
 }
 
 export function getErrorStatus(error: unknown) {
+  const status = (error as { status?: unknown })?.status
+  if (typeof status === "number") return status
+
   if (error instanceof AuthError) return error.status
   if (error instanceof ValidationError) return error.status
   if (error instanceof UpstreamError) return error.status
   return 500
+}
+
+export function errorResponseBody(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  const retryAfterSeconds = (error as { retryAfterSeconds?: unknown })
+    ?.retryAfterSeconds
+
+  if (typeof retryAfterSeconds === "number") {
+    return { error: message, retryAfterSeconds }
+  }
+
+  return { error: message }
 }
 
 // CORS: явный allowlist вместо wildcard "*". Список источников настраивается
@@ -225,10 +240,15 @@ export async function callOpenRouter(messages: ChatMessage[]) {
     })
   } catch (error) {
     const aborted = error instanceof DOMException && error.name === "AbortError"
-    logEvent("error", "openrouter", aborted ? "Таймаут OpenRouter" : "Сетевая ошибка OpenRouter", {
-      model,
-      latencyMs: Date.now() - startedAt,
-    })
+    logEvent(
+      "error",
+      "openrouter",
+      aborted ? "Таймаут OpenRouter" : "Сетевая ошибка OpenRouter",
+      {
+        model,
+        latencyMs: Date.now() - startedAt,
+      },
+    )
     throw new Error(
       aborted
         ? `Превышено время ожидания ответа OpenRouter (${timeoutMs} мс).`
@@ -315,10 +335,17 @@ export async function callOpenRouterEmbedding(input: string | string[]) {
     })
   } catch (error) {
     const aborted = error instanceof DOMException && error.name === "AbortError"
-    logEvent("error", "openrouter", aborted ? "Таймаут OpenRouter embeddings" : "Сетевая ошибка OpenRouter embeddings", {
-      model,
-      latencyMs: Date.now() - startedAt,
-    })
+    logEvent(
+      "error",
+      "openrouter",
+      aborted
+        ? "Таймаут OpenRouter embeddings"
+        : "Сетевая ошибка OpenRouter embeddings",
+      {
+        model,
+        latencyMs: Date.now() - startedAt,
+      },
+    )
     throw new Error(
       aborted
         ? `Превышено время ожидания OpenRouter embeddings (${timeoutMs} мс).`
@@ -349,7 +376,10 @@ export async function callOpenRouterEmbedding(input: string | string[]) {
 
   const embeddings = (payload.data ?? []).map((item) => item.embedding)
 
-  if (embeddings.length === 0 || embeddings.some((item) => !Array.isArray(item))) {
+  if (
+    embeddings.length === 0 ||
+    embeddings.some((item) => !Array.isArray(item))
+  ) {
     logEvent("warn", "openrouter", "Пустой embedding-ответ", { model })
     throw new Error("OpenRouter не вернул embedding-вектор.")
   }

@@ -46,7 +46,7 @@
 ```text
 pnpm lint -> passed
 pnpm typecheck -> passed
-pnpm test -> 41 passed
+pnpm test -> 55 passed
 pnpm build -> passed
 pnpm test:e2e -> 9 passed / 11 skipped
 (cd supabase/functions/rag-answer && deno check --no-lock --node-modules-dir=auto index.ts) -> passed
@@ -65,11 +65,7 @@ RLS: user A sees only "RLS smoke A"; user B chunk is hidden
 rag-answer without JWT -> 401
 ```
 
-Evidence:
-
-- `submissions/final-project/evidence/local-vector-rag-sql-rls-smoke-2026-06-25.json`
-- `submissions/final-project/evidence/openrouter-embedding-preflight-2026-06-25.json`
-- `submissions/final-project/evidence/production-vector-rag-smoke-2026-06-26.json`
+Evidence хранится вне публичного продуктового репозитория в teacher-facing пакете верхнего workspace. В публичной документации остаётся только redacted summary без секретов и персональных данных.
 
 ## Production rollout
 

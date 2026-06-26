@@ -43,10 +43,17 @@ jobs:
       - name: Unit tests
         run: pnpm run test
 
+      - name: Dependency audit
+        run: pnpm audit --audit-level high
+
       - name: Deno Edge Function checks
         run: |
+          (cd supabase/functions/ai-clarify && deno check --no-lock --node-modules-dir=auto index.ts)
+          (cd supabase/functions/ai-plan && deno check --no-lock --node-modules-dir=auto index.ts)
+          (cd supabase/functions/ai-weekly-review && deno check --no-lock --node-modules-dir=auto index.ts)
           (cd supabase/functions/rag-answer && deno check --no-lock --node-modules-dir=auto index.ts)
           (cd supabase/functions/embed-knowledge-document && deno check --no-lock --node-modules-dir=auto index.ts)
+          (cd supabase/functions/health && deno check --no-lock --node-modules-dir=auto index.ts)
 
       - name: SQL/RLS policy audit
         run: |
@@ -82,6 +89,9 @@ jobs:
         run: pnpm run build
 
       - name: E2E tests
+        env:
+          E2E_DEMO_EMAIL: ${{ secrets.E2E_DEMO_EMAIL }}
+          E2E_DEMO_PASSWORD: ${{ secrets.E2E_DEMO_PASSWORD }}
         run: pnpm run test:e2e
 
       - name: Upload Playwright evidence
