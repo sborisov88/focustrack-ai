@@ -9,8 +9,6 @@ build
 .vite
 output
 coverage
-submissions/**/evidence/media
-submissions/**/evidence/logs
 supabase/.temp
 supabase/.branches
 *.log

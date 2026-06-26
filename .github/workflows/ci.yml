@@ -57,8 +57,8 @@ jobs:
 
       - name: SQL/RLS policy audit
         run: |
-          mkdir -p output/verification/logs
-          log="output/verification/logs/sql-rls-policy-audit.log"
+          mkdir -p output/ci-audit
+          log="output/ci-audit/sql-rls-policy-audit.log"
           {
             echo "SQL/RLS policy audit"
             echo "checked_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -83,7 +83,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: sql-rls-policy-audit
-          path: output/verification/logs/sql-rls-policy-audit.log
+          path: output/ci-audit/sql-rls-policy-audit.log
 
       - name: Build
         run: pnpm run build
